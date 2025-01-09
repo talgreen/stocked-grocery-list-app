@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { Mic, Send, Camera, Plus, X } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Item } from '../types/item'
-import { Category } from '../types/categories'
+import { Camera, Mic, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Category } from '../types/categories';
+import { Item } from '../types/item';
 
 interface AddItemFormProps {
   onAdd: (item: Omit<Item, 'id' | 'purchased'>, categoryId: number) => void;
@@ -95,7 +94,7 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-semibold">Add New Item</h2>
+        <h2 className="text-lg font-semibold">מוצר חדש</h2>
         <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700">
           <X size={24} />
         </button>
@@ -105,7 +104,7 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
         value={item}
         onChange={(e) => setItem(e.target.value)}
         className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
-        placeholder="Add item (comma-separated for multiple)"
+        placeholder="שם המוצר"
         required
       />
       <input
@@ -113,20 +112,20 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
-        placeholder="Comment"
+        placeholder="הערה"
       />
       <select
         value={selectedCategoryId}
         onChange={(e) => setSelectedCategoryId(e.target.value === 'new' ? 'new' : Number(e.target.value))}
         className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
       >
-        <option value="">Select a category</option>
+        <option value="">קטגוריה</option>
         {categories.map((category) => (
           <option key={category.id} value={category.id}>
             {category.name}
           </option>
         ))}
-        <option value="new">+ Add new category</option>
+        <option value="new">+ קטגוריה חדשה</option>
       </select>
       {selectedCategoryId === 'new' && (
         <input
@@ -134,7 +133,7 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
           className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
-          placeholder="New category name"
+          placeholder="שם הקטגוריה"
           required
         />
       )}
@@ -146,7 +145,7 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
             onClick={() => setPhoto(null)}
             className="text-xs text-red-500 hover:text-red-700"
           >
-            Remove photo
+            הסר תמונה
           </button>
         </div>
       )}
@@ -180,7 +179,7 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
           type="submit"
           className="bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-xl transition-colors duration-200"
         >
-          Add Item
+          הוסף מוצר
         </button>
       </div>
     </form>

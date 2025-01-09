@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
-import { CheckSquare, Square, Trash2, Eye, Edit } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import PhotoModal from './PhotoModal'
+import { AnimatePresence, motion } from 'framer-motion'
+import { CheckSquare, Edit, Eye, Square, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { Item } from '../types/item'
+import PhotoModal from './PhotoModal'
 
 interface GroceryItemProps {
   item: Item
@@ -44,7 +44,7 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
       className={`px-4 py-2 ${item.purchased ? 'opacity-50' : ''}`}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3 flex-grow">
+        <div className="flex items-center space-x-reverse space-x-3 flex-grow">
           <motion.button
             onClick={onToggle}
             className={`transition-colors duration-200 ${
@@ -83,7 +83,7 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
               onBlur={handleCommentBlur}
               onKeyPress={(e) => e.key === 'Enter' && handleCommentBlur()}
               className="text-xs p-1 rounded-lg bg-black/5 focus:outline-none focus:ring-1 focus:ring-[#FFB74D]"
-              placeholder="Add a comment"
+              placeholder="הוסף הערה..."
               autoFocus
             />
           ) : (
@@ -111,7 +111,7 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
             whileTap={{ scale: 0.9 }}
           >
             {isDeleting ? (
-              <span className="text-xs">Sure?</span>
+              <span className="text-xs">בטוח?</span>
             ) : (
               <Trash2 className="h-4 w-4" />
             )}

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import CategoryList from '@/components/CategoryList'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 interface Category {
   id: number
@@ -69,7 +69,7 @@ export default function SharedList() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-4">
       <div className="max-w-md mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">Shared Grocery List</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">רשימת קניות משותפת</h1>
         <CategoryList 
           categories={categories} 
           onToggleItem={handleToggleItem}

@@ -184,7 +184,7 @@ export default function HomeScreen() {
   }, [listId])
 
   return (
-    <div className="min-h-screen bg-[#FDF6ED]">
+    <div className="min-h-screen bg-white text-right">
       <header className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
         <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export default function HomeScreen() {
       </nav>
       <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24">
         <div className="mb-6 text-sm text-muted-foreground font-medium">
-          {uncheckedItems} of {totalItems} items remaining
+          {uncheckedItems} מתוך {totalItems} פריטים נותרו        
         </div>
         <CategoryList 
           categories={categories}

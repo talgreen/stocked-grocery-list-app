@@ -37,8 +37,8 @@ export default function ShareButton() {
         onClick={generateShareLink}
         className="text-black/60 hover:text-black/80 transition-colors duration-200 flex items-center"
       >
-        <Share2 size={20} className="mr-1" />
-        <span className="text-sm">Share</span>
+        <Share2 size={20} className="ml-1" />
+        <span className="text-sm">שיתוף</span>
       </button>
 
       <AnimatePresence>
@@ -59,7 +59,7 @@ export default function ShareButton() {
               className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-black/5 z-[10000]"
             >
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-black/90">Share List</h2>
+                <h2 className="text-xl font-semibold text-black/90">שיתוף רשימה</h2>
                 <button
                   onClick={() => setIsShareModalOpen(false)}
                   className="text-black/40 hover:text-black/60 transition-colors"
@@ -81,13 +81,13 @@ export default function ShareButton() {
                 >
                   {isCopied ? (
                     <>
-                      <Check size={16} />
-                      <span>Copied!</span>
+                      <Check className="w-4 h-4 text-green-500" />
+                      <span>הועתק!</span>
                     </>
                   ) : (
                     <>
-                      <Copy size={16} />
-                      <span>Copy</span>
+                      <Copy className="w-4 h-4" />
+                      <span>העתק קישור</span>
                     </>
                   )}
                 </button>

@@ -1,19 +1,25 @@
 import type { Metadata } from 'next'
+import { Heebo } from 'next/font/google'
 import './globals.css'
 
+const heebo = Heebo({ 
+  subsets: ['hebrew', 'latin'],
+  variable: '--font-heebo',
+})
+
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Stocked',
+  description: 'רשימת קניות חכמה',
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="he" dir="rtl">
+      <body className={`${heebo.variable} font-heebo`}>{children}</body>
     </html>
   )
 }

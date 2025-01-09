@@ -1,11 +1,12 @@
 TODOs MVP:
-1. A new list should have a new guid
-2. When sharing a list, the guid should be included in the url
-3. When a list is shared, the guid should be used to fetch the list
-4. use BE db integration to store and fetch lists
-5. add a new item and auto categorize it using the LLM
+1. A new list should have a new guid - done
+2. When sharing a list, the guid should be included in the url - done
+3. When a list is shared, the guid should be used to fetch the list - done
+4. use BE db integration to store and fetch lists - done
+5. add a new item and auto categorize it using the LLM 
 6. integrate with the LLM to auto categorize items
 7. fix tabs and category scroller
 
 TODOs v2:
+1. add necessary git files such as readme, license, etc.
 
