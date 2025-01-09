@@ -1,7 +1,9 @@
 'use client'
 
+import { createNewList, getList, updateList } from '@/lib/db'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus } from 'lucide-react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { initialCategories } from '../types/categories'
 import { Item } from '../types/item'
@@ -13,13 +15,16 @@ import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
 
 export default function HomeScreen() {
-  const [categories, setCategories] = useState(initialCategories)
+  const [categories, setCategories] = useState<Category[]>([])
+  const searchParams = useSearchParams()
   const [activeCategoryId, setActiveCategoryId] = useState<number>(1)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [showFireworks, setShowFireworks] = useState(false)
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now())
   const [isScrollLocked, setIsScrollLocked] = useState(false)
   const scrollTimeout = useRef<NodeJS.Timeout>()
+  const params = useParams()
+  const listId = params.listId as string
 
   const HEADER_HEIGHT = 120
 
@@ -38,71 +43,97 @@ export default function HomeScreen() {
     }
   }, []);
 
-  const handleAddItem = (newItem: Omit<Item, 'id' | 'purchased'>, categoryId: number) => {
-    setCategories(prevCategories => {
-      return prevCategories.map(category => {
-        if (category.id === categoryId) {
-          return {
-            ...category,
-            items: [
-              ...category.items,
-              {
-                id: Math.max(...category.items.map(i => i.id), 0) + 1,
-                ...newItem,
-                purchased: false
-              }
-            ]
-          }
-        }
-        return category
-      })
-    })
-    setIsAddFormOpen(false)
+  const handleAddItem = async (item: Omit<Item, 'id' | 'purchased'>, categoryId: number) => {
+    const newItem = {
+      ...item,
+      id: Date.now(),
+      purchased: false,
+    }
+
+    const updatedCategories = categories.map(category =>
+      category.id === categoryId
+        ? { ...category, items: [...category.items, newItem] }
+        : category
+    )
+
+    setCategories(updatedCategories)
+    
+    if (listId) {
+      try {
+        await updateList(listId, updatedCategories)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        // Optionally revert state on error
+        setCategories(categories)
+      }
+    }
   }
 
-  const handleAddCategory = (categoryName: string): number => {
+  const handleAddCategory = async (categoryName: string) => {
     const newCategory = {
-      id: Math.max(...categories.map(c => c.id)) + 1,
+      id: Date.now(),
       name: categoryName,
-      items: []
+      items: [],
     }
-    setCategories(prevCategories => [...prevCategories, newCategory])
+
+    const updatedCategories = [...categories, newCategory]
+    setCategories(updatedCategories)
+    
+    if (listId) {
+      try {
+        await updateList(listId, updatedCategories)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        setCategories(categories)
+      }
+    }
+
     return newCategory.id
   }
 
-  const handleToggleItem = (categoryId: number, itemId: number) => {
-    setCategories(prevCategories => {
-      const newCategories = prevCategories.map(category => 
-        category.id === categoryId 
-          ? {
-              ...category, 
-              items: category.items.map(item => 
-                item.id === itemId ? { ...item, purchased: !item.purchased } : item
-              ).sort((a, b) => {
-                if (a.purchased === b.purchased) return 0
-                if (a.purchased) return 1
-                return -1
-              })
-            }
-          : category
-      )
+  const handleToggleItem = async (categoryId: number, itemId: number) => {
+    const updatedCategories = categories.map(category =>
+      category.id === categoryId
+        ? {
+            ...category,
+            items: category.items.map(item =>
+              item.id === itemId
+                ? { ...item, purchased: !item.purchased }
+                : item
+            ).sort((a, b) => (a.purchased === b.purchased) ? 0 : a.purchased ? 1 : -1)
+          }
+        : category
+    )
 
-      // Check if all items in the category are now purchased
-      const category = newCategories.find(c => c.id === categoryId)
-      if (category && category.items.length > 0 && category.items.every(item => item.purchased)) {
-        setShowFireworks(true)
+    setCategories(updatedCategories)
+    
+    if (listId) {
+      try {
+        await updateList(listId, updatedCategories)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        setCategories(categories)
       }
-
-      return newCategories
-    })
+    }
   }
 
-  const handleDeleteItem = (categoryId: number, itemId: number) => {
-    setCategories(categories.map(category =>
+  const handleDeleteItem = async (categoryId: number, itemId: number) => {
+    const updatedCategories = categories.map(category =>
       category.id === categoryId
         ? { ...category, items: category.items.filter(item => item.id !== itemId) }
         : category
-    ))
+    )
+
+    setCategories(updatedCategories)
+    
+    if (listId) {
+      try {
+        await updateList(listId, updatedCategories)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        setCategories(categories)
+      }
+    }
   }
 
   const handleEditItem = (categoryId: number, itemId: number, newComment: string) => {
@@ -128,6 +159,29 @@ export default function HomeScreen() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    async function initializeList() {
+      try {
+        const data = await getList(listId)
+        if (data?.categories) {
+          setCategories(data.categories)
+          // Set first category as active if exists
+          if (data.categories.length > 0) {
+            setActiveCategoryId(data.categories[0].id)
+          }
+        } else {
+          // If no data exists, create new list with initial categories
+          await createNewList(listId, initialCategories)
+          setCategories(initialCategories)
+        }
+      } catch (error) {
+        console.error('Error initializing list:', error)
+      }
+    }
+
+    initializeList()
+  }, [listId])
 
   return (
     <div className="min-h-screen bg-[#FDF6ED]">

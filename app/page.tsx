@@ -1,10 +1,17 @@
-import HomeScreen from '@/components/HomeScreen'
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 
 export default function Home() {
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50">
-      <HomeScreen />
-    </main>
-  )
+  const router = useRouter()
+
+  useEffect(() => {
+    const listId = uuidv4()
+    router.replace(`/share/${listId}`)
+  }, [router])
+
+  return null
 }
 

@@ -1,34 +1,20 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Share2, X, Copy, Check } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Check, Copy, Share2, X } from 'lucide-react'
+import { useParams } from 'next/navigation'
+import { useRef, useState } from 'react'
 
-interface Category {
-  id: number
-  name: string
-  items: {
-    id: number
-    name: string
-    purchased: boolean
-    comment?: string
-  }[]
-}
-
-interface ShareButtonProps {
-  categories: Category[]
-}
-
-export default function ShareButton({ categories }: ShareButtonProps) {
+export default function ShareButton() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [shareLink, setShareLink] = useState('')
   const [isCopied, setIsCopied] = useState(false)
   const linkInputRef = useRef<HTMLInputElement>(null)
+  const params = useParams()
+  const listId = params.listId as string
 
   const generateShareLink = () => {
-    const data = JSON.stringify(categories)
-    const encodedData = btoa(encodeURIComponent(data))
-    const link = `${window.location.origin}/share?data=${encodedData}`
+    const link = `${window.location.origin}/share/${listId}`
     setShareLink(link)
     setIsShareModalOpen(true)
   }
