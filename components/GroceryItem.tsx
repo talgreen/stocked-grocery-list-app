@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { CheckSquare, Edit, Eye, Square, Trash2 } from 'lucide-react'
+import { CheckSquare, Square, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Item } from '../types/item'
 import PhotoModal from './PhotoModal'
@@ -41,13 +41,13 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.2 }}
-      className={`px-4 py-2 ${item.purchased ? 'opacity-50' : ''}`}
+      className={`px-4 py-1.5 ${item.purchased ? 'opacity-50' : ''}`}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-reverse space-x-3 flex-grow">
+      <div className="flex flex-col min-h-8 group">
+        <div className="flex items-center gap-3 min-w-0">
           <motion.button
             onClick={onToggle}
-            className={`transition-colors duration-200 ${
+            className={`flex-shrink-0 transition-colors duration-200 ${
               item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
             }`}
             whileTap={{ scale: 0.9 }}
@@ -69,42 +69,16 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
               </motion.div>
             </AnimatePresence>
           </motion.button>
-          <span className={`text-sm ${item.purchased ? 'line-through text-black/40' : 'text-black/80'}`}>
+          
+          <span className={`text-sm truncate leading-tight flex-1 ${
+            item.purchased ? 'line-through text-black/40' : 'text-black/80'
+          }`}>
             {item.name}
           </span>
-        </div>
-        <div className="flex items-center space-x-2">
-          {isEditingComment ? (
-            <input
-              ref={commentInputRef}
-              type="text"
-              value={editedComment}
-              onChange={(e) => setEditedComment(e.target.value)}
-              onBlur={handleCommentBlur}
-              onKeyPress={(e) => e.key === 'Enter' && handleCommentBlur()}
-              className="text-xs p-1 rounded-lg bg-black/5 focus:outline-none focus:ring-1 focus:ring-[#FFB74D]"
-              placeholder="הוסף הערה..."
-              autoFocus
-            />
-          ) : (
-            <button
-              onClick={() => setIsEditingComment(true)}
-              className="text-xs text-black/40 hover:text-black/60"
-            >
-              {item.comment ? item.comment : <Edit size={12} />}
-            </button>
-          )}
-          {item.photo && (
-            <button
-              onClick={() => setShowPhotoModal(true)}
-              className="text-[#FFB74D] hover:text-[#FFA726] transition-colors duration-200"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-          )}
+
           <motion.button
             onClick={handleDelete}
-            className={`text-black/40 hover:text-red-500 transition-colors duration-200 ${
+            className={`flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200 opacity-0 group-hover:opacity-100 ${
               isDeleting ? 'bg-red-50 text-red-500 px-2 py-1 rounded-lg' : ''
             }`}
             whileHover={{ scale: 1.1 }}
@@ -117,6 +91,12 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
             )}
           </motion.button>
         </div>
+
+        {item.comment && (
+          <div className="pr-8 text-xs text-black/40 truncate leading-tight min-h-4">
+            {item.comment}
+          </div>
+        )}
       </div>
       {item.photo && showPhotoModal && (
         <PhotoModal photoUrl={item.photo} onClose={() => setShowPhotoModal(false)} />

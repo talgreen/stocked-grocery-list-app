@@ -184,7 +184,7 @@ export default function HomeScreen() {
   }, [listId])
 
   return (
-    <div className="min-h-screen bg-white text-right">
+    <div className="min-h-screen bg-[#FDF6ED]">
       <header className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
         <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">

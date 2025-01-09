@@ -5,8 +5,9 @@ TODOs MVP:
 4. use BE db integration to store and fetch lists - done
 5. add a new item and auto categorize it using the LLM 
 6. integrate with the LLM to auto categorize items
-7. fix tabs and category scroller
+7. fix tabs and category scroller - done
 
 TODOs v2:
 1. add necessary git files such as readme, license, etc.
+2. add edit item functionality
 

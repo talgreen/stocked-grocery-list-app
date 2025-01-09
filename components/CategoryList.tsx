@@ -1,3 +1,4 @@
+import confetti from 'canvas-confetti'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, ChevronDown } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -26,39 +27,42 @@ interface CategoryListProps {
 }
 
 export default function CategoryList({ categories, onToggleItem, onDeleteItem, onEditItem, onCategoryChange }: CategoryListProps) {
-  const [expandedCategories, setExpandedCategories] = useState<number[]>(categories.map(c => c.id))
-  const prevItemsRef = useRef<{ [key: number]: number }>({})
+  // Always start with all categories expanded
+  const [expandedCategories, setExpandedCategories] = useState(() => 
+    categories.map(category => category.id)
+  )
   const categoryRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
+  const previousStates = useRef<{ [key: number]: number }>({})
 
+  // Re-expand all categories whenever the categories list changes (including initial load)
   useEffect(() => {
-    const newExpandedCategories = [...expandedCategories]
-    
+    const allCategoryIds = categories.map(category => category.id)
+    setExpandedCategories(allCategoryIds)
+  }, [categories])
+
+  // Handle category completion and collapse
+  useEffect(() => {
     categories.forEach(category => {
-      const prevItemCount = prevItemsRef.current[category.id] || 0
-      const currentItemCount = category.items.length
-      
-      // If all items are checked, collapse the category
-      const allChecked = category.items.length > 0 && category.items.every(item => item.purchased)
-      
-      // If new items were added, expand the category
-      const itemsAdded = currentItemCount > prevItemCount
-      
-      if (allChecked && !itemsAdded) {
-        const index = newExpandedCategories.indexOf(category.id)
-        if (index !== -1) {
-          newExpandedCategories.splice(index, 1)
-        }
-      } else if (itemsAdded) {
-        if (!newExpandedCategories.includes(category.id)) {
-          newExpandedCategories.push(category.id)
-        }
+      const uncheckedCount = category.items.filter(item => !item.purchased).length
+      const previousUncheckedCount = previousStates.current[category.id] || uncheckedCount
+
+      // If this was the last item checked
+      if (previousUncheckedCount === 1 && uncheckedCount === 0) {
+        // Trigger confetti
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00']
+        })
+        
+        // Collapse the category
+        setExpandedCategories(prev => prev.filter(id => id !== category.id))
       }
-      
-      // Update the previous items count
-      prevItemsRef.current[category.id] = currentItemCount
+
+      // Update the previous state
+      previousStates.current[category.id] = uncheckedCount
     })
-    
-    setExpandedCategories(newExpandedCategories)
   }, [categories])
 
   const toggleCategory = (categoryId: number) => {
@@ -72,10 +76,10 @@ export default function CategoryList({ categories, onToggleItem, onDeleteItem, o
   return (
     <div className="space-y-4">
       {categories.map((category) => {
-        const uncheckedCount = category.items.filter(item => !item.purchased).length;
-        const totalCount = category.items.length;
-        const allChecked = totalCount > 0 && uncheckedCount === 0;
-        const isExpanded = expandedCategories.includes(category.id);
+        const uncheckedCount = category.items.filter(item => !item.purchased).length
+        const totalCount = category.items.length
+        const allChecked = totalCount > 0 && uncheckedCount === 0
+        const isExpanded = expandedCategories.includes(category.id)
         
         return (
           <motion.div
@@ -92,10 +96,10 @@ export default function CategoryList({ categories, onToggleItem, onDeleteItem, o
                 onClick={() => toggleCategory(category.id)}
                 className="w-full p-4 flex justify-between items-center hover:bg-black/5 transition-colors duration-200"
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center gap-3">
                   <span className="text-xl">{category.name.split(' ')[0]}</span>
                   <h2 className="text-base font-semibold text-black/80">{category.name.split(' ')[1]}</h2>
-                  <span className="text-sm text-black/40 font-medium">
+                  <span className="text-sm text-black/40 font-medium mr-2">
                     ({uncheckedCount}/{totalCount})
                   </span>
                   {allChecked && <Check className="h-4 w-4 text-[#FFB74D]" />}
@@ -110,36 +114,29 @@ export default function CategoryList({ categories, onToggleItem, onDeleteItem, o
             </div>
             <AnimatePresence initial={false}>
               {isExpanded && (
-                <motion.ul
+                <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: 'auto' }}
                   exit={{ height: 0 }}
-                  transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="py-2">
+                  <ul className="">
                     {category.items.map((item) => (
-                      <motion.div
+                      <GroceryItem
                         key={item.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <GroceryItem
-                          item={item}
-                          onToggle={() => onToggleItem(category.id, item.id)}
-                          onDelete={() => onDeleteItem(category.id, item.id)}
-                          onEdit={(newComment) => onEditItem(category.id, item.id, newComment)}
-                        />
-                      </motion.div>
+                        item={item}
+                        onToggle={() => onToggleItem(category.id, item.id)}
+                        onDelete={() => onDeleteItem(category.id, item.id)}
+                        onEdit={(field, value) => onEditItem(category.id, item.id, field, value)}
+                      />
                     ))}
-                  </div>
-                </motion.ul>
+                  </ul>
+                </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
-        );
+        )
       })}
     </div>
   )
