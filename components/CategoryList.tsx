@@ -1,3 +1,5 @@
+'use client'
+
 import confetti from 'canvas-confetti'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, ChevronDown } from 'lucide-react'
@@ -27,17 +29,21 @@ interface CategoryListProps {
 }
 
 export default function CategoryList({ categories, onToggleItem, onDeleteItem, onEditItem, onCategoryChange }: CategoryListProps) {
-  // Always start with all categories expanded
+  // Start with all unchecked categories expanded
   const [expandedCategories, setExpandedCategories] = useState(() => 
-    categories.map(category => category.id)
+    categories
+      .filter(category => category.items.some(item => !item.purchased))
+      .map(category => category.id)
   )
   const categoryRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
   const previousStates = useRef<{ [key: number]: number }>({})
 
-  // Re-expand all categories whenever the categories list changes (including initial load)
+  // Only expand unchecked categories on load/changes
   useEffect(() => {
-    const allCategoryIds = categories.map(category => category.id)
-    setExpandedCategories(allCategoryIds)
+    const uncheckedCategoryIds = categories
+      .filter(category => category.items.some(item => !item.purchased))
+      .map(category => category.id)
+    setExpandedCategories(uncheckedCategoryIds)
   }, [categories])
 
   // Handle category completion and collapse
@@ -56,7 +62,7 @@ export default function CategoryList({ categories, onToggleItem, onDeleteItem, o
           colors: ['#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00']
         })
         
-        // Collapse the category
+        // Collapse only this category
         setExpandedCategories(prev => prev.filter(id => id !== category.id))
       }
 
@@ -98,7 +104,7 @@ export default function CategoryList({ categories, onToggleItem, onDeleteItem, o
               >
                 <div className="flex items-center gap-3">
                   <span className="text-xl">{category.name.split(' ')[0]}</span>
-                  <h2 className="text-base font-semibold text-black/80">{category.name.substring(category.name.indexOf(' ') + 1)}</h2>
+                  <h2 className="text-base font-semibold text-black/80">{category.name.split(' ')[1]}</h2>
                   <span className="text-sm text-black/40 font-medium mr-2">
                     ({uncheckedCount}/{totalCount})
                   </span>
@@ -121,7 +127,7 @@ export default function CategoryList({ categories, onToggleItem, onDeleteItem, o
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <ul className="">
+                  <ul className="divide-y divide-black/5">
                     {category.items.map((item) => (
                       <GroceryItem
                         key={item.id}

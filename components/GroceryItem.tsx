@@ -55,10 +55,11 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
             }`}
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.1 }}
+            key={`checkbox-${item.id}`}
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
-                key={item.purchased ? 'checked' : 'unchecked'}
+                key={`${item.id}-${item.purchased}`}
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.5 }}
@@ -81,14 +82,14 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
 
           <motion.button
             onClick={handleDelete}
-            className={`flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200 ${
-              isDeleting ? 'bg-red-50 text-red-500 px-2 py-1 rounded-lg' : ''
+            className={`flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200 h-5 w-5 flex items-center justify-center ${
+              isDeleting ? 'bg-red-50 text-red-500 !w-auto px-2' : ''
             }`}
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.1 }}
           >
             {isDeleting ? (
-              <span className="text-xs">בטוח?</span>
+              <span className="text-xs whitespace-nowrap">למחוק?</span>
             ) : (
               <Trash2 className="h-4 w-4" />
             )}
