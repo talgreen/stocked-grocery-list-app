@@ -97,7 +97,7 @@ export default function CategoryScroller({ categories, onCategoryChange, activeC
                 {category.name.split(' ')[0]}
               </span>
               <span className="text-sm font-medium whitespace-nowrap">
-                {category.name.split(' ')[1]}
+                {category.name.split(' ').slice(1).join(' ')}
               </span>
             </motion.button>
           ))}

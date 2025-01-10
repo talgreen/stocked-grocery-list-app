@@ -54,31 +54,24 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
     };
   }, [isListening]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (item.trim()) {
-      const items = item.split(',').map(i => i.trim()).filter(i => i !== '')
-      let categoryId: number;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!item.trim()) return;
 
-      if (selectedCategoryId === 'new' && newCategoryName.trim()) {
-        categoryId = onAddCategory(newCategoryName.trim());
-      } else if (typeof selectedCategoryId === 'number') {
-        categoryId = selectedCategoryId;
-      } else {
-        // If no category is selected, use the 'Other' category
-        const otherCategory = categories.find(c => c.name === '🛒 Other');
-        categoryId = otherCategory ? otherCategory.id : onAddCategory('🛒 Other');
-      }
+    const categoryName = selectedCategoryId === 'new' ? newCategoryName.trim() : '';
 
-      items.forEach(i => onAdd({ name: i, comment: comment.trim(), photo: photo || undefined }, categoryId))
-      setItem('')
-      setComment('')
-      setPhoto(null)
-      setSelectedCategoryId('')
-      setNewCategoryName('')
-      onClose()
+    try {
+      await onAdd({ name: item, comment, photo }, categoryName);
+      setItem('');
+      setComment('');
+      setPhoto(null);
+      setSelectedCategoryId('');
+      setNewCategoryName('');
+      onClose();
+    } catch (error) {
+      console.error('Error adding item:', error);
     }
-  }
+  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
