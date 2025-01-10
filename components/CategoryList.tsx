@@ -98,7 +98,7 @@ export default function CategoryList({ categories, onToggleItem, onDeleteItem, o
               >
                 <div className="flex items-center gap-3">
                   <span className="text-xl">{category.name.split(' ')[0]}</span>
-                  <h2 className="text-base font-semibold text-black/80">{category.name.split(' ')[1]}</h2>
+                  <h2 className="text-base font-semibold text-black/80">{category.name.substring(category.name.indexOf(' ') + 1)}</h2>
                   <span className="text-sm text-black/40 font-medium mr-2">
                     ({uncheckedCount}/{totalCount})
                   </span>

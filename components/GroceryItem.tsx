@@ -46,7 +46,10 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
       <div className="flex flex-col min-h-8 group">
         <div className="flex items-center gap-3 min-w-0">
           <motion.button
-            onClick={onToggle}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle()
+            }}
             className={`flex-shrink-0 transition-colors duration-200 ${
               item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
             }`}
@@ -78,11 +81,11 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
 
           <motion.button
             onClick={handleDelete}
-            className={`flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200 opacity-0 group-hover:opacity-100 ${
+            className={`flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200 ${
               isDeleting ? 'bg-red-50 text-red-500 px-2 py-1 rounded-lg' : ''
             }`}
-            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.1 }}
           >
             {isDeleting ? (
               <span className="text-xs">בטוח?</span>
