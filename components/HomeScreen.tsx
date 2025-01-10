@@ -44,14 +44,14 @@ export default function HomeScreen() {
     }
   }, []);
 
-  const handleAddItemWithCategory = async (item: Omit<Item, 'id' | 'purchased'>, categoryName: string) => {
+  const handleAddItemWithCategory = async (item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string) => {
     // Create a new item object
     const newItem = {
       ...item,
       id: Date.now(), // Temporary ID for local use
       purchased: false,
-      comment: item.comment || '',
-      photo: item.photo || '',
+      comment: item.comment || '', // Ensure comment is an empty string if undefined
+      photo: item.photo || null, // Set photo to null if undefined
     };
 
     // Determine if we need to create a new category
@@ -62,6 +62,7 @@ export default function HomeScreen() {
       const maxId = Math.max(...categories.map(cat => cat.id), 0);
       const newCategory = {
         id: maxId + 1, // Use maxId + 1 for the new category ID
+        emoji: typeof emoji === 'string' && emoji.trim() !== '' ? emoji : '', // Ensure emoji is a string
         name: categoryName,
         items: [],
       };
@@ -78,13 +79,15 @@ export default function HomeScreen() {
       if (category.id === categoryId) {
         return {
           ...category,
-          items: [...category.items.filter(item => !item.purchased), newItem, ...category.items.filter(item => item.purchased)], // Add new item to the end of unchecked items
+          items: [...category.items.filter(item => !item.purchased), newItem, ...category.items.filter(item => item.purchased)],
         };
       }
       return category; // Return unchanged category
     });
 
     try {
+      // Log the data being sent to Firestore
+      console.log('Updating list with data:', updatedCategories); 
       setCategories(updatedCategories); // Update local state
       await updateList(listId, updatedCategories); // Update Firebase with the new categories
     } catch (error) {

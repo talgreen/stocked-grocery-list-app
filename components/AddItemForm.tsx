@@ -1,7 +1,11 @@
 import { Camera, Mic, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useRef, useState } from 'react';
 import { Category } from '../types/categories';
 import { Item } from '../types/item';
+
+// Dynamically import the emoji picker to ensure it works well with SSR
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 interface AddItemFormProps {
   onAdd: (item: Omit<Item, 'id' | 'purchased'>, categoryId: number) => void;
@@ -11,78 +15,48 @@ interface AddItemFormProps {
 }
 
 export default function AddItemForm({ onAdd, onAddCategory, onClose, categories }: AddItemFormProps) {
-  const [item, setItem] = useState('')
-  const [comment, setComment] = useState('')
-  const [photo, setPhoto] = useState<string | null>(null)
-  const [isListening, setIsListening] = useState(false)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'new' | ''>('')
-  const [newCategoryName, setNewCategoryName] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [item, setItem] = useState('');
+  const [categoryName, setCategoryName] = useState('');
+  const [emoji, setEmoji] = useState('');
+  const [comment, setComment] = useState('');
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'new' | ''>('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    let recognition: SpeechRecognition | null = null;
+  const handleEmojiSelect = (emojiObject: any) => {
+    setEmoji(emojiObject.emoji); // Directly set the emoji as a string
+    setShowEmojiPicker(false); // Close the emoji picker
+  };
 
-    if (isListening) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          setItem(prevItem => prevItem ? `${prevItem}, ${transcript}` : transcript);
-          setIsListening(false);
-        };
-
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error', event.error);
-          setIsListening(false);
-        };
-
-        recognition.start();
-      } else {
-        console.error('Speech recognition not supported');
-        setIsListening(false);
-      }
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-
-    return () => {
-      if (recognition) {
-        recognition.stop();
-      }
-    };
-  }, [isListening]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!item.trim()) return;
 
-    const categoryName = selectedCategoryId === 'new' ? newCategoryName.trim() : '';
-
     try {
-      await onAdd({ name: item, comment, photo }, categoryName);
+      await onAdd({ name: item, comment, photo }, categoryName, emoji);
       setItem('');
+      setCategoryName('');
+      setEmoji('');
       setComment('');
       setPhoto(null);
-      setSelectedCategoryId('');
-      setNewCategoryName('');
       onClose();
     } catch (error) {
       console.error('Error adding item:', error);
     }
   };
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setPhoto(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,20 +89,41 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
         <option value="">קטגוריה</option>
         {categories.map((category) => (
           <option key={category.id} value={category.id}>
-            {category.name}
+            {category.emoji} {category.name}
           </option>
         ))}
         <option value="new">+ קטגוריה חדשה</option>
       </select>
       {selectedCategoryId === 'new' && (
-        <input
-          type="text"
-          value={newCategoryName}
-          onChange={(e) => setNewCategoryName(e.target.value)}
-          className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
-          placeholder="שם הקטגוריה"
-          required
-        />
+        <>
+          <input
+            type="text"
+            value={categoryName}
+            onChange={(e) => setCategoryName(e.target.value)}
+            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
+            placeholder="שם הקטגוריה"
+            required
+          />
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              className="bg-gray-200 text-gray-600 p-2 rounded-md hover:bg-gray-300 transition-colors duration-200"
+            >
+              בחר אימוג'י
+            </button>
+            {showEmojiPicker && (
+              <div className="mt-2">
+                <EmojiPicker onEmojiClick={handleEmojiSelect} />
+              </div>
+            )}
+          </div>
+          {emoji && (
+            <div className="text-2xl mt-2">
+              <span>נבחר אימוג'י: {emoji}</span>
+            </div>
+          )}
+        </>
       )}
       {photo && (
         <div className="flex items-center">
@@ -176,6 +171,5 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
         </button>
       </div>
     </form>
-  )
+  );
 }
-

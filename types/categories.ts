@@ -1,7 +1,8 @@
 export const initialCategories = [
   {
     id: 1,
-    name: '🥬 ירקות',
+    emoji: '🥬',
+    name: 'ירקות',
     items: [
       { id: 1, name: 'עגבניות', purchased: false, comment: '4-5 יחידות בשלות' },
       { id: 2, name: 'מלפפונים', purchased: false },
@@ -17,7 +18,8 @@ export const initialCategories = [
   },
   {
     id: 2,
-    name: '🥖 מאפים',
+    emoji: '🥖',
+    name: 'מאפים',
     items: [
       { id: 11, name: 'לחם', purchased: false, comment: 'כפרי מחיטה מלאה' },
       { id: 12, name: 'פיתות', purchased: false },
@@ -29,7 +31,8 @@ export const initialCategories = [
   },
   {
     id: 3,
-    name: '🥛 מוצרי חלב',
+    emoji: '🥛',
+    name: 'מוצרי חלב',
     items: [
       { id: 17, name: 'חלב', purchased: false, comment: '3% שומן' },
       { id: 18, name: 'גבינה צהובה', purchased: false },
@@ -43,7 +46,8 @@ export const initialCategories = [
   },
   {
     id: 4,
-    name: '🧃 משקאות',
+    emoji: '🧃',
+    name: 'משקאות',
     items: [
       { id: 25, name: 'מים מינרלים', purchased: false, comment: '2 שישיות' },
       { id: 26, name: 'סודה', purchased: false },
@@ -55,7 +59,8 @@ export const initialCategories = [
   },
   {
     id: 5,
-    name: '🥚 ביצים וחלבונים',
+    emoji: '🥚',
+    name: 'ביצים וחלבונים',
     items: [
       { id: 31, name: 'ביצים', purchased: false, comment: 'תבנית L' },
       { id: 32, name: 'חזה עוף', purchased: false, comment: 'טרי, 1 ק״ג' },
@@ -66,7 +71,8 @@ export const initialCategories = [
   },
   {
     id: 6,
-    name: '🥫 מזווה',
+    emoji: '🥫',
+    name: 'מזווה',
     items: [
       { id: 36, name: 'אורז', purchased: false },
       { id: 37, name: 'פסטה', purchased: false, comment: 'ספגטי + פנה' },
@@ -80,7 +86,8 @@ export const initialCategories = [
   },
   {
     id: 7,
-    name: '🧊 קפואים',
+    emoji: '🧊',
+    name: 'קפואים',
     items: [
       { id: 44, name: 'אפונה', purchased: false },
       { id: 45, name: 'שעועית ירוקה', purchased: false },
@@ -91,7 +98,8 @@ export const initialCategories = [
   },
   {
     id: 8,
-    name: '🧂 תבלינים',
+    emoji: '🧂',
+    name: 'תבלינים',
     items: [
       { id: 49, name: 'מלח', purchased: false },
       { id: 50, name: 'פלפל שחור', purchased: false },
