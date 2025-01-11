@@ -1,93 +1,91 @@
-import { Camera, Mic, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { Category } from '../types/categories';
-import { Item } from '../types/item';
+'use client'
+
+import { OpenRouter } from '@/lib/openrouter'
+import { X } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface AddItemFormProps {
-  onAdd: (item: Omit<Item, 'id' | 'purchased'>, categoryId: number) => void;
-  onAddCategory: (categoryName: string) => number;
-  onClose: () => void;
-  categories: Category[];
+  onAdd: (item: { name: string, comment?: string }, categoryId: number) => void
+  onAddCategory: (categoryName: string) => Promise<number>
+  onClose: () => void
+  categories: Category[]
 }
 
 export default function AddItemForm({ onAdd, onAddCategory, onClose, categories }: AddItemFormProps) {
   const [item, setItem] = useState('')
   const [comment, setComment] = useState('')
-  const [photo, setPhoto] = useState<string | null>(null)
-  const [isListening, setIsListening] = useState(false)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'new' | ''>('')
-  const [newCategoryName, setNewCategoryName] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    let recognition: SpeechRecognition | null = null;
-
-    if (isListening) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          setItem(prevItem => prevItem ? `${prevItem}, ${transcript}` : transcript);
-          setIsListening(false);
-        };
-
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error', event.error);
-          setIsListening(false);
-        };
-
-        recognition.start();
-      } else {
-        console.error('Speech recognition not supported');
-        setIsListening(false);
-      }
-    }
-
-    return () => {
-      if (recognition) {
-        recognition.stop();
-      }
-    };
-  }, [isListening]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (item.trim()) {
-      const items = item.split(',').map(i => i.trim()).filter(i => i !== '')
-      let categoryId: number;
-
-      if (selectedCategoryId === 'new' && newCategoryName.trim()) {
-        categoryId = onAddCategory(newCategoryName.trim());
-      } else if (typeof selectedCategoryId === 'number') {
-        categoryId = selectedCategoryId;
-      } else {
-        // If no category is selected, use the 'Other' category
-        const otherCategory = categories.find(c => c.name === '🛒 Other');
-        categoryId = otherCategory ? otherCategory.id : onAddCategory('🛒 Other');
-      }
-
-      items.forEach(i => onAdd({ name: i, comment: comment.trim(), photo: photo || undefined }, categoryId))
-      setItem('')
-      setComment('')
-      setPhoto(null)
-      setSelectedCategoryId('')
-      setNewCategoryName('')
-      onClose()
-    }
+  const checkIfItemExists = () => {
+    return categories.some(category => 
+      category.items.some(existingItem => 
+        existingItem.name.toLowerCase() === item.trim().toLowerCase()
+      )
+    )
   }
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setPhoto(reader.result as string)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!item.trim()) return
+
+    // Check for duplicates first
+    if (checkIfItemExists()) {
+      toast.error('פריט זה כבר קיים ברשימה')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const { category, emoji } = await OpenRouter.categorize(item)
+      
+      // Find existing category
+      let categoryId: number
+      const existingCategory = categories.find(c => 
+        c.name.toLowerCase().includes(category.toLowerCase()) || 
+        category.toLowerCase().includes(c.name.split(' ')[1].toLowerCase())
+      )
+      
+      const newItem = {
+        id: Date.now(),
+        name: item.trim(),
+        purchased: false,
+        ...(comment && { comment })
       }
-      reader.readAsDataURL(file)
+
+      if (existingCategory) {
+        // Use existing category's emoji and ID
+        const existingEmoji = existingCategory.name.split(' ')[0]
+        categoryId = existingCategory.id
+        
+        // Add item
+        onAdd(newItem, categoryId)
+        
+        // Show success message with existing category's emoji
+        toast.success(`הפריט "${item}" נוסף לקטגוריית ${existingEmoji} ${category}`)
+      } else {
+        // Create new category first
+        categoryId = await onAddCategory(`${emoji} ${category}`)
+        
+        // Wait for category to be created
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Then add the item
+        onAdd(newItem, categoryId)
+        
+        // Show success message with new emoji
+        toast.success(`הפריט "${item}" נוסף לקטגוריה חדשה ${emoji} ${category}`)
+      }
+      
+      // Reset and close
+      setItem('')
+      setComment('')
+      onClose()
+    } catch (error) {
+      console.error('Error adding item:', error)
+      toast.error('שגיאה בהוספת הפריט')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -99,6 +97,7 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
           <X size={24} />
         </button>
       </div>
+      
       <input
         type="text"
         value={item}
@@ -106,82 +105,25 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
         className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
         placeholder="שם המוצר"
         required
+        disabled={isLoading}
       />
+
       <input
         type="text"
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
-        placeholder="הערה"
+        placeholder="הערה (אופציונלי)"
+        disabled={isLoading}
       />
-      <select
-        value={selectedCategoryId}
-        onChange={(e) => setSelectedCategoryId(e.target.value === 'new' ? 'new' : Number(e.target.value))}
-        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
+
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-xl transition-colors duration-200 disabled:opacity-50"
       >
-        <option value="">קטגוריה</option>
-        {categories.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.name}
-          </option>
-        ))}
-        <option value="new">+ קטגוריה חדשה</option>
-      </select>
-      {selectedCategoryId === 'new' && (
-        <input
-          type="text"
-          value={newCategoryName}
-          onChange={(e) => setNewCategoryName(e.target.value)}
-          className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
-          placeholder="שם הקטגוריה"
-          required
-        />
-      )}
-      {photo && (
-        <div className="flex items-center">
-          <img src={photo} alt="Uploaded" className="w-10 h-10 object-cover rounded-md mr-2" />
-          <button
-            type="button"
-            onClick={() => setPhoto(null)}
-            className="text-xs text-red-500 hover:text-red-700"
-          >
-            הסר תמונה
-          </button>
-        </div>
-      )}
-      <div className="flex justify-between">
-        <div className="space-x-2">
-          <button
-            type="button"
-            onClick={() => setIsListening(true)}
-            className={`p-2 rounded-md transition-colors duration-200 ${
-              isListening ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-            }`}
-          >
-            <Mic size={20} />
-          </button>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="bg-gray-200 text-gray-600 p-2 rounded-md hover:bg-gray-300 transition-colors duration-200"
-          >
-            <Camera size={20} />
-          </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handlePhotoUpload}
-            accept="image/*"
-            className="hidden"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-xl transition-colors duration-200"
-        >
-          הוסף מוצר
-        </button>
-      </div>
+        {isLoading ? 'מוסיף...' : 'הוסף מוצר'}
+      </button>
     </form>
   )
 }
