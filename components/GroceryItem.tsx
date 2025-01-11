@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
 import { CheckSquare, Square, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Item } from '../types/item'
 import PhotoModal from './PhotoModal'
 
@@ -9,9 +9,10 @@ interface GroceryItemProps {
   onToggle: () => void
   onDelete: () => void
   onEdit: (newComment: string) => void
+  isNew?: boolean
 }
 
-export default function GroceryItem({ item, onToggle, onDelete, onEdit }: GroceryItemProps) {
+export default function GroceryItem({ item, onToggle, onDelete, onEdit, isNew }: GroceryItemProps) {
   const [isEditingComment, setIsEditingComment] = useState(false)
   const [editedComment, setEditedComment] = useState(item.comment || '')
   const [isDeleting, setIsDeleting] = useState(false)
@@ -19,6 +20,16 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
   const [isDragging, setIsDragging] = useState(false)
 
   const x = useMotionValue(0)
+  const itemRef = useRef<HTMLLIElement>(null)
+
+  useEffect(() => {
+    if (isNew && itemRef.current) {
+      itemRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'center'
+      })
+    }
+  }, [isNew])
 
   const handleDelete = () => {
     if (isDeleting) {
@@ -65,6 +76,7 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit }: Grocer
       )}
 
       <motion.li
+        ref={itemRef}
         layout
         style={{ x }}
         drag="x"

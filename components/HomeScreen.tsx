@@ -259,16 +259,16 @@ export default function HomeScreen() {
       </header>
       <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm z-20 sticky top-0">
         <div className="max-w-2xl mx-auto">
+          <CategoryScroller 
+            categories={categories}
+            onCategoryChange={handleCategoryChange}
+            activeCategoryId={activeCategoryId}
+          />
           <ProgressHeader
             uncheckedItems={uncheckedItems}
             totalItems={totalItems}
             isAllExpanded={isAllExpanded}
             onToggleAll={handleToggleAll}
-          />
-          <CategoryScroller 
-            categories={categories}
-            onCategoryChange={handleCategoryChange}
-            activeCategoryId={activeCategoryId}
           />
         </div>
       </nav>
