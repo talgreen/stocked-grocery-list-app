@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 
 interface Category {
   id: number
+  emoji: string
   name: string
   items: any[]
 }
@@ -94,10 +95,10 @@ export default function CategoryScroller({ categories, onCategoryChange, activeC
               transition={{ duration: 0.2 }}
             >
               <span className="text-xl">
-                {category.name.split(' ')[0]}
+                {category.emoji}
               </span>
               <span className="text-sm font-medium whitespace-nowrap">
-                {category.name.split(' ')[1]}
+                {category.name}
               </span>
             </motion.button>
           ))}

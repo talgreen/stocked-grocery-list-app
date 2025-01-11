@@ -16,6 +16,7 @@ import SparkleIcon from './SparkleIcon'
 
 export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const searchParams = useSearchParams()
   const [activeCategoryId, setActiveCategoryId] = useState<number>(1)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
@@ -43,53 +44,57 @@ export default function HomeScreen() {
     }
   }, []);
 
-  const handleAddItem = async (item: Omit<Item, 'id' | 'purchased'>, categoryId: number) => {
+  const handleAddItemWithCategory = async (item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string) => {
+    // Create a new item object
     const newItem = {
       ...item,
-      id: Date.now(),
+      id: Date.now(), // Temporary ID for local use
       purchased: false,
+      comment: item.comment || '', // Ensure comment is an empty string if undefined
+      photo: item.photo || null, // Set photo to null if undefined
+    };
+
+    // Determine if we need to create a new category
+    let updatedCategories = [...categories];
+    let categoryId: number;
+
+    if (categoryName) {
+      const maxId = Math.max(...categories.map(cat => cat.id), 0);
+      const newCategory = {
+        id: maxId + 1, // Use maxId + 1 for the new category ID
+        emoji: typeof emoji === 'string' && emoji.trim() !== '' ? emoji : '', // Ensure emoji is a string
+        name: categoryName,
+        items: [],
+      };
+
+      updatedCategories.push(newCategory); // Add the new category to the array
+      categoryId = newCategory.id; // Set the category ID to the new category
+    } else {
+      // If no new category, use the first category
+      categoryId = categories[0]?.id; // Fallback to the first category
     }
 
-    const updatedCategories = categories.map(category =>
-      category.id === categoryId
-        ? { ...category, items: [...category.items, newItem] }
-        : category
-    )
-
-    setCategories(updatedCategories)
-    
-    if (listId) {
-      try {
-        await updateList(listId, updatedCategories)
-      } catch (error) {
-        console.error('Error updating list:', error)
-        // Optionally revert state on error
-        setCategories(categories)
+    // Add the new item to the appropriate category
+    updatedCategories = updatedCategories.map(category => {
+      if (category.id === categoryId) {
+        return {
+          ...category,
+          items: [...category.items.filter(item => !item.purchased), newItem, ...category.items.filter(item => item.purchased)],
+        };
       }
-    }
-  }
+      return category; // Return unchanged category
+    });
 
-  const handleAddCategory = async (categoryName: string) => {
-    const newCategory = {
-      id: Date.now(),
-      name: categoryName,
-      items: [],
+    try {
+      // Log the data being sent to Firestore
+      console.log('Updating list with data:', updatedCategories); 
+      setCategories(updatedCategories); // Update local state
+      await updateList(listId, updatedCategories); // Update Firebase with the new categories
+    } catch (error) {
+      console.error('Error updating list:', error);
+      setCategories(categories); // Revert to previous state on error
     }
-
-    const updatedCategories = [...categories, newCategory]
-    setCategories(updatedCategories)
-    
-    if (listId) {
-      try {
-        await updateList(listId, updatedCategories)
-      } catch (error) {
-        console.error('Error updating list:', error)
-        setCategories(categories)
-      }
-    }
-
-    return newCategory.id
-  }
+  };
 
   const handleToggleItem = async (categoryId: number, itemId: number) => {
     const updatedCategories = categories.map(category =>
@@ -162,26 +167,29 @@ export default function HomeScreen() {
 
   useEffect(() => {
     async function initializeList() {
+      setIsLoading(true)
       try {
         const data = await getList(listId)
         if (data?.categories) {
           setCategories(data.categories)
-          // Set first category as active if exists
           if (data.categories.length > 0) {
             setActiveCategoryId(data.categories[0].id)
           }
         } else {
-          // If no data exists, create new list with initial categories
           await createNewList(listId, initialCategories)
           setCategories(initialCategories)
         }
       } catch (error) {
         console.error('Error initializing list:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
     initializeList()
   }, [listId])
+
+  if (isLoading) return <div>Loading...</div>
 
   return (
     <div className="min-h-screen bg-[#FDF6ED]">
@@ -227,9 +235,8 @@ export default function HomeScreen() {
           >
             <div className="bg-white rounded-2xl shadow-lg p-6 border border-black/5 add-item-form">
               <AddItemForm 
-                onAdd={handleAddItem} 
-                onAddCategory={handleAddCategory}
-                onClose={() => setIsAddFormOpen(false)} 
+                onAdd={handleAddItemWithCategory}
+                onClose={() => setIsAddFormOpen(false)}
                 categories={categories}
               />
             </div>

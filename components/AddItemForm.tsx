@@ -87,7 +87,7 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
     } finally {
       setIsLoading(false)
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -125,6 +125,5 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
         {isLoading ? 'מוסיף...' : 'הוסף מוצר'}
       </button>
     </form>
-  )
+  );
 }
-

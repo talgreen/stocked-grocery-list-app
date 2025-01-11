@@ -1,7 +1,8 @@
 export const initialCategories = [
   {
     id: 1,
-    name: '🥬 ירקות',
+    emoji: '🥬',
+    name: 'ירקות',
     items: [
       { id: 1, name: 'עגבניות', purchased: false, comment: '4-5 יחידות בשלות' },
       { id: 2, name: 'מלפפונים', purchased: false },
@@ -29,7 +30,8 @@ export const initialCategories = [
   },
   {
     id: 3,
-    name: '🥛 מוצרי חלב',
+    emoji: '🥛',
+    name: 'מוצרי חלב',
     items: [
       { id: 17, name: 'חלב', purchased: false, comment: '3% שומן' },
       { id: 18, name: 'גבינה צהובה', purchased: false },
@@ -90,7 +92,8 @@ export const initialCategories = [
   },
   {
     id: 8,
-    name: '🧂 תבלינים',
+    emoji: '🧂',
+    name: 'תבלינים',
     items: [
       { id: 49, name: 'מלח', purchased: false },
       { id: 50, name: 'פלפל שחור', purchased: false },
