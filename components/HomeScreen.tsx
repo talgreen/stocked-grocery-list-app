@@ -11,6 +11,7 @@ import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
 import CategoryScroller from './CategoryScroller'
 import Fireworks from './Fireworks'
+import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
 
@@ -26,8 +27,10 @@ export default function HomeScreen() {
   const scrollTimeout = useRef<NodeJS.Timeout>()
   const params = useParams()
   const listId = params.listId as string
+  const [isAllExpanded, setIsAllExpanded] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState<number[]>([])
 
-  const HEADER_HEIGHT = 120
+  const HEADER_HEIGHT = 140
 
   const handleCategoryChange = useCallback((categoryId: number) => {
     setActiveCategoryId(categoryId);
@@ -160,6 +163,11 @@ export default function HomeScreen() {
   const totalItems = categories.reduce((sum, category) => sum + category.items.length, 0)
   const uncheckedItems = categories.reduce((sum, category) => sum + category.items.filter(item => !item.purchased).length, 0)
 
+  const handleToggleAll = () => {
+    setIsAllExpanded(!isAllExpanded)
+    setExpandedCategories(isAllExpanded ? [] : categories.map(cat => cat.id))
+  }
+
   useEffect(() => {
     return () => {
       if (scrollTimeout.current) {
@@ -192,7 +200,49 @@ export default function HomeScreen() {
     initializeList()
   }, [listId])
 
-  if (isLoading) return <div>Loading...</div>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#FDF6ED]">
+        <header className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
+          <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-24 bg-gray-200 animate-pulse rounded-lg" />
+            </div>
+            <div className="h-8 w-8 bg-gray-200 animate-pulse rounded-full" />
+          </div>
+        </header>
+        <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
+          <div className="max-w-2xl mx-auto px-6 py-3">
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-8 w-20 bg-gray-200 animate-pulse rounded-full" />
+              ))}
+            </div>
+          </div>
+        </nav>
+        <main className="flex-grow max-w-2xl w-full mx-auto p-6">
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-6 w-6 bg-gray-200 animate-pulse rounded-full" />
+                  <div className="h-6 w-32 bg-gray-200 animate-pulse rounded-lg" />
+                </div>
+                <div className="space-y-3">
+                  {[1, 2].map((j) => (
+                    <div key={j} className="flex items-center gap-3">
+                      <div className="h-5 w-5 bg-gray-200 animate-pulse rounded" />
+                      <div className="h-5 w-48 bg-gray-200 animate-pulse rounded-lg" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#FDF6ED]">
@@ -209,6 +259,12 @@ export default function HomeScreen() {
       </header>
       <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm z-20 sticky top-0">
         <div className="max-w-2xl mx-auto">
+          <ProgressHeader
+            uncheckedItems={uncheckedItems}
+            totalItems={totalItems}
+            isAllExpanded={isAllExpanded}
+            onToggleAll={handleToggleAll}
+          />
           <CategoryScroller 
             categories={categories}
             onCategoryChange={handleCategoryChange}
@@ -217,15 +273,14 @@ export default function HomeScreen() {
         </div>
       </nav>
       <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24">
-        <div className="mb-6 text-sm text-muted-foreground font-medium">
-          {uncheckedItems} מתוך {totalItems} פריטים נותרו        
-        </div>
         <CategoryList 
           categories={categories}
           onToggleItem={handleToggleItem}
           onDeleteItem={handleDeleteItem}
           onEditItem={handleEditItem}
           onCategoryChange={setActiveCategoryId}
+          expandedCategories={expandedCategories}
+          setExpandedCategories={setExpandedCategories}
         />
       </main>
       <AnimatePresence>

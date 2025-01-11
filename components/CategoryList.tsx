@@ -3,7 +3,7 @@
 import confetti from 'canvas-confetti'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, ChevronDown } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import GroceryItem from './GroceryItem'
 
 interface Item {
@@ -27,25 +27,21 @@ interface CategoryListProps {
   onDeleteItem: (categoryId: number, itemId: number) => void
   onEditItem: (categoryId: number, itemId: number, newComment: string) => void
   onCategoryChange: (categoryId: number) => void
+  expandedCategories: number[]
+  setExpandedCategories: (categories: number[]) => void
 }
 
-export default function CategoryList({ categories, onToggleItem, onDeleteItem, onEditItem, onCategoryChange }: CategoryListProps) {
-  // Start with all unchecked categories expanded
-  const [expandedCategories, setExpandedCategories] = useState(() => 
-    categories
-      .filter(category => category.items.some(item => !item.purchased))
-      .map(category => category.id)
-  )
+export default function CategoryList({ 
+  categories, 
+  onToggleItem, 
+  onDeleteItem, 
+  onEditItem, 
+  onCategoryChange,
+  expandedCategories,
+  setExpandedCategories 
+}: CategoryListProps) {
   const categoryRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
   const previousStates = useRef<{ [key: number]: number }>({})
-
-  // Only expand unchecked categories on load/changes
-  useEffect(() => {
-    const uncheckedCategoryIds = categories
-      .filter(category => category.items.some(item => !item.purchased))
-      .map(category => category.id)
-    setExpandedCategories(uncheckedCategoryIds)
-  }, [categories])
 
   // Handle category completion and collapse
   useEffect(() => {
@@ -70,7 +66,7 @@ export default function CategoryList({ categories, onToggleItem, onDeleteItem, o
       // Update the previous state
       previousStates.current[category.id] = uncheckedCount
     })
-  }, [categories])
+  }, [categories, setExpandedCategories])
 
   const toggleCategory = (categoryId: number) => {
     setExpandedCategories(prev => 

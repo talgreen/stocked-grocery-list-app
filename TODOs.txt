@@ -3,11 +3,19 @@ TODOs MVP:
 2. When sharing a list, the guid should be included in the url - done
 3. When a list is shared, the guid should be used to fetch the list - done
 4. use BE db integration to store and fetch lists - done
-5. add a new item and auto categorize it using the LLM 
-6. integrate with the LLM to auto categorize items
+5. add a new item and auto categorize it using the LLM - done
+6. integrate with the LLM to auto categorize items - done
 7. fix tabs and category scroller - done
 
 TODOs v2:
 1. add necessary git files such as readme, license, etc.
 2. add edit item functionality
+3. add a progress bar - done
+4. add a collapse/expand all categories functionality - done
+5. make the progress bar, item count, and collapse/expand all categories functionality sticky - done
+6. make sure the llm api key is not shown in the api calls
+7. add swipe to delete item functionality based on react-swipeable-list and R2L, and make sure it works on mobile, keep the trash icon
+8. add swipe to toggle item functionality, keep the checkbox
+9. automatic scroll to the added item in the list
+10. add loading skeleton for the list - done
 
