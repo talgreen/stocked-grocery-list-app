@@ -18,7 +18,8 @@ export const initialCategories = [
   },
   {
     id: 2,
-    name: '🍎 פירות',
+    emoji: '🍎',
+    name: 'פירות',
     items: [
       { id: 11, name: 'תפוחים', purchased: false, comment: '4-5 יחידות' },
       { id: 12, name: 'בננות', purchased: false },
@@ -45,7 +46,8 @@ export const initialCategories = [
   },
   {
     id: 4,
-    name: '🥚 ביצים',
+    emoji: '🥚',
+    name: 'ביצים',
     items: [
       { id: 31, name: 'ביצים', purchased: false, comment: 'תבנית L' },
       { id: 32, name: 'חזה עוף', purchased: false, comment: 'טרי, 1 ק״ג' },
@@ -56,7 +58,8 @@ export const initialCategories = [
   },
   {
     id: 5,
-    name: '🥫 שימורים',
+    emoji: '🥫',
+    name: 'שימורים',
     items: [
       { id: 31, name: 'תירס', purchased: false },
       { id: 32, name: 'טונה', purchased: false, comment: '4 קופסאות' },
@@ -68,7 +71,8 @@ export const initialCategories = [
   },
   {
     id: 6,
-    name: '🫙 ממרחים ורטבים',
+    emoji: '🫙',
+    name: 'ממרחים ורטבים',
     items: [
       { id: 37, name: 'טחינה גולמית', purchased: false },
       { id: 38, name: 'חמאת בוטנים', purchased: false },
@@ -80,7 +84,8 @@ export const initialCategories = [
   },
   {
     id: 7,
-    name: '🥖 מאפים',
+    emoji: '🥖',
+    name: 'מאפים',
     items: [
       { id: 11, name: 'לחם', purchased: false, comment: 'כפרי מחיטה מלאה' },
       { id: 12, name: 'פיתות', purchased: false },
@@ -104,7 +109,8 @@ export const initialCategories = [
   },
   {
     id: 9,
-    name: '🍝 מזווה',
+    emoji: '🍝',
+    name: 'מזווה',
     items: [
       { id: 43, name: 'אורז', purchased: false },
       { id: 44, name: 'פסטה', purchased: false },
@@ -116,7 +122,8 @@ export const initialCategories = [
   },
   {
     id: 10,
-    name: '🧃 משקאות',
+    emoji: '🧃',
+    name: 'משקאות',
     items: [
       { id: 25, name: 'מים מינרלים', purchased: false, comment: '2 שישיות' },
       { id: 26, name: 'סודה', purchased: false },
@@ -128,7 +135,8 @@ export const initialCategories = [
   },
   {
     id: 11,
-    name: '🍪 חטיפים ומתוקים',
+    emoji: '🍪',
+    name: 'חטיפים ומתוקים',
     items: [
       { id: 49, name: 'במבה', purchased: false },
       { id: 50, name: 'ביסלי', purchased: false },
@@ -140,7 +148,8 @@ export const initialCategories = [
   },
   {
     id: 12,
-    name: '🧊 קפואים',
+    emoji: '🧊',
+    name: 'קפואים',
     items: [
       { id: 44, name: 'אפונה', purchased: false },
       { id: 45, name: 'שעועית ירוקה', purchased: false },
@@ -151,7 +160,8 @@ export const initialCategories = [
   },
   {
     id: 13,
-    name: '🥩 בשר ודגים',
+    emoji: '🥩',
+    name: 'בשר ודגים',
     items: [
       { id: 55, name: 'חזה עוף', purchased: false, comment: 'טרי, 1 ק״ג' },
       { id: 56, name: 'פרגיות', purchased: false },

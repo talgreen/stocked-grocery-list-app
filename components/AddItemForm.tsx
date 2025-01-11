@@ -6,13 +6,12 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 interface AddItemFormProps {
-  onAdd: (item: { name: string, comment?: string }, categoryId: number) => void
-  onAddCategory: (categoryName: string) => Promise<number>
-  onClose: () => void
+  onAdd: (item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string) => void
   categories: Category[]
+  onClose: () => void
 }
 
-export default function AddItemForm({ onAdd, onAddCategory, onClose, categories }: AddItemFormProps) {
+export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormProps) {
   const [item, setItem] = useState('')
   const [comment, setComment] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -29,7 +28,6 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
     e.preventDefault()
     if (!item.trim()) return
 
-    // Check for duplicates first
     if (checkIfItemExists()) {
       toast.error('פריט זה כבר קיים ברשימה')
       return
@@ -39,45 +37,26 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
     try {
       const { category, emoji } = await OpenRouter.categorize(item)
       
-      // Find existing category
-      let categoryId: number
+      // Find existing category by name only
       const existingCategory = categories.find(c => 
         c.name.toLowerCase().includes(category.toLowerCase()) || 
-        category.toLowerCase().includes(c.name.split(' ')[1].toLowerCase())
+        category.toLowerCase().includes(c.name.toLowerCase())
       )
       
       const newItem = {
-        id: Date.now(),
         name: item.trim(),
-        purchased: false,
         ...(comment && { comment })
       }
 
+      // Use single function but keep different messages
       if (existingCategory) {
-        // Use existing category's emoji and ID
-        const existingEmoji = existingCategory.name.split(' ')[0]
-        categoryId = existingCategory.id
-        
-        // Add item
-        onAdd(newItem, categoryId)
-        
-        // Show success message with existing category's emoji
-        toast.success(`הפריט "${item}" נוסף לקטגוריית ${existingEmoji} ${category}`)
+        onAdd(newItem, category, existingCategory.emoji)
+        toast.success(`הפריט "${item}" נוסף לקטגוריית ${existingCategory.emoji} ${existingCategory.name}`)
       } else {
-        // Create new category first
-        categoryId = await onAddCategory(`${emoji} ${category}`)
-        
-        // Wait for category to be created
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
-        // Then add the item
-        onAdd(newItem, categoryId)
-        
-        // Show success message with new emoji
+        onAdd(newItem, category, emoji)
         toast.success(`הפריט "${item}" נוסף לקטגוריה חדשה ${emoji} ${category}`)
       }
       
-      // Reset and close
       setItem('')
       setComment('')
       onClose()
@@ -87,7 +66,7 @@ export default function AddItemForm({ onAdd, onAddCategory, onClose, categories 
     } finally {
       setIsLoading(false)
     }
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

@@ -48,30 +48,35 @@ export default function HomeScreen() {
     // Create a new item object
     const newItem = {
       ...item,
-      id: Date.now(), // Temporary ID for local use
+      id: Date.now(),
       purchased: false,
-      comment: item.comment || '', // Ensure comment is an empty string if undefined
-      photo: item.photo || null, // Set photo to null if undefined
+      comment: item.comment || '',
+      photo: item.photo || null,
     };
 
-    // Determine if we need to create a new category
+    // Find existing category first
     let updatedCategories = [...categories];
     let categoryId: number;
 
-    if (categoryName) {
+    const existingCategory = categories.find(c => 
+      c.name.toLowerCase() === categoryName.toLowerCase()
+    );
+
+    if (existingCategory) {
+      // Use existing category
+      categoryId = existingCategory.id;
+    } else {
+      // Create new category only if it doesn't exist
       const maxId = Math.max(...categories.map(cat => cat.id), 0);
       const newCategory = {
-        id: maxId + 1, // Use maxId + 1 for the new category ID
-        emoji: typeof emoji === 'string' && emoji.trim() !== '' ? emoji : '', // Ensure emoji is a string
+        id: maxId + 1,
+        emoji: emoji,
         name: categoryName,
         items: [],
       };
 
-      updatedCategories.push(newCategory); // Add the new category to the array
-      categoryId = newCategory.id; // Set the category ID to the new category
-    } else {
-      // If no new category, use the first category
-      categoryId = categories[0]?.id; // Fallback to the first category
+      updatedCategories.push(newCategory);
+      categoryId = newCategory.id;
     }
 
     // Add the new item to the appropriate category
@@ -82,17 +87,15 @@ export default function HomeScreen() {
           items: [...category.items.filter(item => !item.purchased), newItem, ...category.items.filter(item => item.purchased)],
         };
       }
-      return category; // Return unchanged category
+      return category;
     });
 
     try {
-      // Log the data being sent to Firestore
-      console.log('Updating list with data:', updatedCategories); 
-      setCategories(updatedCategories); // Update local state
-      await updateList(listId, updatedCategories); // Update Firebase with the new categories
+      setCategories(updatedCategories);
+      await updateList(listId, updatedCategories);
     } catch (error) {
       console.error('Error updating list:', error);
-      setCategories(categories); // Revert to previous state on error
+      setCategories(categories);
     }
   };
 
