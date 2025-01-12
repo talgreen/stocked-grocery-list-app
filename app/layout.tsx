@@ -11,6 +11,17 @@ const heebo = Heebo({
 export const metadata: Metadata = {
   title: 'Stocked',
   description: 'רשימת קניות חכמה',
+  manifest: '/manifest.json',
+  icons: {
+    // Favicon
+    icon: [{ url: '/favicon.ico' }],
+    // iOS home screen icon
+    apple: [{ url: '/apple-icon.png' }],
+  },
+  other: {
+    'apple-mobile-web-app-title': 'Stocked',
+    'apple-mobile-web-app-capable': 'yes',
+  },
 }
 
 export default function RootLayout({
