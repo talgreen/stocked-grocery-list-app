@@ -14,6 +14,10 @@ TODOs v2:
 4. add a collapse/expand all categories functionality - done
 5. make the progress bar, item count, and collapse/expand all categories functionality sticky - done
 6. make sure the llm api key is not shown in the api calls
+   - Move OpenRouter API calls to backend endpoints
+   - Store API key in backend environment variables
+   - Create middleware to handle token validation
+   - Implement rate limiting for API endpoints
 7. add swipe to delete item functionality based on react-swipeable-list and R2L, and make sure it works on mobile, keep the trash icon - done
 8. add swipe to toggle item functionality, keep the checkbox - done
 9. automatic scroll to the added item in the list
