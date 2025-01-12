@@ -213,6 +213,71 @@ export default function HomeScreen() {
     }
   }, [isAddFormOpen])
 
+  const handleUpdateItemCategory = async (itemId: number, newCategoryId: number) => {
+    try {
+      // First find which category currently has the item
+      let itemToMove: any = null;
+      let sourceCategory: number | null = null;
+
+      // First pass: find the item and its source
+      categories.forEach(category => {
+        const foundItem = category.items.find(item => item.id === itemId);
+        if (foundItem) {
+          itemToMove = foundItem;
+          sourceCategory = category.id;
+        }
+      });
+
+      if (!itemToMove || sourceCategory === null) {
+        console.error('Item not found');
+        return;
+      }
+
+      // Second pass: create the new categories array
+      const updatedCategories = categories.map(category => {
+        // If this is the target category, add the item
+        if (category.id === newCategoryId) {
+          const currentItems = category.items;
+          // Split items into purchased and unpurchased
+          const purchasedItems = currentItems.filter(item => item.purchased);
+          const unpurchasedItems = currentItems.filter(item => !item.purchased);
+          
+          // Add the new item to unpurchased items
+          return {
+            ...category,
+            items: [
+              ...unpurchasedItems,
+              { ...itemToMove, categoryId: newCategoryId },
+              ...purchasedItems
+            ]
+          };
+        }
+        
+        // If this is the source category, remove the item
+        if (category.id === sourceCategory) {
+          return {
+            ...category,
+            items: category.items.filter(item => item.id !== itemId)
+          };
+        }
+
+        // Leave other categories unchanged
+        return category;
+      });
+
+      // Update state first
+      setCategories(updatedCategories);
+
+      // Then persist to database
+      if (listId) {
+        await updateList(listId, updatedCategories);
+      }
+    } catch (error) {
+      console.error('Error moving item:', error);
+      // Optionally show an error toast here
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FDF6ED]">
@@ -294,6 +359,7 @@ export default function HomeScreen() {
           onCategoryChange={setActiveCategoryId}
           expandedCategories={expandedCategories}
           setExpandedCategories={setExpandedCategories}
+          onUpdateItemCategory={handleUpdateItemCategory}
         />
       </main>
       <AnimatePresence>

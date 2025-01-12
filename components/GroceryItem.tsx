@@ -1,18 +1,26 @@
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
-import { CheckSquare, Square, Trash2 } from 'lucide-react'
+import { CheckSquare, MoreVertical, Square, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Item } from '../types/item'
 import PhotoModal from './PhotoModal'
 
 interface GroceryItemProps {
   item: Item
+  categories: Category[]
   onToggle: () => void
   onDelete: () => void
   onEdit: (newComment: string) => void
-  isNew?: boolean
+  onUpdateCategory: (newCategoryId: number) => void
 }
 
-export default function GroceryItem({ item, onToggle, onDelete, onEdit, isNew }: GroceryItemProps) {
+export default function GroceryItem({ item, categories, onToggle, onDelete, onEdit, onUpdateCategory }: GroceryItemProps) {
   const [isEditingComment, setIsEditingComment] = useState(false)
   const [editedComment, setEditedComment] = useState(item.comment || '')
   const [isDeleting, setIsDeleting] = useState(false)
@@ -23,13 +31,13 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit, isNew }:
   const itemRef = useRef<HTMLLIElement>(null)
 
   useEffect(() => {
-    if (isNew && itemRef.current) {
+    if (item.isNew && itemRef.current) {
       itemRef.current.scrollIntoView({ 
         behavior: 'smooth',
         block: 'center'
       })
     }
-  }, [isNew])
+  }, [item.isNew])
 
   const handleDelete = () => {
     if (isDeleting) {
@@ -134,6 +142,29 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit, isNew }:
               </span>
             )}
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex-shrink-0 p-1 hover:bg-black/5 rounded-lg">
+                <MoreVertical className="h-4 w-4 text-black/40" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5 text-sm font-medium text-black/40 text-right">
+                העבר ל-
+              </div>
+              <DropdownMenuSeparator />
+              {categories.map((category) => (
+                <DropdownMenuItem
+                  key={category.id}
+                  onClick={() => onUpdateCategory(category.id)}
+                  className="text-right"
+                >
+                  {category.emoji} {category.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <motion.button
             onClick={handleDelete}

@@ -9,11 +9,11 @@ TODOs MVP:
 
 TODOs v2:
 1. add necessary git files such as readme, license, etc.
-2. add edit item functionality
+2. add edit item functionality - done
 3. add a progress bar - done
 4. add a collapse/expand all categories functionality - done
 5. make the progress bar, item count, and collapse/expand all categories functionality sticky - done
-6. make sure the llm api key is not shown in the api calls
+6. make sure the llm api key is not shown in the api calls - done
    - Move OpenRouter API calls to backend endpoints
    - Store API key in backend environment variables
    - Create middleware to handle token validation

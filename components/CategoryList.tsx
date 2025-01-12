@@ -12,6 +12,7 @@ interface Item {
   purchased: boolean
   comment?: string
   photo?: string
+  categoryId: number
 }
 
 interface Category {
@@ -29,13 +30,15 @@ interface CategoryListProps {
   onCategoryChange: (categoryId: number) => void
   expandedCategories: number[]
   setExpandedCategories: (categories: number[]) => void
+  onUpdateItemCategory: (itemId: number, newCategoryId: number) => void
 }
 
 export default function CategoryList({ 
   categories, 
   onToggleItem, 
   onDeleteItem, 
-  onEditItem, 
+  onEditItem,
+  onUpdateItemCategory,
   onCategoryChange,
   expandedCategories,
   setExpandedCategories 
@@ -129,9 +132,11 @@ export default function CategoryList({
                       <GroceryItem
                         key={item.id}
                         item={item}
+                        categories={categories.filter(c => c.id !== category.id)}
                         onToggle={() => onToggleItem(category.id, item.id)}
                         onDelete={() => onDeleteItem(category.id, item.id)}
-                        onEdit={(field, value) => onEditItem(category.id, item.id, field, value)}
+                        onEdit={(newComment: string) => onEditItem(category.id, item.id, newComment)}
+                        onUpdateCategory={(newCategoryId: number) => onUpdateItemCategory(item.id, newCategoryId)}
                       />
                     ))}
                   </ul>
