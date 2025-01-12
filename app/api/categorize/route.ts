@@ -4,6 +4,8 @@ export async function POST(request: Request) {
   try {
     const { itemName } = await request.json()
     
+    console.log('Categorization request:', { itemName })
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -45,19 +47,30 @@ export async function POST(request: Request) {
             content: `המוצר: ${itemName}`
           }
         ],
-        model: "anthropic/claude-3.5-haiku-20241022:beta",
+        model: "google/gemini-2.0-flash-exp:free",
         temperature: 0.3
       })
     })
 
     if (!response.ok) {
+      console.error('OpenRouter API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers)
+      })
       return NextResponse.json({ error: 'Failed to categorize item' }, { status: 500 })
     }
 
     const data = await response.json()
-    const content = data.choices[0].message.content
-    return NextResponse.json(JSON.parse(content))
+    return NextResponse.json(JSON.parse(data.choices[0].message.content))
   } catch (error) {
+    console.error('Categorization error:', {
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack
+      } : error,
+      timestamp: new Date().toISOString()
+    })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
