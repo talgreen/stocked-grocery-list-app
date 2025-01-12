@@ -29,6 +29,7 @@ export default function HomeScreen() {
   const listId = params.listId as string
   const [isAllExpanded, setIsAllExpanded] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<number[]>([])
+  const modalRef = useRef<HTMLDivElement>(null)
 
   const HEADER_HEIGHT = 140
 
@@ -200,6 +201,18 @@ export default function HomeScreen() {
     initializeList()
   }, [listId])
 
+  useEffect(() => {
+    if (isAddFormOpen) {
+      // Small delay to ensure the modal is rendered
+      setTimeout(() => {
+        modalRef.current?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'center'
+        })
+      }, 100)
+    }
+  }, [isAddFormOpen])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FDF6ED]">
@@ -286,6 +299,7 @@ export default function HomeScreen() {
       <AnimatePresence>
         {isAddFormOpen && (
           <motion.div
+            ref={modalRef}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
