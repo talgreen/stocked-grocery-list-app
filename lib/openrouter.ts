@@ -27,6 +27,7 @@ export class OpenRouter {
 - 🍪 חטיפים ומתוקים: כל סוגי החטיפים והממתקים.
 - 🧊 קפואים: מזון מוקפא שמוכן לשימוש מאוחר יותר.
 - 🍴 כלי מטבח: מוצרים וחומרים המשמשים במטבח להכנה, בישול, אפייה, או אחסון. לדוגמה: נייר כסף, תבניות חד פעמיות, שקיות זיפלוק.
+- 🧹 מוצרי ניקיון: חומרי ניקוי, מוצרי כביסה, נייר טואלט, מגבונים ומוצרי היגיינה לבית. לדוגמה: סבון כלים, אקונומיקה, מרכך כביסה, שקיות אשפה.
 
 - החזר תשובה בפורמט JSON בלבד.
 - סווג כל מוצר לקטגוריה המתאימה ביותר לפי ההגדרות לעיל.
@@ -40,7 +41,7 @@ export class OpenRouter {
             content: `המוצר: ${itemName}`
           }
         ],
-        model: "openai/gpt-3.5-turbo",
+        model: "anthropic/claude-3.5-haiku-20241022:beta",
         temperature: 0.3
       })
     })

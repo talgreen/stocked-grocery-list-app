@@ -170,6 +170,21 @@ export const initialCategories = [
       { id: 59, name: 'נקניקיות', purchased: false },
       { id: 60, name: 'דג אמנון', purchased: false },
     ]
+  },
+  {
+    id: 14,
+    emoji: '🧹',
+    name: 'מוצרי ניקיון',
+    items: [
+      { id: 61, name: 'נוזל כלים', purchased: false },
+      { id: 62, name: 'אקונומיקה', purchased: false },
+      { id: 63, name: 'נייר טואלט', purchased: false, comment: 'חבילה של 32' },
+      { id: 64, name: 'מגבונים', purchased: false },
+      { id: 65, name: 'שקיות אשפה', purchased: false },
+      { id: 66, name: 'סבון כביסה', purchased: false },
+      { id: 67, name: 'מרכך כביסה', purchased: false },
+      { id: 68, name: 'נוזל רצפות', purchased: false },
+    ]
   }
 ]
 

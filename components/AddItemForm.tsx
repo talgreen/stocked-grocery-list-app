@@ -2,7 +2,7 @@
 
 import { OpenRouter } from '@/lib/openrouter'
 import { X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 interface AddItemFormProps {
@@ -15,6 +15,11 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
   const [item, setItem] = useState('')
   const [comment, setComment] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
 
   const checkIfItemExists = () => {
     return categories.some(category => 
@@ -35,7 +40,7 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
 
     setIsLoading(true)
     try {
-      const { category, emoji } = await OpenRouter.categorize(item)
+      const { category, emoji } = await OpenRouter.categorize(`${item}${comment ? ` - ${comment}` : ''}`)
       
       // Find existing category by name only
       const existingCategory = categories.find(c => 
@@ -77,24 +82,39 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
         </button>
       </div>
       
-      <input
-        type="text"
-        value={item}
-        onChange={(e) => setItem(e.target.value)}
-        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
-        placeholder="שם הפריט"
-        required
-        disabled={isLoading}
-      />
+      <div>
+        <label htmlFor="item" className="block text-sm font-medium text-gray-700 mb-1">
+          שם הפריט
+        </label>
+        <input
+          ref={inputRef}
+          type="text"
+          id="item"
+          value={item}
+          onChange={(e) => setItem(e.target.value)}
+          className="w-full border-gray-300 rounded-md shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-3 py-2"
+          placeholder="הוסף פריט חדש"
+          required
+          disabled={isLoading}
+          style={{ fontSize: '16px' }}
+        />
+      </div>
 
-      <input
-        type="text"
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-300 focus:border-emerald-300 px-3 py-2 text-sm"
-        placeholder="הערה (אופציונלי)"
-        disabled={isLoading}
-      />
+      <div>
+        <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1">
+          הערה (אופציונלי)
+        </label>
+        <input
+          type="text"
+          id="comment"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          className="w-full border-gray-300 rounded-md shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-3 py-2"
+          placeholder="הוסף הערה"
+          disabled={isLoading}
+          style={{ fontSize: '16px' }}
+        />
+      </div>
 
       <button
         type="submit"

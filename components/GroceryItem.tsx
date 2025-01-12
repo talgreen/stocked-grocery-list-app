@@ -66,11 +66,11 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit, isNew }:
         <div className="absolute inset-0 flex">
           {/* Toggle background */}
           <div className="w-1/2 bg-[#FFB74D] flex items-center justify-start pl-4">
-            <CheckSquare className="text-white h-5 w-5" />
+            <CheckSquare className="text-white h-5 w-5 absolute right-6 top-1/2 -translate-y-1/2" />
           </div>
           {/* Delete background */}
           <div className="w-1/2 bg-red-500 flex items-center justify-end pr-4">
-            <Trash2 className="text-white h-5 w-5" />
+            <Trash2 className="text-white h-5 w-5 absolute left-6 top-1/2 -translate-y-1/2" />
           </div>
         </div>
       )}
@@ -88,68 +88,67 @@ export default function GroceryItem({ item, onToggle, onDelete, onEdit, isNew }:
         animate={{ opacity: 1, height: 'auto' }}
         exit={{ opacity: 0, height: 0 }}
         transition={{ duration: 0.2 }}
-        className={`px-4 py-1.5 relative touch-pan-x bg-white ${
+        className={`px-4 py-2 relative touch-pan-x bg-white ${
           item.purchased ? 'opacity-50' : ''
         }`}
       >
-        <div className="flex flex-col min-h-8 group">
-          <div className="flex items-center gap-3 min-w-0">
-            <motion.button
-              onClick={(e) => {
-                e.stopPropagation()
-                onToggle()
-              }}
-              className={`flex-shrink-0 transition-colors duration-200 ${
-                item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
-              }`}
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.1 }}
-              key={`checkbox-${item.id}`}
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={`${item.id}-${item.purchased}`}
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.5 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.purchased ? (
-                    <CheckSquare className="h-5 w-5" />
-                  ) : (
-                    <Square className="h-5 w-5" />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </motion.button>
-            
-            <span className={`text-sm truncate leading-tight flex-1 ${
+        <div className="flex items-center gap-3 min-w-0">
+          <motion.button
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle()
+            }}
+            className={`flex-shrink-0 transition-colors duration-200 mt-0.5 ${
+              item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
+            }`}
+            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.1 }}
+            key={`checkbox-${item.id}`}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`${item.id}-${item.purchased}`}
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.2 }}
+              >
+                {item.purchased ? (
+                  <CheckSquare className="h-5 w-5" />
+                ) : (
+                  <Square className="h-5 w-5" />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </motion.button>
+          
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <span className={`text-sm truncate ${
               item.purchased ? 'line-through text-black/40' : 'text-black/80'
             }`}>
               {item.name}
             </span>
-
-            <motion.button
-              onClick={handleDelete}
-              className={`flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200 h-5 w-5 flex items-center justify-center ${
-                isDeleting ? 'bg-red-50 text-red-500 !w-auto px-2' : ''
-              }`}
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.1 }}
-            >
-              {isDeleting ? (
-                <span className="text-xs whitespace-nowrap">למחוק?</span>
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-            </motion.button>
+            {item.comment && (
+              <span className="text-xs text-black/40 truncate">
+                ({item.comment})
+              </span>
+            )}
           </div>
 
-          {item.comment && (
-            <div className="pr-8 text-xs text-black/40 truncate leading-tight min-h-4">
-              {item.comment}
-            </div>
-          )}
+          <motion.button
+            onClick={handleDelete}
+            className={`flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200 mt-0.5 ${
+              isDeleting ? 'bg-red-50 text-red-500 !w-auto px-2' : ''
+            }`}
+            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.1 }}
+          >
+            {isDeleting ? (
+              <span className="text-xs whitespace-nowrap">למחוק?</span>
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </motion.button>
         </div>
         {item.photo && showPhotoModal && (
           <PhotoModal photoUrl={item.photo} onClose={() => setShowPhotoModal(false)} />
