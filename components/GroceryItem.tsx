@@ -2,8 +2,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
 import { CheckSquare, MoreVertical, Square, Trash2 } from 'lucide-react'
@@ -154,7 +153,6 @@ export default function GroceryItem({ item, categories, onToggle, onDelete, onEd
               className="w-56 max-h-[300px] overflow-y-auto"
               sideOffset={5}
             >
-              <DropdownMenuSeparator />
               {categories.map((category) => (
                 <DropdownMenuItem
                   key={category.id}
