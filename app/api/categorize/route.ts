@@ -62,7 +62,27 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json()
-    return NextResponse.json(JSON.parse(data.choices[0].message.content))
+    console.log('OpenRouter response:', JSON.stringify(data, null, 2))
+    
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Unexpected API response structure:', data)
+      return NextResponse.json({ error: 'Invalid API response format' }, { status: 500 })
+    }
+
+    const content = data.choices[0].message.content
+    // Clean up the content by removing markdown formatting if present
+    const cleanContent = content.replace(/```json\n|\n```/g, '').trim()
+    
+    try {
+      return NextResponse.json(JSON.parse(cleanContent))
+    } catch (error) {
+      console.error('JSON parse error:', {
+        content,
+        cleanContent,
+        error: error instanceof Error ? error.message : error
+      })
+      return NextResponse.json({ error: 'Failed to parse categorization response' }, { status: 500 })
+    }
   } catch (error) {
     console.error('Categorization error:', {
       error: error instanceof Error ? {
