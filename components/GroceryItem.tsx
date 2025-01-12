@@ -149,10 +149,11 @@ export default function GroceryItem({ item, categories, onToggle, onDelete, onEd
                 <MoreVertical className="h-4 w-4 text-black/40" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-2 py-1.5 text-sm font-medium text-black/40 text-right">
-                העבר ל-
-              </div>
+            <DropdownMenuContent 
+              align="start" 
+              className="w-56 max-h-[300px] overflow-y-auto"
+              sideOffset={5}
+            >
               <DropdownMenuSeparator />
               {categories.map((category) => (
                 <DropdownMenuItem

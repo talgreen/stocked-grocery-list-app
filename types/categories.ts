@@ -49,11 +49,11 @@ export const initialCategories = [
     emoji: '🥚',
     name: 'ביצים',
     items: [
-      { id: 31, name: 'ביצים', purchased: false, comment: 'תבנית L' },
-      { id: 32, name: 'חזה עוף', purchased: false, comment: 'טרי, 1 ק״ג' },
-      { id: 33, name: 'סלמון', purchased: false },
-      { id: 34, name: 'טונה', purchased: false, comment: '4 קופסאות' },
-      { id: 35, name: 'שניצל מהצומח', purchased: false },
+      { id: 25, name: 'ביצים', purchased: false, comment: 'תבנית L' },
+      { id: 26, name: 'חזה עוף', purchased: false, comment: 'טרי, 1 ק״ג' },
+      { id: 27, name: 'סלמון', purchased: false },
+      { id: 28, name: 'טונה', purchased: false, comment: '4 קופסאות' },
+      { id: 29, name: 'שניצל מהצומח', purchased: false },
     ]
   },
   {
@@ -61,12 +61,12 @@ export const initialCategories = [
     emoji: '🥫',
     name: 'שימורים',
     items: [
-      { id: 31, name: 'תירס', purchased: false },
-      { id: 32, name: 'טונה', purchased: false, comment: '4 קופסאות' },
-      { id: 33, name: 'זיתים', purchased: false },
-      { id: 34, name: 'אפונה', purchased: false },
-      { id: 35, name: 'רסק עגבניות', purchased: false },
-      { id: 36, name: 'חומוס', purchased: false },
+      { id: 30, name: 'תירס', purchased: false },
+      { id: 31, name: 'טונה', purchased: false, comment: '4 קופסאות' },
+      { id: 32, name: 'זיתים', purchased: false },
+      { id: 33, name: 'אפונה', purchased: false },
+      { id: 34, name: 'רסק עגבניות', purchased: false },
+      { id: 35, name: 'חומוס', purchased: false },
     ]
   },
   {
@@ -74,12 +74,12 @@ export const initialCategories = [
     emoji: '🫙',
     name: 'ממרחים ורטבים',
     items: [
-      { id: 37, name: 'טחינה גולמית', purchased: false },
-      { id: 38, name: 'חמאת בוטנים', purchased: false },
-      { id: 39, name: 'קטשופ', purchased: false },
-      { id: 40, name: 'מיונז', purchased: false },
-      { id: 41, name: 'חרדל', purchased: false },
-      { id: 42, name: 'סויה', purchased: false },
+      { id: 36, name: 'טחינה גולמית', purchased: false },
+      { id: 37, name: 'חמאת בוטנים', purchased: false },
+      { id: 38, name: 'קטשופ', purchased: false },
+      { id: 39, name: 'מיונז', purchased: false },
+      { id: 40, name: 'חרדל', purchased: false },
+      { id: 41, name: 'סויה', purchased: false },
     ]
   },
   {
@@ -87,12 +87,12 @@ export const initialCategories = [
     emoji: '🥖',
     name: 'מאפים',
     items: [
-      { id: 11, name: 'לחם', purchased: false, comment: 'כפרי מחיטה מלאה' },
-      { id: 12, name: 'פיתות', purchased: false },
-      { id: 13, name: 'לחמניות', purchased: false, comment: '6 יחידות' },
-      { id: 14, name: 'חלה', purchased: false },
-      { id: 15, name: 'בייגלה', purchased: false },
-      { id: 16, name: 'פיתות מקמח מלא', purchased: false },
+      { id: 42, name: 'לחם', purchased: false, comment: 'כפרי מחיטה מלאה' },
+      { id: 43, name: 'פיתות', purchased: false },
+      { id: 44, name: 'לחמניות', purchased: false, comment: '6 יחידות' },
+      { id: 45, name: 'חלה', purchased: false },
+      { id: 46, name: 'בייגלה', purchased: false },
+      { id: 47, name: 'פיתות מקמח מלא', purchased: false },
     ]
   },
   {
@@ -100,11 +100,11 @@ export const initialCategories = [
     emoji: '🧂',
     name: 'תבלינים',
     items: [
-      { id: 49, name: 'מלח', purchased: false },
-      { id: 50, name: 'פלפל שחור', purchased: false },
-      { id: 51, name: 'פפריקה', purchased: false },
-      { id: 52, name: 'כמון', purchased: false },
-      { id: 53, name: 'כורכום', purchased: false },
+      { id: 48, name: 'מלח', purchased: false },
+      { id: 49, name: 'פלפל שחור', purchased: false },
+      { id: 50, name: 'פפריקה', purchased: false },
+      { id: 51, name: 'כמון', purchased: false },
+      { id: 52, name: 'כורכום', purchased: false },
     ]
   },
   {
@@ -112,12 +112,12 @@ export const initialCategories = [
     emoji: '🍝',
     name: 'מזווה',
     items: [
-      { id: 43, name: 'אורז', purchased: false },
-      { id: 44, name: 'פסטה', purchased: false },
-      { id: 45, name: 'קמח', purchased: false },
-      { id: 46, name: 'סוכר', purchased: false },
-      { id: 47, name: 'שמן', purchased: false },
-      { id: 48, name: 'דגני בוקר', purchased: false },
+      { id: 53, name: 'אורז', purchased: false },
+      { id: 54, name: 'פסטה', purchased: false },
+      { id: 55, name: 'קמח', purchased: false },
+      { id: 56, name: 'סוכר', purchased: false },
+      { id: 57, name: 'שמן', purchased: false },
+      { id: 58, name: 'דגני בוקר', purchased: false },
     ]
   },
   {
@@ -125,12 +125,12 @@ export const initialCategories = [
     emoji: '🧃',
     name: 'משקאות',
     items: [
-      { id: 25, name: 'מים מינרלים', purchased: false, comment: '2 שישיות' },
-      { id: 26, name: 'סודה', purchased: false },
-      { id: 27, name: 'מיץ תפוזים', purchased: false, comment: 'טרי' },
-      { id: 28, name: 'קולה', purchased: false, comment: '6 פחיות' },
-      { id: 29, name: 'בירה', purchased: false },
-      { id: 30, name: 'יין', purchased: false, comment: 'אדום יבש' },
+      { id: 59, name: 'מים מינרלים', purchased: false, comment: '2 שישיות' },
+      { id: 60, name: 'סודה', purchased: false },
+      { id: 61, name: 'מיץ תפוזים', purchased: false, comment: 'טרי' },
+      { id: 62, name: 'קולה', purchased: false, comment: '6 פחיות' },
+      { id: 63, name: 'בירה', purchased: false },
+      { id: 64, name: 'יין', purchased: false, comment: 'אדום יבש' },
     ]
   },
   {
@@ -138,12 +138,12 @@ export const initialCategories = [
     emoji: '🍪',
     name: 'חטיפים ומתוקים',
     items: [
-      { id: 49, name: 'במבה', purchased: false },
-      { id: 50, name: 'ביסלי', purchased: false },
-      { id: 51, name: 'שוקולד', purchased: false },
-      { id: 52, name: 'עוגיות', purchased: false },
-      { id: 53, name: 'חטיף אנרגיה', purchased: false },
-      { id: 54, name: 'מסטיק', purchased: false },
+      { id: 65, name: 'במבה', purchased: false },
+      { id: 66, name: 'ביסלי', purchased: false },
+      { id: 67, name: 'שוקולד', purchased: false },
+      { id: 68, name: 'עוגיות', purchased: false },
+      { id: 69, name: 'חטיף אנרגיה', purchased: false },
+      { id: 70, name: 'מסטיק', purchased: false },
     ]
   },
   {
@@ -151,11 +151,11 @@ export const initialCategories = [
     emoji: '🧊',
     name: 'קפואים',
     items: [
-      { id: 44, name: 'אפונה', purchased: false },
-      { id: 45, name: 'שעועית ירוקה', purchased: false },
-      { id: 46, name: 'פיצה', purchased: false, comment: 'משפחתית' },
-      { id: 47, name: 'גלידה', purchased: false },
-      { id: 48, name: 'פטריות', purchased: false },
+      { id: 71, name: 'אפונה', purchased: false },
+      { id: 72, name: 'שעועית ירוקה', purchased: false },
+      { id: 73, name: 'פיצה', purchased: false, comment: 'משפחתית' },
+      { id: 74, name: 'גלידה', purchased: false },
+      { id: 75, name: 'פטריות', purchased: false },
     ]
   },
   {
@@ -163,12 +163,12 @@ export const initialCategories = [
     emoji: '🥩',
     name: 'בשר ודגים',
     items: [
-      { id: 55, name: 'חזה עוף', purchased: false, comment: 'טרי, 1 ק״ג' },
-      { id: 56, name: 'פרגיות', purchased: false },
-      { id: 57, name: 'סלמון', purchased: false, comment: 'טרי' },
-      { id: 58, name: 'בשר טחון', purchased: false, comment: '500 גרם' },
-      { id: 59, name: 'נקניקיות', purchased: false },
-      { id: 60, name: 'דג אמנון', purchased: false },
+      { id: 76, name: 'חזה עוף', purchased: false, comment: 'טרי, 1 ק״ג' },
+      { id: 77, name: 'פרגיות', purchased: false },
+      { id: 78, name: 'סלמון', purchased: false, comment: 'טרי' },
+      { id: 79, name: 'בשר טחון', purchased: false, comment: '500 גרם' },
+      { id: 80, name: 'נקניקיות', purchased: false },
+      { id: 81, name: 'דג אמנון', purchased: false },
     ]
   },
   {
@@ -176,15 +176,21 @@ export const initialCategories = [
     emoji: '🧹',
     name: 'מוצרי ניקיון',
     items: [
-      { id: 61, name: 'נוזל כלים', purchased: false },
-      { id: 62, name: 'אקונומיקה', purchased: false },
-      { id: 63, name: 'נייר טואלט', purchased: false, comment: 'חבילה של 32' },
-      { id: 64, name: 'מגבונים', purchased: false },
-      { id: 65, name: 'שקיות אשפה', purchased: false },
-      { id: 66, name: 'סבון כביסה', purchased: false },
-      { id: 67, name: 'מרכך כביסה', purchased: false },
-      { id: 68, name: 'נוזל רצפות', purchased: false },
+      { id: 82, name: 'נוזל כלים', purchased: false },
+      { id: 83, name: 'אקונומיקה', purchased: false },
+      { id: 84, name: 'נייר טואלט', purchased: false, comment: 'חבילה של 32' },
+      { id: 85, name: 'מגבונים', purchased: false },
+      { id: 86, name: 'שקיות אשפה', purchased: false },
+      { id: 87, name: 'סבון כביסה', purchased: false },
+      { id: 88, name: 'מרכך כביסה', purchased: false },
+      { id: 89, name: 'נוזל רצפות', purchased: false },
     ]
+  },
+  {
+    id: 15,
+    name: 'אחר',
+    emoji: '📦',
+    items: []
   }
 ]
 
