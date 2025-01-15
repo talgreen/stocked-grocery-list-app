@@ -2,7 +2,7 @@
   "name": "Stocked",
   "short_name": "Stocked",
   "description": "רשימת קניות חכמה",
-  "start_url": "/",
+  "start_url": "/?share=true&listId=:listId",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
