@@ -1,20 +1,18 @@
-export const initialCategories = [
+import { Item } from './item'
+
+export interface Category {
+  id: number
+  emoji: string
+  name: string
+  items: Item[]
+}
+
+export const initialCategories: Category[] = [
   {
     id: 1,
     emoji: '🥬',
     name: 'ירקות',
-    items: [
-      // { id: 1, name: 'עגבניות', purchased: false, comment: '4-5 יחידות בשלות' },
-      // { id: 2, name: 'מלפפונים', purchased: false },
-      // { id: 3, name: 'גזר', purchased: false, comment: 'חבילה אורגנית' },
-      // { id: 4, name: 'בצל', purchased: false },
-      // { id: 5, name: 'פלפלים', purchased: false, comment: 'אדום וצהוב' },
-      // { id: 6, name: 'חסה', purchased: false, comment: 'ערבית/רומית' },
-      // { id: 7, name: 'עגבניות שרי', purchased: false },
-      // { id: 8, name: 'קישואים', purchased: false },
-      // { id: 9, name: 'בטטה', purchased: false },
-      // { id: 10, name: 'תפוחי אדמה', purchased: false, comment: '2 ק״ג' },
-    ]
+    items: []
   },
   {
     id: 2,
@@ -188,6 +186,12 @@ export const initialCategories = [
   },
   {
     id: 15,
+    emoji: '🍴',
+    name: 'כלי מטבח',
+    items: []
+  },
+  {
+    id: 16,
     name: 'אחר',
     emoji: '📦',
     items: []

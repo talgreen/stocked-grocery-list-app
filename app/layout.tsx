@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Heebo } from 'next/font/google'
 import { Toaster } from 'sonner'
 import './globals.css'
@@ -7,6 +7,15 @@ const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
   variable: '--font-heebo',
 })
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#000000',
+}
 
 export const metadata: Metadata = {
   title: 'Stocked',
@@ -27,15 +36,7 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
     'mobile-web-app-capable': 'yes',
     'format-detection': 'telephone=no',
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: 'cover',
-  },
-  themeColor: '#000000',
+  }
 }
 
 export default function RootLayout({

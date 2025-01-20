@@ -1,15 +1,26 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+})
+
 export async function POST(request: Request) {
   try {
-    const { itemName } = await request.json()
-    
-    console.log('Categorization request:', { itemName })
-    
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    })
+    const { items } = await request.json()
+
+    if (!Array.isArray(items)) {
+      return NextResponse.json({ error: 'Items must be an array' }, { status: 400 })
+    }
+
+    if (items.length === 0) {
+      return NextResponse.json({ error: 'Items array is empty' }, { status: 400 })
+    }
+
+    // Format items list for the prompt
+    const itemsList = items
+      .map((item, index) => `${index + 1}. ${item.name}${item.comment ? ` (${item.comment})` : ''}`)
+      .join('\n')
 
     const completion = await openai.chat.completions.create({
       messages: [
@@ -34,20 +45,23 @@ export async function POST(request: Request) {
 - 🧹 מוצרי ניקיון: חומרי ניקוי, מוצרי כביסה, נייר טואלט, מגבונים ומוצרי היגיינה לבית. לדוגמה: סבון כלים, אקונומיקה, מרכך כביסה, שקיות אשפה.
 - 📦 אחר: כל סוגי המוצרים שאינם נכללים בקטגוריות שלעיל.
 
-- החזר תשובה בפורמט JSON בלבד.
-- סווג כל מוצר לקטגוריה המתאימה ביותר לפי ההגדרות לעיל.
-{
+החזר תשובה בפורמט של מערך JSON בלבד, גם אם יש רק פריט אחד.
+לדוגמה:
+[{
   "category": "שם הקטגוריה בעברית",
   "emoji": "האימוג׳י המתאים ביותר לקטגוריה"
-}`
+}]
+
+סווג כל מוצר לקטגוריה המתאימה ביותר לפי ההגדרות לעיל.`
         },
         {
           role: 'user',
-          content: `המוצר: ${itemName}`
+          content: `Categorize these items:\n${itemsList}`
         }
       ],
       model: "gpt-4o-mini",
-      temperature: 0.3
+      temperature: 0.3,
+      max_tokens: 500
     })
 
     if (!completion.choices[0]?.message?.content) {
@@ -60,7 +74,10 @@ export async function POST(request: Request) {
     const cleanContent = content.replace(/```json\n|\n```/g, '').trim()
     
     try {
-      return NextResponse.json(JSON.parse(cleanContent))
+      const parsed = JSON.parse(cleanContent)
+      // Ensure the response is always an array
+      const results = Array.isArray(parsed) ? parsed : [parsed]
+      return NextResponse.json(results)
     } catch (error) {
       console.error('JSON parse error:', {
         content,
@@ -70,7 +87,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to parse categorization response' }, { status: 500 })
     }
   } catch (error) {
-    console.error('Categorization error:', {
+    console.error('Batch categorization error:', {
       error: error instanceof Error ? {
         message: error.message,
         stack: error.stack
@@ -79,4 +96,4 @@ export async function POST(request: Request) {
     })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-}
+} 

@@ -1,12 +1,12 @@
 'use client'
 
 import { createNewList, getList, updateList } from '@/lib/db'
+import { Category, initialCategories } from '@/types/categories'
+import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus } from 'lucide-react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { initialCategories } from '../types/categories'
-import { Item } from '../types/item'
 import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
 import CategoryScroller from './CategoryScroller'
@@ -16,20 +16,20 @@ import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
 
 export default function HomeScreen() {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<Category[]>(initialCategories)
   const [isLoading, setIsLoading] = useState(true)
-  const searchParams = useSearchParams()
-  const [activeCategoryId, setActiveCategoryId] = useState<number>(1)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [showFireworks, setShowFireworks] = useState(false)
-  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now())
+  const modalRef = useRef<HTMLDivElement>(null)
+  const params = useParams()
+  const searchParams = useSearchParams()
+  const listId = (params?.listId as string) || 'default'
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now())
   const [isScrollLocked, setIsScrollLocked] = useState(false)
   const scrollTimeout = useRef<NodeJS.Timeout>()
-  const params = useParams()
-  const listId = params.listId as string
+  const [activeCategoryId, setActiveCategoryId] = useState<number>(1)
   const [isAllExpanded, setIsAllExpanded] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<number[]>([])
-  const modalRef = useRef<HTMLDivElement>(null)
 
   const HEADER_HEIGHT = 140
 
@@ -278,6 +278,86 @@ export default function HomeScreen() {
     }
   };
 
+  const handleUncheckItem = async (existingItem: Item, categoryName: string, emoji: string) => {
+    // Update the item's purchased status
+    const updatedCategories = categories.map(category => {
+      if (category.name === categoryName) {
+        return {
+          ...category,
+          items: category.items.map(item => 
+            item.id === existingItem.id 
+              ? { ...item, purchased: false }
+              : item
+          )
+        }
+      }
+      return category
+    })
+
+    try {
+      setCategories(updatedCategories)
+      await updateList(listId, updatedCategories)
+    } catch (error) {
+      console.error('Error updating list:', error)
+      setCategories(categories)
+    }
+  }
+
+  const handleAddBulkItems = async (items: { item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string }[]) => {
+    const updatedCategories = [...categories];
+
+    // Process all items at once
+    for (const { item, categoryName, emoji } of items) {
+      // Create a new item object
+      const newItem = {
+        ...item,
+        id: Date.now() + Math.random(), // Ensure unique IDs
+        purchased: false,
+        comment: item.comment || '',
+        photo: null,
+      };
+
+      // Find or create category
+      let categoryId: number;
+      const existingCategory = updatedCategories.find(c => 
+        c.name.toLowerCase() === categoryName.toLowerCase()
+      );
+
+      if (existingCategory) {
+        categoryId = existingCategory.id;
+      } else {
+        const maxId = Math.max(...updatedCategories.map(cat => cat.id), 0);
+        const newCategory = {
+          id: maxId + 1,
+          emoji: emoji,
+          name: categoryName,
+          items: [],
+        };
+        updatedCategories.push(newCategory);
+        categoryId = newCategory.id;
+      }
+
+      // Add the new item to the appropriate category
+      const categoryIndex = updatedCategories.findIndex(c => c.id === categoryId);
+      if (categoryIndex !== -1) {
+        const category = updatedCategories[categoryIndex];
+        category.items = [
+          ...category.items.filter(item => !item.purchased),
+          newItem,
+          ...category.items.filter(item => item.purchased)
+        ];
+      }
+    }
+
+    try {
+      setCategories(updatedCategories);
+      await updateList(listId, updatedCategories);
+    } catch (error) {
+      console.error('Error updating list:', error);
+      setCategories(categories);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FDF6ED]">
@@ -350,7 +430,7 @@ export default function HomeScreen() {
           />
         </div>
       </nav>
-      <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24">
+      <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24 text-right">
         <CategoryList 
           categories={categories}
           onToggleItem={handleToggleItem}
@@ -374,6 +454,8 @@ export default function HomeScreen() {
             <div className="bg-white rounded-2xl shadow-lg p-6 border border-black/5 add-item-form">
               <AddItemForm 
                 onAdd={handleAddItemWithCategory}
+                onUncheck={handleUncheckItem}
+                onBulkAdd={handleAddBulkItems}
                 onClose={() => setIsAddFormOpen(false)}
                 categories={categories}
               />
