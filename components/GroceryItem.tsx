@@ -150,14 +150,14 @@ export default function GroceryItem({ item, categories, onToggle, onDelete, onEd
             </DropdownMenuTrigger>
             <DropdownMenuContent 
               align="start" 
-              className="w-56 max-h-[300px] overflow-y-auto"
+              className="w-56 max-h-[300px] overflow-y-auto [direction:rtl] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track] [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar]:left-0 [&::-webkit-scrollbar]:!right-auto [&_*]:m-0"
               sideOffset={5}
             >
               {categories.map((category) => (
                 <DropdownMenuItem
                   key={category.id}
                   onClick={() => onUpdateCategory(category.id)}
-                  className="text-right"
+                  className="text-right pr-3"
                 >
                   {category.emoji} {category.name}
                 </DropdownMenuItem>

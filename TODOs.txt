@@ -23,3 +23,10 @@ TODOs v2:
 9. automatic scroll to the added item in the list
 10. add loading skeleton for the list - done
 
+TODOs v3:
+1. add quick list mode
+2. add a new category
+3. drag and drop items within a category
+4. drag and drop categories
+5. hide categories that have no items
+
