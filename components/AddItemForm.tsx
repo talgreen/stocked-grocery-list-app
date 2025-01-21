@@ -19,8 +19,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 
 interface AddItemFormProps {
   onAdd: (item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string) => void
-  onUncheck?: (item: Item, categoryName: string, emoji: string) => void
-  onBulkAdd: (items: { item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string }[]) => Promise<void>
+  onUncheck?: (itemsToUncheck: { item: Item, categoryName: string, emoji: string }[]) => Promise<void>
+  onBulkAdd: (items: { item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string }[], itemsToUncheck: { item: Item, categoryName: string, emoji: string }[]) => Promise<void>
   categories: Category[]
   onClose: () => void
 }
@@ -67,8 +67,17 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
       // If item exists and is purchased, uncheck it
       if (existingItem.item.purchased) {
         if (onUncheck) {
-          onUncheck(existingItem.item, existingItem.category, existingItem.emoji)
-          toast.success('הפריט סומן כלא נרכש')
+          try {
+            await onUncheck([{
+              item: existingItem.item,
+              categoryName: existingItem.category,
+              emoji: existingItem.emoji
+            }])
+            toast.success('הפריט סומן כלא נרכש')
+          } catch (error) {
+            toast.error('שגיאה בעדכון הפריט')
+            return
+          }
         } else {
           // Fallback to onAdd if onUncheck is not provided
           onAdd(
@@ -123,11 +132,11 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
     }
   }
 
-  const handleBulkAdd = async (items: { item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string }[]) => {
+  const handleBulkAdd = async (items: { item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string }[], itemsToUncheck: { item: Item, categoryName: string, emoji: string }[]) => {
     setIsLoading(true)
     try {
-      await onBulkAdd(items)
-      toast.success('הפריטים נוספו בהצלחה')
+      await onBulkAdd(items, itemsToUncheck)
+      toast.success('הפריטים עודכנו בהצלחה')
       onClose()
     } catch (error) {
       console.error('Error in bulk add:', error)
@@ -264,8 +273,7 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
         <TabsContent value="bulk">
           <BulkAddItems 
             categories={categories}
-            onAdd={handleBulkAdd}
-            onUncheck={onUncheck}
+            onAdd={onBulkAdd}
             onClose={onClose}
             isSubmitting={isLoading}
           />

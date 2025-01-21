@@ -278,20 +278,22 @@ export default function HomeScreen() {
     }
   };
 
-  const handleUncheckItem = async (existingItem: Item, categoryName: string, emoji: string) => {
-    // Update the item's purchased status
+  const handleUncheckItems = async (itemsToUncheck: { item: Item, categoryName: string, emoji: string }[]) => {
+    // Create a map for quick lookup of which items to uncheck
+    const itemsMap = new Map(itemsToUncheck.map(({ item }) => [item.id, true]))
+
+    // Update all items' purchased status in a single categories update
     const updatedCategories = categories.map(category => {
-      if (category.name === categoryName) {
-        return {
-          ...category,
-          items: category.items.map(item => 
-            item.id === existingItem.id 
-              ? { ...item, purchased: false }
-              : item
-          )
-        }
+      const hasItemsToUpdate = category.items.some(item => itemsMap.has(item.id))
+      if (!hasItemsToUpdate) return category
+
+      return {
+        ...category,
+        items: category.items.map(item => {
+          if (!itemsMap.has(item.id)) return item
+          return { ...item, purchased: false }
+        }).sort((a, b) => (a.purchased === b.purchased) ? 0 : a.purchased ? 1 : -1)
       }
-      return category
     })
 
     try {
@@ -300,61 +302,97 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Error updating list:', error)
       setCategories(categories)
+      throw error // Re-throw to allow caller to handle the error
     }
   }
 
-  const handleAddBulkItems = async (items: { item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string }[]) => {
-    const updatedCategories = [...categories];
+  // Single item uncheck wrapper for backward compatibility
+  const handleUncheckItem = async (item: Item, categoryName: string, emoji: string) => {
+    await handleUncheckItems([{ item, categoryName, emoji }])
+  }
 
-    // Process all items at once
-    for (const { item, categoryName, emoji } of items) {
-      // Create a new item object
-      const newItem = {
-        ...item,
-        id: Date.now() + Math.random(), // Ensure unique IDs
-        purchased: false,
-        comment: item.comment || '',
-        photo: null,
-      };
+  const handleAddBulkItems = async (
+    items: { item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string }[],
+    itemsToUncheck: { item: Item, categoryName: string, emoji: string }[]
+  ) => {
+    // Start with current state
+    let updatedCategories = [...categories];
 
-      // Find or create category
-      let categoryId: number;
-      const existingCategory = updatedCategories.find(c => 
-        c.name.toLowerCase() === categoryName.toLowerCase()
-      );
+    // First, handle unchecking items if any
+    if (itemsToUncheck.length > 0) {
+      const itemsMap = new Map(itemsToUncheck.map(({ item }) => [item.id, true]))
+      
+      updatedCategories = updatedCategories.map(category => {
+        const hasItemsToUpdate = category.items.some(item => itemsMap.has(item.id))
+        if (!hasItemsToUpdate) return category
 
-      if (existingCategory) {
-        categoryId = existingCategory.id;
-      } else {
-        const maxId = Math.max(...updatedCategories.map(cat => cat.id), 0);
-        const newCategory = {
-          id: maxId + 1,
-          emoji: emoji,
-          name: categoryName,
-          items: [],
+        return {
+          ...category,
+          items: category.items.map(item => {
+            if (!itemsMap.has(item.id)) return item
+            return { ...item, purchased: false }
+          }).sort((a, b) => (a.purchased === b.purchased) ? 0 : a.purchased ? 1 : -1)
+        }
+      })
+    }
+
+    // Then, add new items if any
+    if (items.length > 0) {
+      // Process each item
+      for (const { item, categoryName, emoji } of items) {
+        // Create new item with all required fields
+        const newItem: Item = {
+          id: Date.now() + Math.random(),
+          name: item.name,
+          purchased: false,
+          comment: item.comment || '',
+          // Only include photo if it exists
+          ...(item.photo ? { photo: item.photo } : {})
         };
-        updatedCategories.push(newCategory);
-        categoryId = newCategory.id;
-      }
 
-      // Add the new item to the appropriate category
-      const categoryIndex = updatedCategories.findIndex(c => c.id === categoryId);
-      if (categoryIndex !== -1) {
-        const category = updatedCategories[categoryIndex];
-        category.items = [
-          ...category.items.filter(item => !item.purchased),
-          newItem,
-          ...category.items.filter(item => item.purchased)
-        ];
+        // Find or create category
+        let existingCategory = updatedCategories.find(c => 
+          c.name.toLowerCase() === categoryName.toLowerCase()
+        );
+
+        if (!existingCategory) {
+          // Create new category
+          const maxId = Math.max(...updatedCategories.map(cat => cat.id), 0);
+          existingCategory = {
+            id: maxId + 1,
+            emoji,
+            name: categoryName,
+            items: []
+          };
+          updatedCategories.push(existingCategory);
+        }
+
+        // Add item to category
+        const categoryIndex = updatedCategories.findIndex(c => c.id === existingCategory!.id);
+        if (categoryIndex !== -1) {
+          const category = updatedCategories[categoryIndex];
+          updatedCategories[categoryIndex] = {
+            ...category,
+            items: [
+              ...category.items.filter(i => !i.purchased),
+              newItem,
+              ...category.items.filter(i => i.purchased)
+            ]
+          };
+        }
       }
     }
 
     try {
+      // Update state first
       setCategories(updatedCategories);
+      // Then persist to Firebase
       await updateList(listId, updatedCategories);
     } catch (error) {
       console.error('Error updating list:', error);
+      // Rollback on error
       setCategories(categories);
+      throw error;
     }
   };
 
@@ -454,7 +492,7 @@ export default function HomeScreen() {
             <div className="bg-white rounded-2xl shadow-lg p-6 border border-black/5 add-item-form">
               <AddItemForm 
                 onAdd={handleAddItemWithCategory}
-                onUncheck={handleUncheckItem}
+                onUncheck={handleUncheckItems}
                 onBulkAdd={handleAddBulkItems}
                 onClose={() => setIsAddFormOpen(false)}
                 categories={categories}
