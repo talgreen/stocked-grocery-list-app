@@ -188,10 +188,29 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
         <h2 className="text-lg font-semibold order-first">הוספת פריטים</h2>
       </div>
 
-      <Tabs defaultValue="quick" className="w-full" dir="rtl">
+      <Tabs 
+        defaultValue="quick" 
+        className="w-full" 
+        dir="rtl"
+        onValueChange={(value) => {
+          // Add longer delay to ensure animation is complete
+          setTimeout(() => {
+            if (value === 'bulk') {
+              const firstInput = document.querySelector('.bulk-add-form input[placeholder="שם הפריט"]') as HTMLInputElement
+              firstInput?.focus()
+            } else if (value === 'quick') {
+              const quickInput = document.querySelector('input[placeholder="הוסף פריט חדש"]') as HTMLInputElement
+              quickInput?.focus()
+            }
+          }, 150)
+        }}
+      >
         <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
           <TabsTrigger value="quick" className="data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm">הוספה מהירה</TabsTrigger>
-          <TabsTrigger value="bulk" className="data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm">הוספה מרובה</TabsTrigger>
+          <TabsTrigger 
+            value="bulk" 
+            className="data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >הוספה מרובה</TabsTrigger>
         </TabsList>
 
         <TabsContent value="quick">
@@ -270,7 +289,7 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
           </form>
         </TabsContent>
 
-        <TabsContent value="bulk">
+        <TabsContent value="bulk" className="bulk-add-form">
           <BulkAddItems 
             categories={categories}
             onAdd={onBulkAdd}

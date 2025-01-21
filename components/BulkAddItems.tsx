@@ -10,7 +10,7 @@ import { Category } from '@/types/categories'
 import { Item } from '@/types/item'
 import { motion } from 'framer-motion'
 import { AlertCircle, Loader2, Plus, Trash2 } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 interface BulkItem {
@@ -35,6 +35,38 @@ export default function BulkAddItems({ categories, onAdd, onClose, isSubmitting 
     categoryId: 'auto', 
     status: 'idle' 
   }])
+  const firstInputRef = useRef<HTMLInputElement>(null)
+
+  // Focus first input on mount
+  useEffect(() => {
+    firstInputRef.current?.focus()
+  }, [])
+
+  // Handle form submission
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    handleSubmit()
+  }
+
+  // Handle key press for individual rows
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      // If it's the last row and has content, submit the form
+      if (index === items.length - 1 && items[index].name.trim()) {
+        handleSubmit()
+      } else {
+        // Otherwise add a new row and focus it
+        addRow()
+        // Focus the name field of the new row after it's added
+        setTimeout(() => {
+          const inputs = document.querySelectorAll('input[placeholder="שם הפריט"]')
+          const lastInput = inputs[inputs.length - 1] as HTMLInputElement
+          lastInput?.focus()
+        }, 0)
+      }
+    }
+  }
 
   // Memoized map of existing items for O(1) lookup
   const existingItemsMap = useMemo(() => {
@@ -226,129 +258,134 @@ export default function BulkAddItems({ categories, onAdd, onClose, isSubmitting 
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr>
-              <th className="pb-2 font-medium text-sm text-gray-600 text-right w-[40%]">פריט</th>
-              <th className="pb-2 font-medium text-sm text-gray-600 text-right w-[30%]">הערה</th>
-              <th className="pb-2 font-medium text-sm text-gray-600 text-right w-[30%]">קטגוריה</th>
-              <th className="pb-2 w-10"></th>
-            </tr>
-          </thead>
-          <tbody className="space-y-2">
-            {items.map((item, index) => (
-              <tr key={index} className="group">
-                <td className="pr-2">
-                  <div className="relative">
+      <form onSubmit={handleFormSubmit}>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="pb-2 font-medium text-sm text-gray-600 text-right w-[40%]">פריט</th>
+                <th className="pb-2 font-medium text-sm text-gray-600 text-right w-[30%]">הערה</th>
+                <th className="pb-2 font-medium text-sm text-gray-600 text-right w-[30%]">קטגוריה</th>
+                <th className="pb-2 w-10"></th>
+              </tr>
+            </thead>
+            <tbody className="space-y-2">
+              {items.map((item, index) => (
+                <tr key={index} className="group">
+                  <td className="pr-2">
+                    <div className="relative">
+                      <input
+                        ref={index === 0 ? firstInputRef : undefined}
+                        type="text"
+                        value={item.name}
+                        onChange={(e) => updateItem(index, 'name', e.target.value)}
+                        onKeyDown={(e) => handleKeyPress(e, index)}
+                        placeholder="שם הפריט"
+                        className={`w-full border-gray-300 rounded-md shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-3 py-2 text-right
+                          ${item.status === 'error' ? 'border-red-500' : ''}
+                          ${item.status === 'exists' ? 'border-yellow-500' : ''}
+                          ${item.status === 'success' ? 'border-green-500' : ''}`}
+                        disabled={isSubmitting || item.status === 'loading'}
+                      />
+                      <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        {item.status === 'loading' && (
+                          <Loader2 className="w-4 h-4 animate-spin text-[#FFB74D]" />
+                        )}
+                        {item.status === 'exists' && (
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        )}
+                        {item.message && (
+                          <span className="text-xs text-gray-500">{item.message}</span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-2">
                     <input
                       type="text"
-                      value={item.name}
-                      onChange={(e) => updateItem(index, 'name', e.target.value)}
-                      placeholder="שם הפריט"
-                      className={`w-full border-gray-300 rounded-md shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-3 py-2 text-right
-                        ${item.status === 'error' ? 'border-red-500' : ''}
-                        ${item.status === 'exists' ? 'border-yellow-500' : ''}
-                        ${item.status === 'success' ? 'border-green-500' : ''}`}
+                      value={item.comment}
+                      onChange={(e) => updateItem(index, 'comment', e.target.value)}
+                      onKeyDown={(e) => handleKeyPress(e, index)}
+                      placeholder="הערה"
+                      className="w-full border-gray-300 rounded-md shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-3 py-2 text-right"
                       disabled={isSubmitting || item.status === 'loading'}
                     />
-                    <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                      {item.status === 'loading' && (
-                        <Loader2 className="w-4 h-4 animate-spin text-[#FFB74D]" />
-                      )}
-                      {item.status === 'exists' && (
-                        <AlertCircle className="w-4 h-4 text-yellow-500" />
-                      )}
-                      {item.message && (
-                        <span className="text-xs text-gray-500">{item.message}</span>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-2">
-                  <input
-                    type="text"
-                    value={item.comment}
-                    onChange={(e) => updateItem(index, 'comment', e.target.value)}
-                    placeholder="הערה"
-                    className="w-full border-gray-300 rounded-md shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-3 py-2 text-right"
-                    disabled={isSubmitting || item.status === 'loading'}
-                  />
-                </td>
-                <td className="px-2">
-                  <Select
-                    value={item.categoryId}
-                    onValueChange={(value) => updateItem(index, 'categoryId', value)}
-                    disabled={isSubmitting || item.status === 'loading'}
-                  >
-                    <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center">
-                      <SelectValue placeholder="בחר קטגוריה" className="text-right" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto" className="flex flex-row-reverse text-right">
-                        חכמה 🤖
-                      </SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem 
-                          key={category.id} 
-                          value={category.id.toString()} 
-                          className="flex flex-row-reverse text-right"
-                        >
-                          {category.name} {category.emoji}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-                <td className="pl-2">
-                  {items.length > 1 && (
-                    <button
-                      onClick={() => removeRow(index)}
+                  </td>
+                  <td className="px-2">
+                    <Select
+                      value={item.categoryId}
+                      onValueChange={(value) => updateItem(index, 'categoryId', value)}
                       disabled={isSubmitting || item.status === 'loading'}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                      <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center">
+                        <SelectValue placeholder="בחר קטגוריה" className="text-right" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto" className="flex flex-row-reverse text-right">
+                          חכמה 🤖
+                        </SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem 
+                            key={category.id} 
+                            value={category.id.toString()} 
+                            className="flex flex-row-reverse text-right"
+                          >
+                            {category.name} {category.emoji}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="pl-2">
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeRow(index)}
+                        disabled={isSubmitting || item.status === 'loading'}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-      <div className="flex justify-between">
-        <motion.button
-          type="button"
-          onClick={handleSubmit}
-          disabled={
-            isSubmitting || 
-            items.some(item => item.status === 'loading') || 
-            items.every(item => !item.name.trim())
-          }
-          className="bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-xl transition-colors duration-200 disabled:opacity-50 flex items-center gap-2"
-          whileTap={{ scale: 0.98 }}
-        >
-          {isSubmitting || items.some(item => item.status === 'loading') ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              מוסיף פריטים...
-            </>
-          ) : (
-            'הוסף פריטים'
-          )}
-        </motion.button>
+        <div className="flex justify-between mt-4">
+          <motion.button
+            type="submit"
+            disabled={
+              isSubmitting || 
+              items.some(item => item.status === 'loading') || 
+              items.every(item => !item.name.trim())
+            }
+            className="bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-xl transition-colors duration-200 disabled:opacity-50 flex items-center gap-2"
+            whileTap={{ scale: 0.98 }}
+          >
+            {isSubmitting || items.some(item => item.status === 'loading') ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                מוסיף פריטים...
+              </>
+            ) : (
+              'הוסף פריטים'
+            )}
+          </motion.button>
 
-        <button
-          type="button"
-          onClick={addRow}
-          disabled={isSubmitting || items.some(item => item.status === 'loading')}
-          className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
-        >
-          <Plus className="w-4 h-4" />
-          הוסף שורה
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={addRow}
+            disabled={isSubmitting || items.some(item => item.status === 'loading')}
+            className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            הוסף שורה
+          </button>
+        </div>
+      </form>
     </div>
   )
 } 
