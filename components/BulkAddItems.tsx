@@ -263,16 +263,16 @@ export default function BulkAddItems({ categories, onAdd, onClose, isSubmitting 
           <table className="w-full">
             <thead>
               <tr>
-                <th className="pb-2 font-medium text-sm text-gray-600 text-right w-[40%]">פריט</th>
-                <th className="pb-2 font-medium text-sm text-gray-600 text-right w-[30%]">הערה</th>
-                <th className="pb-2 font-medium text-sm text-gray-600 text-right w-[30%]">קטגוריה</th>
+                <th className="pb-2 pr-1 font-medium text-sm text-gray-600 text-right w-[40%]">פריט</th>
+                <th className="pb-2 pr-1 font-medium text-sm text-gray-600 text-right w-[30%]">הערה</th>
+                <th className="pb-2 pr-1 font-medium text-sm text-gray-600 text-right w-[30%]">קטגוריה</th>
                 <th className="pb-2 w-10"></th>
               </tr>
             </thead>
             <tbody className="space-y-2">
               {items.map((item, index) => (
                 <tr key={index} className="group">
-                  <td className="pr-2">
+                  <td className="pl-2">
                     <div className="relative">
                       <input
                         ref={index === 0 ? firstInputRef : undefined}
@@ -300,7 +300,7 @@ export default function BulkAddItems({ categories, onAdd, onClose, isSubmitting 
                       </div>
                     </div>
                   </td>
-                  <td className="px-2">
+                  <td className="pl-2">
                     <input
                       type="text"
                       value={item.comment}
@@ -311,7 +311,7 @@ export default function BulkAddItems({ categories, onAdd, onClose, isSubmitting 
                       disabled={isSubmitting || item.status === 'loading'}
                     />
                   </td>
-                  <td className="px-2">
+                  <td>
                     <Select
                       value={item.categoryId}
                       onValueChange={(value) => updateItem(index, 'categoryId', value)}
@@ -336,7 +336,7 @@ export default function BulkAddItems({ categories, onAdd, onClose, isSubmitting 
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="pl-2">
+                  <td>
                     {items.length > 1 && (
                       <button
                         type="button"
@@ -344,7 +344,7 @@ export default function BulkAddItems({ categories, onAdd, onClose, isSubmitting 
                         disabled={isSubmitting || item.status === 'loading'}
                         className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-5 h-5" />
                       </button>
                     )}
                   </td>

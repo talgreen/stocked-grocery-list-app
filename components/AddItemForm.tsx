@@ -11,7 +11,7 @@ import { OpenRouter } from '@/lib/openrouter'
 import { Category } from '@/types/categories'
 import type { Item } from '@/types/item'
 import { motion } from 'framer-motion'
-import { Loader2, X } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import BulkAddItems from './BulkAddItems'
@@ -181,13 +181,6 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
         </motion.div>
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700 order-last">
-          <X size={24} />
-        </button>
-        <h2 className="text-lg font-semibold order-first">הוספת פריטים</h2>
-      </div>
-
       <Tabs 
         defaultValue="quick" 
         className="w-full" 
@@ -217,7 +210,7 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
           <form onSubmit={handleQuickAdd} className="space-y-4">
             <div className="flex flex-row-reverse gap-4">
               <div className="flex-1">
-                <label htmlFor="item" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="item" className="block text-sm font-medium text-gray-700 mb-1 mr-1">
                   שם הפריט
                 </label>
                 <input
@@ -238,7 +231,7 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
             </div>
 
             <div>
-              <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1 mr-1">
                 הערה (אופציונלי)
               </label>
               <input
@@ -254,7 +247,7 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
             </div>
 
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 mr-1">
                 קטגוריה
               </label>
               <Select
@@ -280,7 +273,7 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
 
             <motion.button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !item.trim()}
               className="w-full bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-xl transition-colors duration-200 disabled:opacity-50"
               whileTap={{ scale: 0.98 }}
             >
