@@ -1,12 +1,6 @@
+import { Category } from '@/types/categories'
 import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
-
-interface Category {
-  id: number
-  emoji: string
-  name: string
-  items: any[]
-}
 
 interface CategoryScrollerProps {
   categories: Category[]
@@ -20,13 +14,12 @@ export default function CategoryScroller({ categories, onCategoryChange, activeC
   const startX = useRef(0)
   const scrollLeft = useRef(0)
   const dragDistance = useRef(0)
-  const lastScrollPosition = useRef(0)
   const isManualScrolling = useRef(false)
 
   useEffect(() => {
     if (isDragging || isManualScrolling.current) return
     
-    const activeElement = document.querySelector(`[data-category-id="${activeCategoryId}"]`)
+    const activeElement = document.querySelector(`[data-category-id="${activeCategoryId}"]`) as HTMLElement | null
     if (activeElement && scrollRef.current) {
       const container = scrollRef.current
       const scrollLeft = activeElement.offsetLeft - (container.offsetWidth / 2) + (activeElement.clientWidth / 2)

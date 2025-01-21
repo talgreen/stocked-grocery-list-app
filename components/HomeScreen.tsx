@@ -5,7 +5,7 @@ import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus } from 'lucide-react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
@@ -20,12 +20,10 @@ export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [showFireworks, setShowFireworks] = useState(false)
+  const [showEmptyCategories, setShowEmptyCategories] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
   const params = useParams()
-  const searchParams = useSearchParams()
   const listId = (params?.listId as string) || 'default'
-  const [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now())
-  const [isScrollLocked, setIsScrollLocked] = useState(false)
   const scrollTimeout = useRef<NodeJS.Timeout>()
   const [activeCategoryId, setActiveCategoryId] = useState<number>(1)
   const [isAllExpanded, setIsAllExpanded] = useState(false)
@@ -216,7 +214,7 @@ export default function HomeScreen() {
   const handleUpdateItemCategory = async (itemId: number, newCategoryId: number) => {
     try {
       // First find which category currently has the item
-      let itemToMove: any = null;
+      let itemToMove: Item | null = null;
       let sourceCategory: number | null = null;
 
       // First pass: find the item and its source
@@ -247,7 +245,7 @@ export default function HomeScreen() {
             ...category,
             items: [
               ...unpurchasedItems,
-              { ...itemToMove, categoryId: newCategoryId },
+              { ...itemToMove, categoryId: newCategoryId } as Item,
               ...purchasedItems
             ]
           };
@@ -265,16 +263,10 @@ export default function HomeScreen() {
         return category;
       });
 
-      // Update state first
       setCategories(updatedCategories);
-
-      // Then persist to database
-      if (listId) {
-        await updateList(listId, updatedCategories);
-      }
+      await updateList(listId, updatedCategories);
     } catch (error) {
-      console.error('Error moving item:', error);
-      // Optionally show an error toast here
+      console.error('Error updating item category:', error);
     }
   };
 
@@ -304,11 +296,6 @@ export default function HomeScreen() {
       setCategories(categories)
       throw error // Re-throw to allow caller to handle the error
     }
-  }
-
-  // Single item uncheck wrapper for backward compatibility
-  const handleUncheckItem = async (item: Item, categoryName: string, emoji: string) => {
-    await handleUncheckItems([{ item, categoryName, emoji }])
   }
 
   const handleAddBulkItems = async (
@@ -341,7 +328,7 @@ export default function HomeScreen() {
       // Process each item
       for (const { item, categoryName, emoji } of items) {
         // Create new item with all required fields
-        const newItem: Item = {
+        const newItem = {
           id: Date.now() + Math.random(),
           name: item.name,
           purchased: false,
@@ -450,13 +437,13 @@ export default function HomeScreen() {
               <SparkleIcon />
             </h1>
           </div>
-          <ShareButton categories={categories} />
+          <ShareButton />
         </div>
       </header>
       <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm z-20 sticky top-0">
         <div className="max-w-2xl mx-auto">
           <CategoryScroller 
-            categories={categories}
+            categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
             onCategoryChange={handleCategoryChange}
             activeCategoryId={activeCategoryId}
           />
@@ -465,12 +452,14 @@ export default function HomeScreen() {
             totalItems={totalItems}
             isAllExpanded={isAllExpanded}
             onToggleAll={handleToggleAll}
+            showEmptyCategories={showEmptyCategories}
+            onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
           />
         </div>
       </nav>
       <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24 text-right">
         <CategoryList 
-          categories={categories}
+          categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
           onToggleItem={handleToggleItem}
           onDeleteItem={handleDeleteItem}
           onEditItem={handleEditItem}

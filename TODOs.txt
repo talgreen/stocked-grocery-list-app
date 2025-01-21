@@ -28,6 +28,8 @@ TODOs v3:
 2. add a new category
 3. drag and drop items within a category
 4. drag and drop categories
-5. hide categories that have no items
-6. fix the multiple add item menu functionality
+5. add the ability to hide categories that have no items - done
+6. fix the multiple add item menu functionality - done
 7. open a category if closed and either adding an item or adding an existing item that is already checked
+8. add tabs view with sticky feeling
+9. add an empty state for the list - done
