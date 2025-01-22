@@ -11,7 +11,7 @@ import { OpenRouter } from '@/lib/openrouter'
 import { Category } from '@/types/categories'
 import type { Item } from '@/types/item'
 import { motion } from 'framer-motion'
-import { Loader2 } from 'lucide-react'
+import { ShoppingCart, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import BulkAddItems from './BulkAddItems'
@@ -30,6 +30,36 @@ interface ExistingItemResult {
   category: string
   emoji: string
 }
+
+// Shopping Cart Loader Animation
+const CartLoader = () => (
+  <motion.div 
+    className="relative"
+    animate={{ 
+      x: [0, 10, 0],
+      rotate: [0, 5, -5, 0]
+    }}
+    transition={{ 
+      duration: 1.5,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }}
+  >
+    <motion.div
+      className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full"
+      animate={{ 
+        scale: [1, 1.5, 1],
+        opacity: [1, 0.5, 1]
+      }}
+      transition={{ 
+        duration: 1,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    />
+    <ShoppingCart className="w-5 h-5" />
+  </motion.div>
+)
 
 export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, categories }: AddItemFormProps) {
   const [item, setItem] = useState('')
@@ -148,6 +178,17 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
 
   return (
     <div className={`relative ${isLoading ? 'pointer-events-none' : ''} text-right`}>
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <X className="h-6 w-6" />
+        </button>
+        <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto" />
+        <div className="w-6" /> {/* Spacer to center the handle */}
+      </div>
+
       {isLoading && (
         <motion.div 
           initial={{ opacity: 0 }}
@@ -155,21 +196,7 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
           className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-lg"
         >
           <motion.div className="flex flex-col items-center gap-3">
-            <motion.div
-              animate={{ 
-                scale: [1, 1.2, 1],
-                rotate: 360
-              }}
-              transition={{ 
-                duration: 1.5,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="relative"
-            >
-              <div className="absolute inset-0 bg-[#FFB74D]/20 rounded-full blur-xl animate-pulse" />
-              <Loader2 className="w-10 h-10 text-[#FFB74D]" />
-            </motion.div>
+            <CartLoader />
             <motion.span 
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
@@ -198,7 +225,7 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
           }, 150)
         }}
       >
-        <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
+        <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50 sticky top-0 z-10">
           <TabsTrigger value="quick" className="data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm">הוספה מהירה</TabsTrigger>
           <TabsTrigger 
             value="bulk" 
@@ -207,7 +234,7 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
         </TabsList>
 
         <TabsContent value="quick">
-          <form onSubmit={handleQuickAdd} className="space-y-4">
+          <form onSubmit={handleQuickAdd} className="space-y-4 pb-4">
             <div className="flex flex-row-reverse gap-4">
               <div className="flex-1">
                 <label htmlFor="item" className="block text-sm font-medium text-gray-700 mb-1 mr-1">
@@ -226,8 +253,6 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
                   style={{ fontSize: '16px' }}
                 />
               </div>
-
-              
             </div>
 
             <div>
@@ -274,10 +299,17 @@ export default function AddItemForm({ onAdd, onUncheck, onBulkAdd, onClose, cate
             <motion.button
               type="submit"
               disabled={isLoading || !item.trim()}
-              className="w-full bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-xl transition-colors duration-200 disabled:opacity-50"
+              className="w-full bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-xl transition-colors duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
               whileTap={{ scale: 0.98 }}
             >
-              {isLoading ? 'מוסיף...' : 'הוסף פריט'}
+              {isLoading ? (
+                <>
+                  <CartLoader />
+                  מוסיף...
+                </>
+              ) : (
+                'הוסף פריט'
+              )}
             </motion.button>
           </form>
         </TabsContent>

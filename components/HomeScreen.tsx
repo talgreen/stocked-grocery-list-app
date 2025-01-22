@@ -457,7 +457,7 @@ export default function HomeScreen() {
           />
         </div>
       </nav>
-      <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24 text-right">
+      <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
         <CategoryList 
           categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
           onToggleItem={handleToggleItem}
@@ -468,39 +468,47 @@ export default function HomeScreen() {
           setExpandedCategories={setExpandedCategories}
           onUpdateItemCategory={handleUpdateItemCategory}
         />
+        <AnimatePresence>
+          {isAddFormOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-t-2xl shadow-lg border border-black/5 fixed left-0 right-0 bottom-0 max-w-2xl mx-auto overflow-hidden"
+              style={{ maxHeight: "85vh" }}
+            >
+              <div className="overflow-y-auto p-6">
+                <AddItemForm 
+                  onAdd={handleAddItemWithCategory}
+                  onUncheck={handleUncheckItems}
+                  onBulkAdd={handleAddBulkItems}
+                  onClose={() => setIsAddFormOpen(false)}
+                  categories={categories}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
       <AnimatePresence>
-        {isAddFormOpen && (
-          <motion.div
-            ref={modalRef}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-24 left-0 right-0 mx-auto max-w-2xl px-6"
+        {!isAddFormOpen && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed bottom-6 right-6 z-30"
           >
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-black/5 add-item-form">
-              <AddItemForm 
-                onAdd={handleAddItemWithCategory}
-                onUncheck={handleUncheckItems}
-                onBulkAdd={handleAddBulkItems}
-                onClose={() => setIsAddFormOpen(false)}
-                categories={categories}
-              />
-            </div>
+            <button
+              onClick={() => setIsAddFormOpen(prev => !prev)}
+              className="bg-[#FFB74D] hover:bg-[#FFA726] text-white p-4 rounded-full hover:shadow-md transition-all duration-200"
+            >
+              <Plus className="h-6 w-6" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="fixed bottom-6 right-6">
-        <button
-          onClick={() => setIsAddFormOpen(prev => !prev)}
-          className="bg-[#FFB74D] hover:bg-[#FFA726] text-white p-4 rounded-full hover:shadow-md transition-all duration-200"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
-      </div>
-      {showFireworks && (
-        <Fireworks onComplete={() => setShowFireworks(false)} />
-      )}
+      {showFireworks && <Fireworks />}
     </div>
   )
 }
