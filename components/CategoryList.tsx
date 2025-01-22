@@ -128,7 +128,7 @@ export default function CategoryList({
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <ul className="divide-y divide-black/5">
+                    <ul className="divide-y divide-black/5 list-none">
                       {category.items.map((item) => (
                         <GroceryItem
                           key={item.id}

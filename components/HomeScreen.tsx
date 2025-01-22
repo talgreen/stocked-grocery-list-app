@@ -11,6 +11,7 @@ import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
 import CategoryScroller from './CategoryScroller'
 import Fireworks from './Fireworks'
+import HorizontalLayout from './HorizontalLayout'
 import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
@@ -21,6 +22,7 @@ export default function HomeScreen() {
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [showFireworks, setShowFireworks] = useState(false)
   const [showEmptyCategories, setShowEmptyCategories] = useState(false)
+  const [viewMode, setViewMode] = useState<'vertical' | 'horizontal'>('vertical')
   const modalRef = useRef<HTMLDivElement>(null)
   const params = useParams()
   const listId = (params?.listId as string) || 'default'
@@ -437,37 +439,72 @@ export default function HomeScreen() {
               <SparkleIcon />
             </h1>
           </div>
-          <ShareButton />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setViewMode(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
+              className="p-2 hover:bg-black/5 rounded-lg transition-colors duration-200"
+            >
+              {viewMode === 'vertical' ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M3 9h18" />
+                  <path d="M3 15h18" />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="18" rx="1" />
+                  <rect x="14" y="3" width="7" height="18" rx="1" />
+                </svg>
+              )}
+            </button>
+            <ShareButton />
+          </div>
         </div>
       </header>
       <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm z-20 sticky top-0">
         <div className="max-w-2xl mx-auto">
-          <CategoryScroller 
-            categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
-            onCategoryChange={handleCategoryChange}
-            activeCategoryId={activeCategoryId}
-          />
-          <ProgressHeader
-            uncheckedItems={uncheckedItems}
-            totalItems={totalItems}
-            isAllExpanded={isAllExpanded}
-            onToggleAll={handleToggleAll}
-            showEmptyCategories={showEmptyCategories}
-            onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
-          />
+          {viewMode === 'vertical' && (
+            <>
+              <CategoryScroller 
+                categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
+                onCategoryChange={handleCategoryChange}
+                activeCategoryId={activeCategoryId}
+              />
+              <ProgressHeader
+                uncheckedItems={uncheckedItems}
+                totalItems={totalItems}
+                isAllExpanded={isAllExpanded}
+                onToggleAll={handleToggleAll}
+                showEmptyCategories={showEmptyCategories}
+                onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
+              />
+            </>
+          )}
         </div>
       </nav>
       <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
-        <CategoryList 
-          categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
-          onToggleItem={handleToggleItem}
-          onDeleteItem={handleDeleteItem}
-          onEditItem={handleEditItem}
-          onCategoryChange={setActiveCategoryId}
-          expandedCategories={expandedCategories}
-          setExpandedCategories={setExpandedCategories}
-          onUpdateItemCategory={handleUpdateItemCategory}
-        />
+        {viewMode === 'vertical' ? (
+          <CategoryList 
+            categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
+            onToggleItem={handleToggleItem}
+            onDeleteItem={handleDeleteItem}
+            onEditItem={handleEditItem}
+            onCategoryChange={setActiveCategoryId}
+            expandedCategories={expandedCategories}
+            setExpandedCategories={setExpandedCategories}
+            onUpdateItemCategory={handleUpdateItemCategory}
+          />
+        ) : (
+          <HorizontalLayout
+            categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
+            onToggleItem={handleToggleItem}
+            onDeleteItem={handleDeleteItem}
+            onEditItem={handleEditItem}
+            onUpdateItemCategory={handleUpdateItemCategory}
+            activeCategoryId={activeCategoryId}
+            onCategoryChange={handleCategoryChange}
+          />
+        )}
         <AnimatePresence>
           {isAddFormOpen && (
             <motion.div

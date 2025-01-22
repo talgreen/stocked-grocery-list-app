@@ -1,8 +1,8 @@
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
 import { CheckSquare, MoreVertical, Square, Trash2 } from 'lucide-react'
@@ -95,7 +95,7 @@ export default function GroceryItem({ item, categories, onToggle, onDelete, onEd
         animate={{ opacity: 1, height: 'auto' }}
         exit={{ opacity: 0, height: 0 }}
         transition={{ duration: 0.2 }}
-        className={`px-4 py-2 relative touch-pan-x bg-white ${
+        className={`list-none px-4 py-2 relative touch-pan-x bg-white ${
           item.purchased ? 'opacity-50' : ''
         }`}
       >
