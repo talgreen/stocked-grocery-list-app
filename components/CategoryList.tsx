@@ -95,7 +95,15 @@ export default function CategoryList({
               }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm
+              transition={{ 
+                duration: 0.15,
+                ease: 'easeOut'
+              }}
+              style={{ 
+                willChange: 'transform',
+                transform: 'translateZ(0)'
+              }}
+              className={`bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm will-change-transform
                 ${allChecked ? 'bg-opacity-50' : ''}`}
             >
               <div className={`${allChecked ? 'bg-opacity-50' : ''}`}>
@@ -125,7 +133,14 @@ export default function CategoryList({
                     initial={{ height: 0 }}
                     animate={{ height: 'auto' }}
                     exit={{ height: 0 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ 
+                      duration: 0.15,
+                      ease: 'easeOut'
+                    }}
+                    style={{ 
+                      willChange: 'transform',
+                      transform: 'translateZ(0)'
+                    }}
                     className="overflow-hidden"
                   >
                     <ul className="divide-y divide-black/5 list-none">

@@ -136,6 +136,14 @@ export default function HorizontalLayout({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ 
+                      duration: 0.15,
+                      ease: 'easeOut'
+                    }}
+                    style={{ 
+                      willChange: 'transform',
+                      transform: 'translateZ(0)'
+                    }}
                     className="bg-white rounded-xl border border-black/5 shadow-sm overflow-hidden before:content-none"
                   >
                     <GroceryItem
@@ -164,6 +172,14 @@ export default function HorizontalLayout({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ 
+                      duration: 0.15,
+                      ease: 'easeOut'
+                    }}
+                    style={{ 
+                      willChange: 'transform',
+                      transform: 'translateZ(0)'
+                    }}
                     className="bg-white rounded-xl border border-black/5 shadow-sm overflow-hidden opacity-50 before:content-none"
                   >
                     <GroceryItem

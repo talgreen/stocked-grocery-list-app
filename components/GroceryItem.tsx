@@ -84,18 +84,24 @@ export default function GroceryItem({ item, categories, onToggle, onDelete, onEd
 
       <motion.li
         ref={itemRef}
-        layout
-        style={{ x }}
+        style={{ 
+          x,
+          willChange: 'transform',
+          transform: 'translateZ(0)'
+        }}
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.7}
         onDragEnd={handleDragEnd}
         onDragStart={() => setIsDragging(true)}
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: 1, height: 'auto' }}
-        exit={{ opacity: 0, height: 0 }}
-        transition={{ duration: 0.2 }}
-        className={`list-none px-4 py-2 relative touch-pan-x bg-white ${
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ 
+          duration: 0.15,
+          ease: 'easeOut'
+        }}
+        className={`list-none px-4 py-2 relative touch-pan-x bg-white will-change-transform ${
           item.purchased ? 'opacity-50' : ''
         }`}
       >
@@ -105,20 +111,25 @@ export default function GroceryItem({ item, categories, onToggle, onDelete, onEd
               e.stopPropagation()
               onToggle()
             }}
-            className={`flex-shrink-0 transition-colors duration-200 mt-0.5 ${
+            className={`flex-shrink-0 transition-colors duration-150 mt-0.5 ${
               item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
             }`}
             whileTap={{ scale: 0.9 }}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.15 }}
             key={`checkbox-${item.id}`}
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={`${item.id}-${item.purchased}`}
-                initial={{ opacity: 0, scale: 0.5 }}
+                initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                transition={{ duration: 0.2 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                style={{ 
+                  willChange: 'transform',
+                  transform: 'translateZ(0)'
+                }}
               >
                 {item.purchased ? (
                   <CheckSquare className="h-5 w-5" />
