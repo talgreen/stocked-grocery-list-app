@@ -14,7 +14,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#000000',
+  themeColor: '#FDF6ED',
 }
 
 export const metadata: Metadata = {
@@ -45,9 +45,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="he" dir="rtl">
-      <body className={`${heebo.variable} font-heebo`}>
-        {children}
+    <html lang="he" dir="rtl" className="h-full">
+      <body className={`${heebo.variable} font-heebo min-h-full`}>
+        <div className="min-h-full bg-[#FDF6ED] pt-safe pb-safe">
+          {children}
+        </div>
         <Toaster position="top-center" richColors />
       </body>
     </html>

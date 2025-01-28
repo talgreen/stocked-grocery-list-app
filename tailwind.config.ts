@@ -1,4 +1,6 @@
+import forms from "@tailwindcss/forms";
 import type { Config } from "tailwindcss";
+import rtl from "tailwindcss-rtl";
 
 const config: Config = {
     darkMode: ["class"],
@@ -9,6 +11,13 @@ const config: Config = {
     "*.{js,ts,jsx,tsx,mdx}"
   ],
   theme: {
+  	container: {
+  		center: true,
+  		padding: '2rem',
+  		screens: {
+  			'2xl': '1400px',
+  		},
+  	},
   	extend: {
   		colors: {
   			background: 'hsl(var(--background))',
@@ -92,11 +101,32 @@ const config: Config = {
   		fontFamily: {
   			heebo: ['var(--font-heebo)'],
   		},
+  		spacing: {
+  			'safe': 'env(safe-area-inset-top)',
+  			'safe-bottom': 'env(safe-area-inset-bottom)',
+  			'safe-left': 'env(safe-area-inset-left)',
+  			'safe-right': 'env(safe-area-inset-right)',
+  		},
+  		padding: {
+  			'safe': 'env(safe-area-inset-top)',
+  			'safe-bottom': 'env(safe-area-inset-bottom)',
+  			'safe-left': 'env(safe-area-inset-left)',
+  			'safe-right': 'env(safe-area-inset-right)',
+  		},
+  		margin: {
+  			'safe': 'env(safe-area-inset-top)',
+  			'safe-bottom': 'env(safe-area-inset-bottom)',
+  			'safe-left': 'env(safe-area-inset-left)',
+  			'safe-right': 'env(safe-area-inset-right)',
+  		},
+  		inset: {
+  			'safe': 'env(safe-area-inset-top)',
+  			'safe-bottom': 'env(safe-area-inset-bottom)',
+  			'safe-left': 'env(safe-area-inset-left)',
+  			'safe-right': 'env(safe-area-inset-right)',
+  		},
   	}
   },
-  plugins: [
-    require('@tailwindcss/forms'),
-    require('tailwindcss-rtl'),
-  ],
+  plugins: [forms, rtl],
 };
 export default config;

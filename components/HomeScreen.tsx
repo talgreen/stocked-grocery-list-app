@@ -431,8 +431,8 @@ export default function HomeScreen() {
 
   return (
     <div className="min-h-screen bg-[#FDF6ED]">
-      <header className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
+      <header className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm pt-safe">
+        <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center mt-safe">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#FFB74D] flex items-center gap-2">
               Stocked
@@ -461,7 +461,7 @@ export default function HomeScreen() {
           </div>
         </div>
       </header>
-      <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm z-20 sticky top-0">
+      <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm z-20 sticky top-safe">
         <div className="max-w-2xl mx-auto">
           {viewMode === 'vertical' && (
             <>
