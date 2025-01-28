@@ -430,7 +430,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FDF6ED]">
       <header className="bg-white border-b border-black/5 shadow-sm">
         <div className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center mt-[calc(env(safe-area-inset-top)+0.5rem)]">
           <div className="flex items-center gap-2">
@@ -465,24 +465,26 @@ export default function HomeScreen() {
         <div className="max-w-2xl mx-auto">
           {viewMode === 'vertical' && (
             <>
-              <CategoryScroller 
-                categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
-                onCategoryChange={handleCategoryChange}
-                activeCategoryId={activeCategoryId}
-              />
-              <ProgressHeader
-                uncheckedItems={uncheckedItems}
-                totalItems={totalItems}
-                isAllExpanded={isAllExpanded}
-                onToggleAll={handleToggleAll}
-                showEmptyCategories={showEmptyCategories}
-                onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
-              />
+              <div className="bg-white">
+                <CategoryScroller 
+                  categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
+                  onCategoryChange={handleCategoryChange}
+                  activeCategoryId={activeCategoryId}
+                />
+                <ProgressHeader
+                  uncheckedItems={uncheckedItems}
+                  totalItems={totalItems}
+                  isAllExpanded={isAllExpanded}
+                  onToggleAll={handleToggleAll}
+                  showEmptyCategories={showEmptyCategories}
+                  onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
+                />
+              </div>
             </>
           )}
         </div>
       </nav>
-      <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24 text-right relative bg-[#FDF6ED]">
+      <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
         {viewMode === 'vertical' ? (
           <CategoryList 
             categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}

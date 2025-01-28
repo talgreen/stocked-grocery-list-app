@@ -127,9 +127,9 @@ export default function CategoryList({
               }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ 
-                opacity: 1, 
+                opacity: allChecked ? 0.7 : 1, 
                 y: 0,
-                scale: allChecked ? 0.98 : 1
+                scale: allChecked ? 0.98 : 1,
               }}
               layout
               transition={{ 
@@ -145,26 +145,37 @@ export default function CategoryList({
                 transform: 'translateZ(0)'
               }}
               className={`bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm will-change-transform
-                ${allChecked ? 'opacity-75' : ''}`}
+                ${allChecked ? 'opacity-70' : ''}`}
             >
               <div className={`${allChecked ? 'bg-opacity-50' : ''}`}>
                 <button
                   onClick={() => toggleCategory(category.id)}
-                  className="w-full p-4 flex justify-between items-center hover:bg-black/5 transition-colors duration-200"
+                  className={`w-full p-4 flex justify-between items-center hover:bg-black/5 transition-colors duration-200
+                    ${allChecked ? 'text-gray-500' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{category.emoji}</span>
-                    <h2 className="text-base font-semibold text-black/80">{category.name}</h2>
-                    <span className="text-sm text-black/40 font-medium mr-2">
+                    <h2 className={`text-base font-semibold ${allChecked ? 'text-gray-500' : 'text-black/80'}`}>
+                      {category.name}
+                    </h2>
+                    <span className={`text-sm font-medium mr-2 ${allChecked ? 'text-gray-400' : 'text-black/40'}`}>
                       ({uncheckedCount}/{totalCount})
                     </span>
-                    {allChecked && <Check className="h-4 w-4 text-[#FFB74D]" />}
+                    {allChecked && (
+                      <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Check className="h-4 w-4 text-green-500" />
+                      </motion.div>
+                    )}
                   </div>
                   <motion.div
                     animate={{ rotate: isExpanded ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <ChevronDown className="h-4 w-4 text-black/40" />
+                    <ChevronDown className={`h-4 w-4 ${allChecked ? 'text-gray-400' : 'text-black/40'}`} />
                   </motion.div>
                 </button>
               </div>

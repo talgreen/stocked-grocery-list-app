@@ -3,6 +3,7 @@
 import { Category } from '@/types/categories'
 import confetti from 'canvas-confetti'
 import { motion } from 'framer-motion'
+import { Check } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import GroceryItem from './GroceryItem'
 
@@ -106,15 +107,26 @@ export default function HorizontalLayout({
                   ? 'bg-[#FFB74D] border-[#FFB74D] text-white shadow-lg' 
                   : 'bg-white border-black/5 hover:border-[#FFB74D] hover:text-[#FFB74D]'
                 }
+                ${uncheckedCount === 0 && totalCount > 0 ? 'opacity-70' : ''}
               `}
               style={{ minWidth: '120px' }}
             >
               <span className="text-2xl">{category.emoji}</span>
               <div className="text-center">
                 <div className="font-medium whitespace-nowrap">{category.name}</div>
-                <div className="text-sm opacity-80">
+                <div className={`text-sm ${uncheckedCount === 0 && totalCount > 0 ? 'opacity-60' : 'opacity-80'}`}>
                   {uncheckedCount}/{totalCount}
                 </div>
+                {uncheckedCount === 0 && totalCount > 0 && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-1"
+                  >
+                    <Check className="h-4 w-4 text-green-500" />
+                  </motion.div>
+                )}
               </div>
             </motion.button>
           )
