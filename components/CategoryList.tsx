@@ -32,6 +32,35 @@ interface CategoryListProps {
   onUpdateItemCategory: (itemId: number, newCategoryId: number) => void
 }
 
+// Helper function to check if a category is completed
+function isCategoryCompleted(category: Category): boolean {
+  return category.items.length > 0 && category.items.every(item => item.purchased)
+}
+
+// Helper function to check if a category is empty
+function isCategoryEmpty(category: Category): boolean {
+  return category.items.length === 0
+}
+
+// Sort categories: active on top, completed in middle, empty at bottom
+function sortCategories(categories: Category[]): Category[] {
+  return [...categories].sort((a, b) => {
+    const aEmpty = isCategoryEmpty(a)
+    const bEmpty = isCategoryEmpty(b)
+    const aCompleted = isCategoryCompleted(a)
+    const bCompleted = isCategoryCompleted(b)
+
+    // If both are empty or both are non-empty, maintain original order
+    if (aEmpty && bEmpty) return 0
+    if (aEmpty) return 1 // Empty goes to bottom
+    if (bEmpty) return -1 // Non-empty goes to top
+
+    // Among non-empty categories, sort completed to bottom
+    if (aCompleted === bCompleted) return 0
+    return aCompleted ? 1 : -1
+  })
+}
+
 export default function CategoryList({ 
   categories, 
   onToggleItem, 
@@ -43,6 +72,9 @@ export default function CategoryList({
 }: CategoryListProps) {
   const categoryRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
   const previousStates = useRef<{ [key: number]: number }>({})
+
+  // Sort categories with completed ones at the bottom
+  const sortedCategories = sortCategories(categories)
 
   // Handle category completion and collapse
   useEffect(() => {
@@ -79,8 +111,8 @@ export default function CategoryList({
 
   return (
     <div className="space-y-4">
-      {categories.some(category => category.items.length > 0) ? (
-        categories.map((category) => {
+      {sortedCategories.some(category => category.items.length > 0) ? (
+        sortedCategories.map((category) => {
           const uncheckedCount = category.items.filter(item => !item.purchased).length
           const totalCount = category.items.length
           const allChecked = totalCount > 0 && uncheckedCount === 0
@@ -94,17 +126,26 @@ export default function CategoryList({
                 categoryRefs.current[category.id] = el
               }}
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                scale: allChecked ? 0.98 : 1
+              }}
+              layout
               transition={{ 
-                duration: 0.15,
-                ease: 'easeOut'
+                duration: 0.3,
+                ease: 'easeOut',
+                layout: {
+                  duration: 0.3,
+                  ease: 'easeInOut'
+                }
               }}
               style={{ 
                 willChange: 'transform',
                 transform: 'translateZ(0)'
               }}
               className={`bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm will-change-transform
-                ${allChecked ? 'bg-opacity-50' : ''}`}
+                ${allChecked ? 'opacity-75' : ''}`}
             >
               <div className={`${allChecked ? 'bg-opacity-50' : ''}`}>
                 <button
