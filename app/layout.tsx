@@ -14,7 +14,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#FDF6ED',
+  themeColor: '#ffffff',
 }
 
 export const metadata: Metadata = {
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   other: {
     'apple-mobile-web-app-title': 'Stocked',
     'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'apple-mobile-web-app-status-bar-style': 'default',
     'mobile-web-app-capable': 'yes',
     'format-detection': 'telephone=no',
   }
@@ -47,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className="h-full">
       <body className={`${heebo.variable} font-heebo min-h-full`}>
-        <div className="min-h-full bg-[#FDF6ED] pt-safe pb-safe">
+        <div className="min-h-full bg-[#FDF6ED]">
           {children}
         </div>
         <Toaster position="top-center" richColors />

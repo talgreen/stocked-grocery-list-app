@@ -430,9 +430,9 @@ export default function HomeScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDF6ED]">
-      <header className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm pt-safe">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center mt-safe">
+    <div className="min-h-screen bg-white">
+      <header className="bg-white border-b border-black/5 shadow-sm">
+        <div className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center mt-[calc(env(safe-area-inset-top)+0.5rem)]">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#FFB74D] flex items-center gap-2">
               Stocked
@@ -461,7 +461,7 @@ export default function HomeScreen() {
           </div>
         </div>
       </header>
-      <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm z-20 sticky top-safe">
+      <nav className="bg-white border-b border-black/5 shadow-sm z-20 sticky top-[env(safe-area-inset-top)]">
         <div className="max-w-2xl mx-auto">
           {viewMode === 'vertical' && (
             <>
@@ -482,7 +482,7 @@ export default function HomeScreen() {
           )}
         </div>
       </nav>
-      <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
+      <main className="flex-grow max-w-2xl w-full mx-auto p-6 pb-24 text-right relative bg-[#FDF6ED]">
         {viewMode === 'vertical' ? (
           <CategoryList 
             categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
