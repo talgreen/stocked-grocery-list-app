@@ -47,10 +47,14 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className="h-full">
       <body className={`${heebo.variable} font-heebo h-full`}>
-        <div className="flex flex-col min-h-full bg-[#FDF6ED]">
+        <div className="flex flex-col min-h-full bg-[#FDF6ED] pt-[env(safe-area-inset-top)]">
           {children}
         </div>
-        <Toaster position="top-center" richColors />
+        <Toaster 
+          position="top-center" 
+          richColors 
+          className="pt-[env(safe-area-inset-top)] !top-[env(safe-area-inset-top)]"
+        />
       </body>
     </html>
   )

@@ -432,7 +432,7 @@ export default function HomeScreen() {
   return (
     <div className="min-h-screen bg-[#FDF6ED]">
       <header className="bg-white border-b border-black/5 shadow-sm">
-        <div className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center mt-[calc(env(safe-area-inset-top)+0.5rem)]">
+        <div className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center mt-[calc(env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#FFB74D] flex items-center gap-2">
               Stocked
