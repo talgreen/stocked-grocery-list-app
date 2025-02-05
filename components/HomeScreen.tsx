@@ -388,21 +388,23 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FDF6ED]">
-        <div className="bg-white border-b border-black/5 shadow-sm sticky top-[env(safe-area-inset-top)] z-30">
-          <header className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
+        <header className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
+          <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-2">
               <div className="h-8 w-24 bg-gray-200 animate-pulse rounded-lg" />
             </div>
             <div className="h-8 w-8 bg-gray-200 animate-pulse rounded-full" />
-          </header>
-          <nav className="max-w-2xl mx-auto px-6 py-3">
+          </div>
+        </header>
+        <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
+          <div className="max-w-2xl mx-auto px-6 py-3">
             <div className="flex gap-3 overflow-x-auto pb-2">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-8 w-20 bg-gray-200 animate-pulse rounded-full" />
               ))}
             </div>
-          </nav>
-        </div>
+          </div>
+        </nav>
         <main className="flex-grow max-w-2xl w-full mx-auto p-6">
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -478,8 +480,23 @@ export default function HomeScreen() {
           </nav>
         )}
       </div>
-      <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
-        {viewMode === 'vertical' ? (
+      {viewMode === 'horizontal' && (
+        <div className="bg-white border-b border-black/5 shadow-sm sticky top-[calc(env(safe-area-inset-top)+3.5rem)] z-20">
+          <nav className="max-w-2xl mx-auto">
+            <HorizontalLayout
+              categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
+              onToggleItem={handleToggleItem}
+              onDeleteItem={handleDeleteItem}
+              onEditItem={handleEditItem}
+              onUpdateItemCategory={handleUpdateItemCategory}
+              activeCategoryId={activeCategoryId}
+              onCategoryChange={handleCategoryChange}
+            />
+          </nav>
+        </div>
+      )}
+      <main className={`flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative ${viewMode === 'vertical' ? 'pt-8' : ''}`}>
+        {viewMode === 'vertical' && (
           <CategoryList 
             categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
             onToggleItem={handleToggleItem}
@@ -489,16 +506,6 @@ export default function HomeScreen() {
             expandedCategories={expandedCategories}
             setExpandedCategories={setExpandedCategories}
             onUpdateItemCategory={handleUpdateItemCategory}
-          />
-        ) : (
-          <HorizontalLayout
-            categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
-            onToggleItem={handleToggleItem}
-            onDeleteItem={handleDeleteItem}
-            onEditItem={handleEditItem}
-            onUpdateItemCategory={handleUpdateItemCategory}
-            activeCategoryId={activeCategoryId}
-            onCategoryChange={handleCategoryChange}
           />
         )}
         <AnimatePresence>
