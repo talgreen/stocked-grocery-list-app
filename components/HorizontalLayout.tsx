@@ -87,59 +87,60 @@ export default function HorizontalLayout({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        className="flex overflow-x-auto pb-4 gap-3 custom-scrollbar smooth-scroll no-select cursor-grab active:cursor-grabbing"
+        className="relative flex overflow-x-auto pb-2 hide-scrollbar smooth-scroll no-select cursor-grab active:cursor-grabbing"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        {categories.map((category) => {
-          const uncheckedCount = category.items.filter(item => !item.purchased).length
-          const totalCount = category.items.length
-          const isActive = category.id === activeCategoryId
+        <div className="flex gap-2 px-4">
+          {categories.map((category) => {
+            const uncheckedCount = category.items.filter(item => !item.purchased).length
+            const totalCount = category.items.length
+            const isActive = category.id === activeCategoryId
 
-          return (
-            <motion.button
-              key={category.id}
-              onClick={() => onCategoryChange(category.id)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`
-                flex-shrink-0 flex flex-col items-center gap-2 p-4 rounded-2xl border transition-colors duration-200
-                ${isActive 
-                  ? 'bg-[#FFB74D] border-[#FFB74D] text-white shadow-lg' 
-                  : 'bg-white border-black/5 hover:border-[#FFB74D] hover:text-[#FFB74D]'
-                }
-                ${uncheckedCount === 0 && totalCount > 0 ? 'opacity-70' : ''}
-              `}
-              style={{ minWidth: '120px' }}
-            >
-              <span className="text-2xl">{category.emoji}</span>
-              <div className="text-center">
-                <div className="font-medium whitespace-nowrap">{category.name}</div>
-                <div className={`text-sm ${uncheckedCount === 0 && totalCount > 0 ? 'opacity-60' : 'opacity-80'}`}>
-                  {uncheckedCount}/{totalCount}
+            return (
+              <motion.button
+                key={category.id}
+                onClick={() => onCategoryChange(category.id)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`
+                  relative flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200
+                  ${isActive 
+                    ? 'bg-[#FFB74D]/10 border-[#FFB74D] text-[#FFB74D]' 
+                    : 'bg-white border-black/5 hover:border-[#FFB74D] hover:text-[#FFB74D]'
+                  }
+                  ${uncheckedCount === 0 && totalCount > 0 ? 'opacity-80' : ''}
+                `}
+              >
+                <span className="text-xl">{category.emoji}</span>
+                <div className="flex flex-col items-start">
+                  <div className="font-medium whitespace-nowrap text-sm">{category.name}</div>
+                  <div className={`text-xs ${isActive ? 'text-[#FFB74D]/80' : 'text-black/40'}`}>
+                    {uncheckedCount}/{totalCount}
+                  </div>
                 </div>
                 {uncheckedCount === 0 && totalCount > 0 && (
                   <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.2 }}
-                    className="mt-1"
+                    className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm border border-black/5"
                   >
-                    <Check className="h-4 w-4 text-green-500" />
+                    <Check className="h-3 w-3 text-green-500" />
                   </motion.div>
                 )}
-              </div>
-            </motion.button>
-          )
-        })}
+              </motion.button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Grid Layout for Items */}
       {activeCategory && (
-        <div className="space-y-6">
+        <div className="space-y-6 px-4 py-4 bg-orange-50/50">
           {/* Unchecked Items */}
           {uncheckedItems.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-black/60 px-1">לקנות</h3>
+              <h3 className="text-sm font-medium text-black/60">לקנות</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 list-none [&>*]:list-none">
                 {uncheckedItems.map((item) => (
                   <motion.div
