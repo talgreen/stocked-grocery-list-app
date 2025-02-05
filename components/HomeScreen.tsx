@@ -388,23 +388,21 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FDF6ED]">
-        <header className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
-          <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="bg-white border-b border-black/5 shadow-sm sticky top-[env(safe-area-inset-top)] z-30">
+          <header className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-2">
               <div className="h-8 w-24 bg-gray-200 animate-pulse rounded-lg" />
             </div>
             <div className="h-8 w-8 bg-gray-200 animate-pulse rounded-full" />
-          </div>
-        </header>
-        <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
-          <div className="max-w-2xl mx-auto px-6 py-3">
+          </header>
+          <nav className="max-w-2xl mx-auto px-6 py-3">
             <div className="flex gap-3 overflow-x-auto pb-2">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-8 w-20 bg-gray-200 animate-pulse rounded-full" />
               ))}
             </div>
-          </div>
-        </nav>
+          </nav>
+        </div>
         <main className="flex-grow max-w-2xl w-full mx-auto p-6">
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -431,8 +429,8 @@ export default function HomeScreen() {
 
   return (
     <div className="min-h-screen bg-[#FDF6ED]">
-      <header className="bg-white border-b border-black/5 shadow-sm sticky top-[env(safe-area-inset-top)] z-30">
-        <div className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center">
+      <div className="bg-white border-b border-black/5 shadow-sm sticky top-[env(safe-area-inset-top)] z-30">
+        <header className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#FFB74D] flex items-center gap-2">
               Stocked
@@ -459,31 +457,27 @@ export default function HomeScreen() {
             </button>
             <ShareButton />
           </div>
-        </div>
-      </header>
-      <nav className="bg-white border-b border-black/5 shadow-sm z-20 sticky top-[calc(env(safe-area-inset-top)+3.5rem)]">
-        <div className="max-w-2xl mx-auto">
-          {viewMode === 'vertical' && (
-            <>
-              <div className="bg-white">
-                <CategoryScroller 
-                  categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
-                  onCategoryChange={handleCategoryChange}
-                  activeCategoryId={activeCategoryId}
-                />
-                <ProgressHeader
-                  uncheckedItems={uncheckedItems}
-                  totalItems={totalItems}
-                  isAllExpanded={isAllExpanded}
-                  onToggleAll={handleToggleAll}
-                  showEmptyCategories={showEmptyCategories}
-                  onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
-                />
-              </div>
-            </>
-          )}
-        </div>
-      </nav>
+        </header>
+        {viewMode === 'vertical' && (
+          <nav className="max-w-2xl mx-auto">
+            <div className="bg-white">
+              <CategoryScroller 
+                categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
+                onCategoryChange={handleCategoryChange}
+                activeCategoryId={activeCategoryId}
+              />
+              <ProgressHeader
+                uncheckedItems={uncheckedItems}
+                totalItems={totalItems}
+                isAllExpanded={isAllExpanded}
+                onToggleAll={handleToggleAll}
+                showEmptyCategories={showEmptyCategories}
+                onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
+              />
+            </div>
+          </nav>
+        )}
+      </div>
       <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
         {viewMode === 'vertical' ? (
           <CategoryList 
