@@ -48,6 +48,7 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className="h-full">
       <body className={`${heebo.variable} font-heebo h-full`}>
+        <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-black z-50" />
         <div className="flex flex-col min-h-full bg-[#FDF6ED]">
           {children}
         </div>
