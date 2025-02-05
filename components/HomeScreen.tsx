@@ -431,7 +431,7 @@ export default function HomeScreen() {
 
   return (
     <div className="min-h-screen bg-[#FDF6ED]">
-      <div className="bg-white border-b border-black/5 shadow-sm sticky top-[env(safe-area-inset-top)] z-30">
+      <div className="bg-white border-b border-black/5 shadow-sm sticky top-0 pt-safe z-30">
         <header className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#FFB74D] flex items-center gap-2">
@@ -496,7 +496,7 @@ export default function HomeScreen() {
         </div>
       )}
       <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
-        {/* {viewMode === 'vertical' && <div className="h-10" aria-hidden="true" />} */}
+        {viewMode === 'vertical' && <div className="h-4" aria-hidden="true" />}
         {viewMode === 'vertical' && (
           <CategoryList 
             categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
