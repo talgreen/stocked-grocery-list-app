@@ -461,7 +461,7 @@ export default function HomeScreen() {
           </div>
         </header>
         {viewMode === 'vertical' && (
-          <nav className="max-w-2xl mx-auto">
+          <nav className="max-w-2xl mx-auto pb-4">
             <div className="bg-white">
               <CategoryScroller 
                 categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
@@ -495,7 +495,7 @@ export default function HomeScreen() {
           </nav>
         </div>
       )}
-      <main className={`flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative ${viewMode === 'vertical' ? 'pt-8' : ''}`}>
+      <main className={`flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative ${viewMode === 'vertical' ? 'pt-0' : ''}`}>
         {viewMode === 'vertical' && (
           <CategoryList 
             categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
