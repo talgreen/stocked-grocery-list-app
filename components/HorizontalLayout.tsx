@@ -79,64 +79,66 @@ export default function HorizontalLayout({
   const checkedItems = activeCategory?.items.filter(item => item.purchased) || []
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       {/* Horizontal Category Scroller */}
-      <div
-        ref={scrollRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        className="relative flex overflow-x-auto pb-2 hide-scrollbar smooth-scroll no-select cursor-grab active:cursor-grabbing"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-      >
-        <div className="flex gap-2 px-4">
-          {categories.map((category) => {
-            const uncheckedCount = category.items.filter(item => !item.purchased).length
-            const totalCount = category.items.length
-            const isActive = category.id === activeCategoryId
+      <div className="sticky top-[3.75rem] bg-white z-10">
+        <div
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className="relative flex overflow-x-auto pt-0 pb-3 hide-scrollbar smooth-scroll no-select cursor-grab active:cursor-grabbing border-b border-black/[0.06]"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <div className="flex gap-2 px-4">
+            {categories.map((category) => {
+              const uncheckedCount = category.items.filter(item => !item.purchased).length
+              const totalCount = category.items.length
+              const isActive = category.id === activeCategoryId
 
-            return (
-              <motion.button
-                key={category.id}
-                onClick={() => onCategoryChange(category.id)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`
-                  relative flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200
-                  ${isActive 
-                    ? 'bg-[#FFB74D]/10 border-[#FFB74D] text-[#FFB74D]' 
-                    : 'bg-white border-black/5 hover:border-[#FFB74D] hover:text-[#FFB74D]'
-                  }
-                  ${uncheckedCount === 0 && totalCount > 0 ? 'opacity-80' : ''}
-                `}
-              >
-                <span className="text-xl">{category.emoji}</span>
-                <div className="flex flex-col items-start">
-                  <div className="font-medium whitespace-nowrap text-sm">{category.name}</div>
-                  <div className={`text-xs ${isActive ? 'text-[#FFB74D]/80' : 'text-black/40'}`}>
-                    {uncheckedCount}/{totalCount}
+              return (
+                <motion.button
+                  key={category.id}
+                  onClick={() => onCategoryChange(category.id)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`
+                    relative flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-200
+                    ${isActive 
+                      ? 'bg-[#FFB74D]/10 border-[#FFB74D] text-[#FFB74D]' 
+                      : 'bg-white border-black/5 hover:border-[#FFB74D] hover:text-[#FFB74D]'
+                    }
+                    ${uncheckedCount === 0 && totalCount > 0 ? 'opacity-80' : ''}
+                  `}
+                >
+                  <span className="text-xl">{category.emoji}</span>
+                  <div className="flex flex-col items-start">
+                    <div className="font-medium whitespace-nowrap text-sm">{category.name}</div>
+                    <div className={`text-xs ${isActive ? 'text-[#FFB74D]/80' : 'text-black/40'}`}>
+                      {uncheckedCount}/{totalCount}
+                    </div>
                   </div>
-                </div>
-                {uncheckedCount === 0 && totalCount > 0 && (
-                  <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm border border-black/5"
-                  >
-                    <Check className="h-3 w-3 text-green-500" />
-                  </motion.div>
-                )}
-              </motion.button>
-            )
-          })}
+                  {uncheckedCount === 0 && totalCount > 0 && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-0.5 right-0.5 bg-white rounded-full p-0.5 shadow-sm border border-black/5"
+                    >
+                      <Check className="h-3 w-3 text-green-500" />
+                    </motion.div>
+                  )}
+                </motion.button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
       {/* Grid Layout for Items */}
       {activeCategory && (
-        <div className="space-y-6 px-4 py-4 bg-orange-50/50">
+        <div className="space-y-6 px-4 py-3 bg-orange-50/50">
           {/* Unchecked Items */}
           {uncheckedItems.length > 0 && (
             <div className="space-y-3">
