@@ -495,7 +495,8 @@ export default function HomeScreen() {
           </nav>
         </div>
       )}
-      <main className={`flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative ${viewMode === 'vertical' ? 'pt-10' : ''}`}>
+      <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
+        {/* {viewMode === 'vertical' && <div className="h-10" aria-hidden="true" />} */}
         {viewMode === 'vertical' && (
           <CategoryList 
             categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
