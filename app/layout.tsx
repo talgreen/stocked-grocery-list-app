@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react'
 import type { Metadata, Viewport } from 'next'
 import { Heebo } from 'next/font/google'
 import { Toaster } from 'sonner'
@@ -47,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className="h-full">
       <body className={`${heebo.variable} font-heebo h-full`}>
-        <div className="flex flex-col min-h-full bg-[#FDF6ED] pt-[env(safe-area-inset-top)]">
+        <div className="flex flex-col min-h-full bg-[#FDF6ED]">
           {children}
         </div>
         <Toaster 
@@ -55,6 +56,7 @@ export default function RootLayout({
           richColors 
           className="pt-[env(safe-area-inset-top)] !top-[env(safe-area-inset-top)]"
         />
+        <Analytics />
       </body>
     </html>
   )
