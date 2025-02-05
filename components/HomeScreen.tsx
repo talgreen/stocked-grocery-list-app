@@ -461,7 +461,7 @@ export default function HomeScreen() {
           </div>
         </div>
       </header>
-      <nav className="bg-white border-b border-black/5 shadow-sm z-20 sticky top-[calc(env(safe-area-inset-top))]">
+      <nav className="bg-white border-b border-black/5 shadow-sm z-20 sticky top-[calc(env(safe-area-inset-top)+3.5rem)]">
         <div className="max-w-2xl mx-auto">
           {viewMode === 'vertical' && (
             <>
