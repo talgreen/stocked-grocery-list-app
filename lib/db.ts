@@ -1,4 +1,6 @@
+import { FirebaseError } from 'firebase/app'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { toast } from 'sonner'
 import { db } from './firebase'
 
 interface ListData {
@@ -8,37 +10,63 @@ interface ListData {
 }
 
 export async function createNewList(listId: string, categories: Category[]) {
-  const listRef = doc(db, 'lists', listId)
-  
-  await setDoc(listRef, {
-    categories,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  })
+  try {
+    const listRef = doc(db, 'lists', listId)
+    
+    await setDoc(listRef, {
+      categories,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })
 
-  return listId
+    return listId
+  } catch (error) {
+    if (error instanceof FirebaseError) {
+      console.error('Firebase error:', error.code, error.message)
+      if (error.code === 'permission-denied') {
+        toast.error('אין הרשאה ליצור רשימה חדשה')
+      }
+    }
+    throw error
+  }
 }
 
 export async function getList(listId: string): Promise<ListData | null> {
-  const listRef = doc(db, 'lists', listId)
-  const listSnap = await getDoc(listRef)
+  try {
+    const listRef = doc(db, 'lists', listId)
+    const listSnap = await getDoc(listRef)
 
-  if (!listSnap.exists()) {
-    return null
+    if (!listSnap.exists()) {
+      return null
+    }
+
+    return listSnap.data() as ListData
+  } catch (error) {
+    if (error instanceof FirebaseError) {
+      console.error('Firebase error:', error.code, error.message)
+      if (error.code === 'permission-denied') {
+        toast.error('אין הרשאה לקרוא את הרשימה')
+      }
+    }
+    throw error
   }
-
-  return listSnap.data() as ListData
 }
 
 export async function updateList(listId: string, categories: Category[]) {
-  const listRef = doc(db, 'lists', listId);
-  
   try {
-    const result = await setDoc(listRef, {
+    const listRef = doc(db, 'lists', listId)
+    
+    await setDoc(listRef, {
       categories,
       updatedAt: new Date().toISOString()
-    }, { merge: true });
+    }, { merge: true })
   } catch (error) {
-    throw error;
+    if (error instanceof FirebaseError) {
+      console.error('Firebase error:', error.code, error.message)
+      if (error.code === 'permission-denied') {
+        toast.error('אין הרשאה לעדכן את הרשימה')
+      }
+    }
+    throw error
   }
 } 
