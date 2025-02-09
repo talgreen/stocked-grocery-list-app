@@ -1,7 +1,10 @@
+import { Category, initialCategories } from '@/types/categories'
 import { FirebaseError } from 'firebase/app'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
 import { db } from './firebase'
+
+
 
 interface ListData {
   categories: Category[]
@@ -68,15 +71,40 @@ export async function updateList(listId: string, categories: Category[]) {
     const hasItems = categories.some(category => category.items.length > 0)
     if (!hasItems) return
 
+    // Ensure categories have the exact required structure
+    const sanitizedCategories = categories.map(category => ({
+      id: category.id,
+      emoji: category.emoji,
+      name: category.name,
+      items: category.items.map(item => ({
+        id: item.id,
+        name: item.name,
+        purchased: item.purchased,
+        comment: item.comment || '',
+        photo: item.photo || null
+      }))
+    }))
+
     const listRef = doc(db, 'lists', listId)
     const listSnap = await getDoc(listRef)
     const isNewList = !listSnap.exists()
 
-    await setDoc(listRef, {
-      categories,
-      ...(isNewList && { createdAt: new Date().toISOString() }),
-      updatedAt: new Date().toISOString()
-    }, { merge: true })
+    const timestamp = new Date().toISOString()
+
+    if (isNewList) {
+      // Create new list with all required fields
+      await setDoc(listRef, {
+        categories: sanitizedCategories,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      })
+    } else {
+      // Update existing list with only allowed fields
+      await setDoc(listRef, {
+        categories: sanitizedCategories,
+        updatedAt: timestamp
+      })
+    }
   } catch (error) {
     if (error instanceof FirebaseError) {
       console.error('Firebase error:', error.code, error.message)
