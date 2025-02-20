@@ -10,7 +10,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
 import CategoryScroller from './CategoryScroller'
-import Fireworks from './Fireworks'
 import HorizontalLayout from './HorizontalLayout'
 import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
@@ -20,7 +19,6 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>(initialCategories)
   const [isLoading, setIsLoading] = useState(true)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
-  const [showFireworks, setShowFireworks] = useState(false)
   const [showEmptyCategories, setShowEmptyCategories] = useState(false)
   const [viewMode, setViewMode] = useState<'vertical' | 'horizontal'>('vertical')
   const modalRef = useRef<HTMLDivElement>(null)
@@ -161,57 +159,39 @@ export default function HomeScreen() {
     ))
   }
 
-  const totalItems = categories.reduce((sum, category) => sum + category.items.length, 0)
-  const uncheckedItems = categories.reduce((sum, category) => sum + category.items.filter(item => !item.purchased).length, 0)
+  const handleAddItem = async (categoryId: number, name: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return;
 
-  const handleToggleAll = () => {
-    setIsAllExpanded(!isAllExpanded)
-    setExpandedCategories(isAllExpanded ? [] : categories.map(cat => cat.id))
-  }
+    const newItem = {
+      id: Date.now(),
+      name: name.trim(),
+      purchased: false,
+      comment: '',
+      categoryId
+    };
 
-  useEffect(() => {
-    return () => {
-      if (scrollTimeout.current) {
-        clearTimeout(scrollTimeout.current)
+    const updatedCategories = categories.map(c => {
+      if (c.id === categoryId) {
+        return {
+          ...c,
+          items: [...c.items.filter(item => !item.purchased), newItem, ...c.items.filter(item => item.purchased)]
+        };
       }
-    }
-  }, [])
+      return c;
+    });
 
-  useEffect(() => {
-    async function initializeList() {
-      setIsLoading(true)
+    setCategories(updatedCategories);
+    
+    if (listId) {
       try {
-        const data = await getList(listId)
-        if (data?.categories) {
-          setCategories(data.categories)
-          if (data.categories.length > 0) {
-            setActiveCategoryId(data.categories[0].id)
-          }
-        } else {
-          await createNewList(listId, initialCategories)
-          setCategories(initialCategories)
-        }
+        await updateList(listId, updatedCategories);
       } catch (error) {
-        console.error('Error initializing list:', error)
-      } finally {
-        setIsLoading(false)
+        console.error('Error updating list:', error);
+        setCategories(categories); // Revert on error
       }
     }
-
-    initializeList()
-  }, [listId])
-
-  useEffect(() => {
-    if (isAddFormOpen) {
-      // Small delay to ensure the modal is rendered
-      setTimeout(() => {
-        modalRef.current?.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'center'
-        })
-      }, 100)
-    }
-  }, [isAddFormOpen])
+  };
 
   const handleUpdateItemCategory = async (itemId: number, newCategoryId: number) => {
     try {
@@ -272,118 +252,57 @@ export default function HomeScreen() {
     }
   };
 
-  const handleUncheckItems = async (itemsToUncheck: { item: Item, categoryName: string, emoji: string }[]) => {
-    // Create a map for quick lookup of which items to uncheck
-    const itemsMap = new Map(itemsToUncheck.map(({ item }) => [item.id, true]))
+  const totalItems = categories.reduce((sum, category) => sum + category.items.length, 0)
+  const uncheckedItems = categories.reduce((sum, category) => sum + category.items.filter(item => !item.purchased).length, 0)
 
-    // Update all items' purchased status in a single categories update
-    const updatedCategories = categories.map(category => {
-      const hasItemsToUpdate = category.items.some(item => itemsMap.has(item.id))
-      if (!hasItemsToUpdate) return category
-
-      return {
-        ...category,
-        items: category.items.map(item => {
-          if (!itemsMap.has(item.id)) return item
-          return { ...item, purchased: false }
-        }).sort((a, b) => (a.purchased === b.purchased) ? 0 : a.purchased ? 1 : -1)
-      }
-    })
-
-    try {
-      setCategories(updatedCategories)
-      await updateList(listId, updatedCategories)
-    } catch (error) {
-      console.error('Error updating list:', error)
-      setCategories(categories)
-      throw error // Re-throw to allow caller to handle the error
-    }
+  const handleToggleAll = () => {
+    setIsAllExpanded(!isAllExpanded)
+    setExpandedCategories(isAllExpanded ? [] : categories.map(cat => cat.id))
   }
 
-  const handleAddBulkItems = async (
-    items: { item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string }[],
-    itemsToUncheck: { item: Item, categoryName: string, emoji: string }[]
-  ) => {
-    // Start with current state
-    let updatedCategories = [...categories];
-
-    // First, handle unchecking items if any
-    if (itemsToUncheck.length > 0) {
-      const itemsMap = new Map(itemsToUncheck.map(({ item }) => [item.id, true]))
-      
-      updatedCategories = updatedCategories.map(category => {
-        const hasItemsToUpdate = category.items.some(item => itemsMap.has(item.id))
-        if (!hasItemsToUpdate) return category
-
-        return {
-          ...category,
-          items: category.items.map(item => {
-            if (!itemsMap.has(item.id)) return item
-            return { ...item, purchased: false }
-          }).sort((a, b) => (a.purchased === b.purchased) ? 0 : a.purchased ? 1 : -1)
-        }
-      })
+  useEffect(() => {
+    return () => {
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current)
+      }
     }
+  }, [])
 
-    // Then, add new items if any
-    if (items.length > 0) {
-      // Process each item
-      for (const { item, categoryName, emoji } of items) {
-        // Create new item with all required fields
-        const newItem = {
-          id: Date.now() + Math.random(),
-          name: item.name,
-          purchased: false,
-          comment: item.comment || '',
-          // Only include photo if it exists
-          ...(item.photo ? { photo: item.photo } : {})
-        };
-
-        // Find or create category
-        let existingCategory = updatedCategories.find(c => 
-          c.name.toLowerCase() === categoryName.toLowerCase()
-        );
-
-        if (!existingCategory) {
-          // Create new category
-          const maxId = Math.max(...updatedCategories.map(cat => cat.id), 0);
-          existingCategory = {
-            id: maxId + 1,
-            emoji,
-            name: categoryName,
-            items: []
-          };
-          updatedCategories.push(existingCategory);
+  useEffect(() => {
+    async function initializeList() {
+      setIsLoading(true)
+      try {
+        const data = await getList(listId)
+        if (data?.categories) {
+          setCategories(data.categories)
+          if (data.categories.length > 0) {
+            setActiveCategoryId(data.categories[0].id)
+          }
+        } else {
+          await createNewList(listId, initialCategories)
+          setCategories(initialCategories)
         }
-
-        // Add item to category
-        const categoryIndex = updatedCategories.findIndex(c => c.id === existingCategory!.id);
-        if (categoryIndex !== -1) {
-          const category = updatedCategories[categoryIndex];
-          updatedCategories[categoryIndex] = {
-            ...category,
-            items: [
-              ...category.items.filter(i => !i.purchased),
-              newItem,
-              ...category.items.filter(i => i.purchased)
-            ]
-          };
-        }
+      } catch (error) {
+        console.error('Error initializing list:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    try {
-      // Update state first
-      setCategories(updatedCategories);
-      // Then persist to Firebase
-      await updateList(listId, updatedCategories);
-    } catch (error) {
-      console.error('Error updating list:', error);
-      // Rollback on error
-      setCategories(categories);
-      throw error;
+    initializeList()
+  }, [listId])
+
+  useEffect(() => {
+    if (isAddFormOpen) {
+      // Small delay to ensure the modal is rendered
+      setTimeout(() => {
+        modalRef.current?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'center'
+        })
+      }, 100)
     }
-  };
+  }, [isAddFormOpen])
 
   if (isLoading) {
     return (
@@ -503,27 +422,34 @@ export default function HomeScreen() {
             onToggleItem={handleToggleItem}
             onDeleteItem={handleDeleteItem}
             onEditItem={handleEditItem}
-            onCategoryChange={setActiveCategoryId}
             expandedCategories={expandedCategories}
             setExpandedCategories={setExpandedCategories}
             onUpdateItemCategory={handleUpdateItemCategory}
+            onAddItem={handleAddItem}
           />
         )}
         <AnimatePresence>
           {isAddFormOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white rounded-t-2xl shadow-lg border border-black/5 fixed left-0 right-0 bottom-0 max-w-2xl mx-auto overflow-hidden"
-              style={{ maxHeight: "85vh" }}
+              initial={{ height: "100vh", opacity: 0, y: "100%" }}
+              animate={{ height: "100vh", opacity: 1, y: 0 }}
+              exit={{ height: "100vh", opacity: 0, y: "100%" }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="bg-white fixed inset-0 z-50 overflow-hidden"
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0.2}
+              onDragEnd={(e, { offset, velocity }) => {
+                const swipe = Math.abs(offset.y) * velocity.y
+                if (offset.y > 200 || swipe > 500) {
+                  setIsAddFormOpen(false)
+                }
+              }}
             >
-              <div className="overflow-y-auto p-6">
+              <div className="absolute w-12 h-1.5 bg-gray-300 rounded-full left-1/2 -translate-x-1/2 top-3" />
+              <div className="h-full overflow-y-auto p-6 pt-8">
                 <AddItemForm 
                   onAdd={handleAddItemWithCategory}
-                  onUncheck={handleUncheckItems}
-                  onBulkAdd={handleAddBulkItems}
                   onClose={() => setIsAddFormOpen(false)}
                   categories={categories}
                 />
@@ -549,7 +475,6 @@ export default function HomeScreen() {
           </motion.div>
         )}
       </AnimatePresence>
-      {showFireworks && <Fireworks />}
     </div>
   )
 }

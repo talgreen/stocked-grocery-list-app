@@ -1,26 +1,11 @@
 'use client'
 
+import { Category } from '@/types/categories'
 import confetti from 'canvas-confetti'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, Square } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import GroceryItem from './GroceryItem'
-
-interface Item {
-  id: number
-  name: string
-  purchased: boolean
-  comment?: string
-  photo?: string
-  categoryId: number
-}
-
-interface Category {
-  id: number
-  emoji: string
-  name: string
-  items: Item[]
-}
 
 interface CategoryListProps {
   categories: Category[]
@@ -30,6 +15,7 @@ interface CategoryListProps {
   expandedCategories: number[]
   setExpandedCategories: React.Dispatch<React.SetStateAction<number[]>>
   onUpdateItemCategory: (itemId: number, newCategoryId: number) => void
+  onAddItem?: (categoryId: number, name: string) => void
 }
 
 // Helper function to check if a category is completed
@@ -68,7 +54,8 @@ export default function CategoryList({
   onEditItem,
   onUpdateItemCategory,
   expandedCategories,
-  setExpandedCategories 
+  setExpandedCategories,
+  onAddItem
 }: CategoryListProps) {
   const categoryRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
   const previousStates = useRef<{ [key: number]: number }>({})
@@ -207,6 +194,27 @@ export default function CategoryList({
                           onUpdateCategory={(newCategoryId: number) => onUpdateItemCategory(item.id, newCategoryId)}
                         />
                       ))}
+                      <motion.li 
+                        initial={false}
+                        className="list-none px-4 py-2 relative touch-pan-x bg-white"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex-shrink-0 text-black/20 mt-0.5">
+                            <Square className="h-5 w-5" />
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="הוסף פריט חדש..."
+                            className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/80 placeholder:text-black/40 focus:ring-0 p-0 min-w-0"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                onAddItem?.(category.id, e.currentTarget.value.trim())
+                                e.currentTarget.value = ''
+                              }
+                            }}
+                          />
+                        </div>
+                      </motion.li>
                     </ul>
                   </motion.div>
                 )}
