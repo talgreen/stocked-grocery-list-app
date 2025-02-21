@@ -1,8 +1,30 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Mic, X } from 'lucide-react'
+import { Mic } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BottomDrawer } from './ui/bottom-drawer'
+
+interface SpeechRecognitionEvent {
+  results: {
+    [index: number]: {
+      [index: number]: {
+        transcript: string
+      }
+    }
+  }
+}
+
+type SpeechRecognitionConstructor = new () => {
+  start(): void
+  onresult: (event: SpeechRecognitionEvent) => void
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: SpeechRecognitionConstructor
+    webkitSpeechRecognition: SpeechRecognitionConstructor
+  }
+}
 
 interface AddItemModalProps {
   onAdd: (item: string, comment: string) => void
@@ -19,7 +41,7 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition()
-        recognition.onresult = (event) => {
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
           const transcript = event.results[0][0].transcript
           setItem(transcript)
           setIsListening(false)
@@ -39,29 +61,15 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
       items.forEach(i => onAdd(i, comment.trim()))
       setItem('')
       setComment('')
+      onClose()
     }
   }
 
   return (
-    <motion.div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        className="bg-white rounded-lg w-full max-w-md shadow-xl"
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-      >
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-800">Add New Item</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors duration-200">
-            <X size={24} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+    <BottomDrawer isOpen={true} onClose={onClose}>
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold text-gray-800">Add New Item</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="item" className="block text-sm font-medium text-gray-700 mb-1">
               Item Name
@@ -72,9 +80,12 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
                 id="item"
                 value={item}
                 onChange={(e) => setItem(e.target.value)}
-                className="flex-grow border-gray-300 rounded-l-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2 text-sm"
+                className="flex-grow border-gray-300 rounded-l-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2 text-base"
                 placeholder="Enter item name (comma-separated for multiple)"
                 required
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
               />
               <button
                 type="button"
@@ -85,6 +96,7 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
               </button>
             </div>
           </div>
+          
           <div>
             <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1">
               Comment (optional)
@@ -94,10 +106,14 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2"
+              className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2 text-base"
               placeholder="Add a comment"
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
             />
           </div>
+
           <div className="flex justify-end space-x-2 pt-2">
             <button
               type="button"
@@ -114,8 +130,8 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
             </button>
           </div>
         </form>
-      </motion.div>
-    </motion.div>
+      </div>
+    </BottomDrawer>
   )
 }
 
