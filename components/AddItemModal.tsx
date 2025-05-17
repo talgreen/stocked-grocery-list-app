@@ -1,7 +1,7 @@
 'use client'
 
 import { Mic } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BottomDrawer } from './ui/bottom-drawer'
 
 interface SpeechRecognitionEvent {
@@ -35,6 +35,7 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
   const [item, setItem] = useState('')
   const [comment, setComment] = useState('')
   const [isListening, setIsListening] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isListening) {
@@ -54,6 +55,11 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
     }
   }, [isListening])
 
+  // Reset scroll position when modal opens
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0
+  }, [])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (item.trim()) {
@@ -67,7 +73,7 @@ export default function AddItemModal({ onAdd, onClose }: AddItemModalProps) {
 
   return (
     <BottomDrawer isOpen={true} onClose={onClose}>
-      <div className="space-y-6">
+      <div ref={contentRef} className="space-y-6 h-full overflow-y-auto">
         <h2 className="text-xl font-semibold text-gray-800">Add New Item</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
