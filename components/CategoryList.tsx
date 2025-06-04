@@ -11,11 +11,11 @@ interface CategoryListProps {
   categories: Category[]
   onToggleItem: (categoryId: number, itemId: number) => void
   onDeleteItem: (categoryId: number, itemId: number) => void
-  onEditItem: (categoryId: number, itemId: number, newComment: string) => void
   expandedCategories: number[]
   setExpandedCategories: React.Dispatch<React.SetStateAction<number[]>>
   onUpdateItemCategory: (itemId: number, newCategoryId: number) => void
   onAddItem?: (categoryId: number, name: string) => void
+  isSearchMode?: boolean
 }
 
 // Helper function to check if a category is completed
@@ -51,11 +51,11 @@ export default function CategoryList({
   categories, 
   onToggleItem, 
   onDeleteItem, 
-  onEditItem,
   onUpdateItemCategory,
   expandedCategories,
   setExpandedCategories,
-  onAddItem
+  onAddItem,
+  isSearchMode = false
 }: CategoryListProps) {
   const categoryRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
   const previousStates = useRef<{ [key: number]: number }>({})
@@ -190,31 +190,32 @@ export default function CategoryList({
                           categories={categories.filter(c => c.id !== category.id)}
                           onToggle={() => onToggleItem(category.id, item.id)}
                           onDelete={() => onDeleteItem(category.id, item.id)}
-                          onEdit={(newComment: string) => onEditItem(category.id, item.id, newComment)}
                           onUpdateCategory={(newCategoryId: number) => onUpdateItemCategory(item.id, newCategoryId)}
                         />
                       ))}
-                      <motion.li 
-                        initial={false}
-                        className="list-none px-4 py-2 relative touch-pan-x bg-white"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="flex-shrink-0 text-black/20 mt-0.5">
-                            <Square className="h-5 w-5" />
+                      {!isSearchMode && (
+                        <motion.li 
+                          initial={false}
+                          className="list-none px-4 py-2 relative touch-pan-x bg-white"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex-shrink-0 text-black/20 mt-0.5">
+                              <Square className="h-5 w-5" />
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="הוסף פריט חדש..."
+                              className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/80 placeholder:text-black/40 focus:ring-0 p-0 min-w-0"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                  onAddItem?.(category.id, e.currentTarget.value.trim())
+                                  e.currentTarget.value = ''
+                                }
+                              }}
+                            />
                           </div>
-                          <input
-                            type="text"
-                            placeholder="הוסף פריט חדש..."
-                            className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/80 placeholder:text-black/40 focus:ring-0 p-0 min-w-0"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                                onAddItem?.(category.id, e.currentTarget.value.trim())
-                                e.currentTarget.value = ''
-                              }
-                            }}
-                          />
-                        </div>
-                      </motion.li>
+                        </motion.li>
+                      )}
                     </ul>
                   </motion.div>
                 )}

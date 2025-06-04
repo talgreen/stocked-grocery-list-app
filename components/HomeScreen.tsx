@@ -4,13 +4,11 @@ import { createNewList, getList, updateList } from '@/lib/db'
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus } from 'lucide-react'
+import { Plus, Search, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
-import CategoryScroller from './CategoryScroller'
-import HorizontalLayout from './HorizontalLayout'
 import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
@@ -20,31 +18,63 @@ export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [showEmptyCategories, setShowEmptyCategories] = useState(false)
-  const [viewMode, setViewMode] = useState<'vertical' | 'horizontal'>('vertical')
+  const [searchQuery, setSearchQuery] = useState('')
   const modalRef = useRef<HTMLDivElement>(null)
   const params = useParams()
   const listId = (params?.listId as string) || 'default'
-  const scrollTimeout = useRef<NodeJS.Timeout>()
-  const [activeCategoryId, setActiveCategoryId] = useState<number>(1)
   const [isAllExpanded, setIsAllExpanded] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<number[]>([])
 
-  const HEADER_HEIGHT = 140
-
-  const handleCategoryChange = useCallback((categoryId: number) => {
-    setActiveCategoryId(categoryId);
+  // Filter items based on search query
+  const getSearchResults = () => {
+    if (!searchQuery.trim()) return []
     
-    const element = document.getElementById(`category-${categoryId}`);
-    if (element) {
-      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-      const offsetPosition = elementPosition - HEADER_HEIGHT;
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+    const results: Array<{
+      item: Item
+      category: Category
+      categoryId: number
+    }> = []
+    
+    categories.forEach(category => {
+      category.items.forEach(item => {
+        if (item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+          results.push({ item, category, categoryId: category.id })
+        }
+      })
+    })
+    
+    return results
+  }
+
+  const searchResults = getSearchResults()
+  const isSearchMode = searchQuery.trim().length > 0
+
+  // Group search results by category
+  const groupedSearchResults = searchResults.reduce((acc, { item, category, categoryId }) => {
+    if (!acc[categoryId]) {
+      acc[categoryId] = {
+        category,
+        items: []
+      }
     }
-  }, []);
+    acc[categoryId].items.push(item)
+    return acc
+  }, {} as Record<number, { category: Category; items: Item[] }>)
+
+  // Helper function to highlight matching text
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text
+    
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+    const parts = text.split(regex)
+    
+    return parts.map((part, index) => {
+      if (part.toLowerCase() === query.toLowerCase()) {
+        return <mark key={index} className="bg-yellow-200 rounded px-1">{part}</mark>
+      }
+      return part
+    })
+  }
 
   const handleAddItemWithCategory = async (item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string) => {
     // Create a new item object
@@ -146,19 +176,6 @@ export default function HomeScreen() {
     }
   }
 
-  const handleEditItem = (categoryId: number, itemId: number, newComment: string) => {
-    setCategories(categories.map(category =>
-      category.id === categoryId
-        ? {
-            ...category,
-            items: category.items.map(item =>
-              item.id === itemId ? { ...item, comment: newComment } : item
-            )
-          }
-        : category
-    ))
-  }
-
   const handleAddItem = async (categoryId: number, name: string) => {
     const category = categories.find(c => c.id === categoryId);
     if (!category) return;
@@ -199,49 +216,33 @@ export default function HomeScreen() {
       let itemToMove: Item | null = null;
       let sourceCategory: number | null = null;
 
-      // First pass: find the item and its source
-      categories.forEach(category => {
+      for (const category of categories) {
         const foundItem = category.items.find(item => item.id === itemId);
         if (foundItem) {
           itemToMove = foundItem;
           sourceCategory = category.id;
+          break;
         }
-      });
+      }
 
       if (!itemToMove || sourceCategory === null) {
         console.error('Item not found');
         return;
       }
 
-      // Second pass: create the new categories array
+      // Remove from source category and add to target category
       const updatedCategories = categories.map(category => {
-        // If this is the target category, add the item
-        if (category.id === newCategoryId) {
-          const currentItems = category.items;
-          // Split items into purchased and unpurchased
-          const purchasedItems = currentItems.filter(item => item.purchased);
-          const unpurchasedItems = currentItems.filter(item => !item.purchased);
-          
-          // Add the new item to unpurchased items
-          return {
-            ...category,
-            items: [
-              ...unpurchasedItems,
-              { ...itemToMove, categoryId: newCategoryId } as Item,
-              ...purchasedItems
-            ]
-          };
-        }
-        
-        // If this is the source category, remove the item
         if (category.id === sourceCategory) {
           return {
             ...category,
             items: category.items.filter(item => item.id !== itemId)
           };
+        } else if (category.id === newCategoryId) {
+          return {
+            ...category,
+            items: [...category.items.filter(item => !item.purchased), itemToMove, ...category.items.filter(item => item.purchased)]
+          };
         }
-
-        // Leave other categories unchanged
         return category;
       });
 
@@ -249,37 +250,39 @@ export default function HomeScreen() {
       await updateList(listId, updatedCategories);
     } catch (error) {
       console.error('Error updating item category:', error);
+      // Revert changes on error
     }
   };
 
-  const totalItems = categories.reduce((sum, category) => sum + category.items.length, 0)
-  const uncheckedItems = categories.reduce((sum, category) => sum + category.items.filter(item => !item.purchased).length, 0)
+  const uncheckedItems = categories.reduce((total, category) => 
+    total + category.items.filter(item => !item.purchased).length, 0
+  )
+  const totalItems = categories.reduce((total, category) => 
+    total + category.items.length, 0
+  )
 
   const handleToggleAll = () => {
+    if (isAllExpanded) {
+      setExpandedCategories([])
+    } else {
+      setExpandedCategories(categories.map(c => c.id))
+    }
     setIsAllExpanded(!isAllExpanded)
-    setExpandedCategories(isAllExpanded ? [] : categories.map(cat => cat.id))
   }
 
   useEffect(() => {
-    return () => {
-      if (scrollTimeout.current) {
-        clearTimeout(scrollTimeout.current)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
     async function initializeList() {
-      setIsLoading(true)
       try {
-        const data = await getList(listId)
-        if (data?.categories) {
-          setCategories(data.categories)
-          if (data.categories.length > 0) {
-            setActiveCategoryId(data.categories[0].id)
+        setIsLoading(true)
+        if (listId && listId !== 'default') {
+          const data = await getList(listId)
+          if (data) {
+            setCategories(data.categories)
+          } else {
+            await createNewList(listId, initialCategories)
+            setCategories(initialCategories)
           }
         } else {
-          await createNewList(listId, initialCategories)
           setCategories(initialCategories)
         }
       } catch (error) {
@@ -359,75 +362,131 @@ export default function HomeScreen() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setViewMode(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
-              className="p-2 hover:bg-black/5 rounded-lg transition-colors duration-200"
-            >
-              {viewMode === 'vertical' ? (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M3 9h18" />
-                  <path d="M3 15h18" />
-                </svg>
-              ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="7" height="18" rx="1" />
-                  <rect x="14" y="3" width="7" height="18" rx="1" />
-                </svg>
-              )}
-            </button>
             <ShareButton />
           </div>
         </header>
-        {viewMode === 'vertical' && (
-          <nav className="max-w-2xl mx-auto">
-            <div className="bg-white">
-              <CategoryScroller 
-                categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
-                onCategoryChange={handleCategoryChange}
-                activeCategoryId={activeCategoryId}
-              />
-              <ProgressHeader
-                uncheckedItems={uncheckedItems}
-                totalItems={totalItems}
-                isAllExpanded={isAllExpanded}
-                onToggleAll={handleToggleAll}
-                showEmptyCategories={showEmptyCategories}
-                onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
-              />
-            </div>
-          </nav>
-        )}
-      </div>
-      {viewMode === 'horizontal' && (
-        <div className="bg-white border-b border-black/5 shadow-sm sticky top-[calc(env(safe-area-inset-top)+3.5rem)] z-20">
-          <nav className="max-w-2xl mx-auto">
-            <HorizontalLayout
-              categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
-              onToggleItem={handleToggleItem}
-              onDeleteItem={handleDeleteItem}
-              onEditItem={handleEditItem}
-              onUpdateItemCategory={handleUpdateItemCategory}
-              activeCategoryId={activeCategoryId}
-              onCategoryChange={handleCategoryChange}
+        <nav className="max-w-2xl mx-auto">
+          <div className="bg-white">
+            <ProgressHeader
+              uncheckedItems={uncheckedItems}
+              totalItems={totalItems}
+              isAllExpanded={isAllExpanded}
+              onToggleAll={handleToggleAll}
+              showEmptyCategories={showEmptyCategories}
+              onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
             />
-          </nav>
-        </div>
-      )}
+            {/* Search Box */}
+            <div className="px-6 pb-4">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder="חפש פריטים..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 pr-10 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D]"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
       <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
-        {viewMode === 'vertical' && <div className="h-4" aria-hidden="true" />}
-        {viewMode === 'vertical' && (
+        <div className="h-4" aria-hidden="true" />
+        
+        {/* Search Results */}
+        {isSearchMode && (
+          <div className="space-y-4 mb-6">
+            {searchResults.length > 0 ? (
+              Object.values(groupedSearchResults).map(({ category, items }) => (
+                <div key={category.id} className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm">
+                  <div className="p-3 bg-gray-50 border-b border-gray-100">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span>{category.emoji}</span>
+                      <span>{category.name}</span>
+                    </div>
+                  </div>
+                  <div className="bg-white">
+                    {items.map((item, index) => (
+                      <div key={item.id} className={`px-4 py-2 ${index < items.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <motion.button
+                            onClick={() => handleToggleItem(category.id, item.id)}
+                            className={`flex-shrink-0 transition-colors duration-150 mt-0.5 ${
+                              item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
+                            }`}
+                            whileTap={{ scale: 0.9 }}
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.15 }}
+                          >
+                            {item.purchased ? (
+                              <div className="h-5 w-5">✓</div>
+                            ) : (
+                              <div className="h-5 w-5 border border-gray-300 rounded"></div>
+                            )}
+                          </motion.button>
+                          
+                          <div className="flex-1 min-w-0 flex items-center gap-2">
+                            <span className={`text-sm truncate ${
+                              item.purchased ? 'line-through text-black/40' : 'text-black/80'
+                            }`}>
+                              {highlightText(item.name, searchQuery)}
+                            </span>
+                            {item.comment && (
+                              <span className="text-xs text-black/40 truncate">
+                                ({item.comment})
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => handleDeleteItem(category.id, item.id)}
+                            className="flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="bg-white rounded-2xl p-8 text-center border border-black/5 shadow-sm">
+                <div className="text-4xl mb-4">🔍</div>
+                <h3 className="text-lg font-semibold text-black/80 mb-2">לא נמצאו תוצאות</h3>
+                <p className="text-sm text-black/60">
+                  נסה לחפש במילות מפתח אחרות
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Category List - Only show when not in search mode */}
+        {!isSearchMode && (
           <CategoryList 
             categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
             onToggleItem={handleToggleItem}
             onDeleteItem={handleDeleteItem}
-            onEditItem={handleEditItem}
             expandedCategories={expandedCategories}
             setExpandedCategories={setExpandedCategories}
             onUpdateItemCategory={handleUpdateItemCategory}
             onAddItem={handleAddItem}
+            isSearchMode={isSearchMode}
           />
         )}
+
         <AnimatePresence>
           {isAddFormOpen && (
             <motion.div

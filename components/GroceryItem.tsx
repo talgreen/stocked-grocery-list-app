@@ -1,12 +1,13 @@
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
 import { CheckSquare, MoreVertical, Square, Trash2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { Category } from '../types/categories'
 import { Item } from '../types/item'
 import PhotoModal from './PhotoModal'
 
@@ -15,13 +16,10 @@ interface GroceryItemProps {
   categories: Category[]
   onToggle: () => void
   onDelete: () => void
-  onEdit: (newComment: string) => void
   onUpdateCategory: (newCategoryId: number) => void
 }
 
-export default function GroceryItem({ item, categories, onToggle, onDelete, onEdit, onUpdateCategory }: GroceryItemProps) {
-  const [isEditingComment, setIsEditingComment] = useState(false)
-  const [editedComment, setEditedComment] = useState(item.comment || '')
+export default function GroceryItem({ item, categories, onToggle, onDelete, onUpdateCategory }: GroceryItemProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -29,28 +27,12 @@ export default function GroceryItem({ item, categories, onToggle, onDelete, onEd
   const x = useMotionValue(0)
   const itemRef = useRef<HTMLLIElement>(null)
 
-  useEffect(() => {
-    if (item.isNew && itemRef.current) {
-      itemRef.current.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'center'
-      })
-    }
-  }, [item.isNew])
-
   const handleDelete = () => {
     if (isDeleting) {
       onDelete()
     } else {
       setIsDeleting(true)
       setTimeout(() => setIsDeleting(false), 3000)
-    }
-  }
-
-  const handleCommentBlur = () => {
-    setIsEditingComment(false)
-    if (editedComment !== item.comment) {
-      onEdit(editedComment)
     }
   }
 
