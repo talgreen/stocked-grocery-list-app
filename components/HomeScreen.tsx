@@ -489,31 +489,33 @@ export default function HomeScreen() {
 
         <AnimatePresence>
           {isAddFormOpen && (
-            <motion.div
-              initial={{ height: "100vh", opacity: 0, y: "100%" }}
-              animate={{ height: "100vh", opacity: 1, y: 0 }}
-              exit={{ height: "100vh", opacity: 0, y: "100%" }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="bg-white fixed inset-0 z-50 overflow-hidden"
-              drag="y"
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.2}
-              onDragEnd={(e, { offset, velocity }) => {
-                const swipe = Math.abs(offset.y) * velocity.y
-                if (offset.y > 200 || swipe > 500) {
-                  setIsAddFormOpen(false)
-                }
-              }}
-            >
-              <div className="absolute w-12 h-1.5 bg-gray-300 rounded-full left-1/2 -translate-x-1/2 top-3" />
-              <div className="h-full overflow-y-auto p-6 pt-8">
-                <AddItemForm 
-                  onAdd={handleAddItemWithCategory}
-                  onClose={() => setIsAddFormOpen(false)}
-                  categories={categories}
-                />
-              </div>
-            </motion.div>
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsAddFormOpen(false)}
+                className="fixed inset-0 bg-black/50 z-50"
+              />
+              
+              {/* Modal */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 50 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 50 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                className="fixed inset-x-4 top-[10vh] bottom-[10vh] bg-white rounded-2xl z-50 overflow-hidden shadow-2xl max-w-md mx-auto"
+              >
+                <div className="h-full overflow-y-auto p-6">
+                  <AddItemForm 
+                    onAdd={handleAddItemWithCategory}
+                    onClose={() => setIsAddFormOpen(false)}
+                    categories={categories}
+                  />
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </main>
