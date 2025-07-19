@@ -1,14 +1,17 @@
 'use client'
 
 import { createNewList, getList, updateList } from '@/lib/db'
+import { OpenRouter } from '@/lib/openrouter'
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, Search, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
+import EditItemModal from './EditItemModal'
 import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
@@ -24,6 +27,9 @@ export default function HomeScreen() {
   const listId = (params?.listId as string) || 'default'
   const [isAllExpanded, setIsAllExpanded] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<number[]>([])
+  const [editingItem, setEditingItem] = useState<Item | null>(null)
+  const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
+  const [isQuickAddLoading, setIsQuickAddLoading] = useState(false)
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -77,6 +83,17 @@ export default function HomeScreen() {
   }
 
   const handleAddItemWithCategory = async (item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string) => {
+    // Check for duplicates first
+    if (checkDuplicateItem(item.name, item.comment || '')) {
+      toast.error('הפריט כבר קיים ברשימה', {
+        style: {
+          background: '#FFA726',
+          color: 'white',
+        }
+      });
+      return;
+    }
+
     // Create a new item object
     const newItem = {
       ...item,
@@ -210,48 +227,136 @@ export default function HomeScreen() {
     }
   };
 
-  const handleUpdateItemCategory = async (itemId: number, newCategoryId: number) => {
+  // Check if an item with the same name and description already exists
+  const checkDuplicateItem = (name: string, comment: string = '') => {
+    const trimmedName = name.trim().toLowerCase();
+    const trimmedComment = comment.trim().toLowerCase();
+    
+    for (const category of categories) {
+      for (const item of category.items) {
+        if (item.name.trim().toLowerCase() === trimmedName && 
+            (item.comment || '').trim().toLowerCase() === trimmedComment) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  // Handle Quick Add from search results
+  const handleQuickAddItem = async () => {
+    if (!searchQuery.trim()) return;
+
+    const itemName = searchQuery.trim();
+    
+    // Check for duplicates
+    if (checkDuplicateItem(itemName)) {
+      toast.error('הפריט כבר קיים ברשימה', {
+        style: {
+          background: '#FFA726',
+          color: 'white',
+        }
+      });
+      return;
+    }
+
+    setIsQuickAddLoading(true);
     try {
-      // First find which category currently has the item
-      let itemToMove: Item | null = null;
+      const result = await OpenRouter.categorize(itemName);
+      await handleAddItemWithCategory(
+        { name: itemName, comment: '' },
+        result.category,
+        result.emoji
+      );
+      
+      toast.success(`הפריט "${itemName}" נוסף לקטגוריה ${result.emoji} ${result.category}`);
+      
+      // Clear search and reset to show all items
+      setSearchQuery('');
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error('שגיאה בהוספת הפריט');
+    } finally {
+      setIsQuickAddLoading(false);
+    }
+  };
+
+  // Handle updating an existing item
+  const handleUpdateItem = async (itemId: number, name: string, comment: string, newCategoryId: number) => {
+    try {
+      // Find the item and its current category
+      let itemToUpdate: Item | null = null;
       let sourceCategory: number | null = null;
 
       for (const category of categories) {
         const foundItem = category.items.find(item => item.id === itemId);
         if (foundItem) {
-          itemToMove = foundItem;
+          itemToUpdate = foundItem;
           sourceCategory = category.id;
           break;
         }
       }
 
-      if (!itemToMove || sourceCategory === null) {
+      if (!itemToUpdate || sourceCategory === null) {
         console.error('Item not found');
         return;
       }
 
-      // Remove from source category and add to target category
-      const updatedCategories = categories.map(category => {
-        if (category.id === sourceCategory) {
-          return {
-            ...category,
-            items: category.items.filter(item => item.id !== itemId)
-          };
-        } else if (category.id === newCategoryId) {
-          return {
-            ...category,
-            items: [...category.items.filter(item => !item.purchased), itemToMove, ...category.items.filter(item => item.purchased)]
-          };
-        }
-        return category;
-      });
+      // Create updated item
+      const updatedItem = {
+        ...itemToUpdate,
+        name,
+        comment
+      };
+
+      let updatedCategories;
+
+      if (sourceCategory === newCategoryId) {
+        // Same category - just update the item
+        updatedCategories = categories.map(category => {
+          if (category.id === sourceCategory) {
+            return {
+              ...category,
+              items: category.items.map(item => 
+                item.id === itemId ? updatedItem : item
+              )
+            };
+          }
+          return category;
+        });
+      } else {
+        // Different category - move the item
+        updatedCategories = categories.map(category => {
+          if (category.id === sourceCategory) {
+            // Remove from source category
+            return {
+              ...category,
+              items: category.items.filter(item => item.id !== itemId)
+            };
+          } else if (category.id === newCategoryId) {
+            // Add to target category
+            return {
+              ...category,
+              items: [...category.items.filter(item => !item.purchased), updatedItem, ...category.items.filter(item => item.purchased)]
+            };
+          }
+          return category;
+        });
+      }
 
       setCategories(updatedCategories);
       await updateList(listId, updatedCategories);
+      toast.success('הפריט עודכן בהצלחה');
     } catch (error) {
-      console.error('Error updating item category:', error);
-      // Revert changes on error
+      console.error('Error updating item:', error);
+      toast.error('שגיאה בעדכון הפריט');
     }
+  };
+
+  // Handle opening edit modal
+  const handleEditItem = (item: Item, categoryId: number) => {
+    setEditingItem(item);
+    setEditingItemCategoryId(categoryId);
   };
 
   const uncheckedItems = categories.reduce((total, category) => 
@@ -465,9 +570,17 @@ export default function HomeScreen() {
               <div className="bg-white rounded-2xl p-8 text-center border border-black/5 shadow-sm">
                 <div className="text-4xl mb-4">🔍</div>
                 <h3 className="text-lg font-semibold text-black/80 mb-2">לא נמצאו תוצאות</h3>
-                <p className="text-sm text-black/60">
+                <p className="text-sm text-black/60 mb-4">
                   נסה לחפש במילות מפתח אחרות
                 </p>
+                <motion.button
+                  onClick={handleQuickAddItem}
+                  className="bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm"
+                  whileTap={{ scale: 0.95 }}
+                  disabled={isQuickAddLoading}
+                >
+                  {isQuickAddLoading ? 'מוסיף...' : `הוסף את ${searchQuery} לרשימה`}
+                </motion.button>
               </div>
             )}
           </div>
@@ -481,7 +594,7 @@ export default function HomeScreen() {
             onDeleteItem={handleDeleteItem}
             expandedCategories={expandedCategories}
             setExpandedCategories={setExpandedCategories}
-            onUpdateItemCategory={handleUpdateItemCategory}
+            onEditItem={handleEditItem}
             onAddItem={handleAddItem}
             isSearchMode={isSearchMode}
           />
@@ -512,6 +625,46 @@ export default function HomeScreen() {
                     onAdd={handleAddItemWithCategory}
                     onClose={() => setIsAddFormOpen(false)}
                     categories={categories}
+                  />
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {editingItem && editingItemCategoryId && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
+                  setEditingItem(null);
+                  setEditingItemCategoryId(null);
+                }}
+                className="fixed inset-0 bg-black/50 z-50"
+              />
+              
+              {/* Modal */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 50 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 50 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                className="fixed inset-x-4 top-[10vh] bottom-[10vh] bg-white rounded-2xl z-50 overflow-hidden shadow-2xl max-w-md mx-auto"
+              >
+                <div className="h-full overflow-y-auto p-6">
+                  <EditItemModal 
+                    item={editingItem}
+                    currentCategoryId={editingItemCategoryId}
+                    categories={categories}
+                    onSave={handleUpdateItem}
+                    onClose={() => {
+                      setEditingItem(null);
+                      setEditingItemCategoryId(null);
+                    }}
                   />
                 </div>
               </motion.div>

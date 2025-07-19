@@ -1,6 +1,7 @@
 'use client'
 
 import { Category } from '@/types/categories'
+import { Item } from '@/types/item'
 import confetti from 'canvas-confetti'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, ChevronDown, Square } from 'lucide-react'
@@ -13,7 +14,7 @@ interface CategoryListProps {
   onDeleteItem: (categoryId: number, itemId: number) => void
   expandedCategories: number[]
   setExpandedCategories: React.Dispatch<React.SetStateAction<number[]>>
-  onUpdateItemCategory: (itemId: number, newCategoryId: number) => void
+  onEditItem: (item: Item, categoryId: number) => void
   onAddItem?: (categoryId: number, name: string) => void
   isSearchMode?: boolean
 }
@@ -51,7 +52,7 @@ export default function CategoryList({
   categories, 
   onToggleItem, 
   onDeleteItem, 
-  onUpdateItemCategory,
+  onEditItem,
   expandedCategories,
   setExpandedCategories,
   onAddItem,
@@ -187,10 +188,10 @@ export default function CategoryList({
                         <GroceryItem
                           key={item.id}
                           item={item}
-                          categories={categories.filter(c => c.id !== category.id)}
+                          categoryId={category.id}
                           onToggle={() => onToggleItem(category.id, item.id)}
                           onDelete={() => onDeleteItem(category.id, item.id)}
-                          onUpdateCategory={(newCategoryId: number) => onUpdateItemCategory(item.id, newCategoryId)}
+                          onEdit={onEditItem}
                         />
                       ))}
                       {!isSearchMode && (

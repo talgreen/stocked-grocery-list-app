@@ -1,11 +1,11 @@
 'use client'
 
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 import { OpenRouter } from '@/lib/openrouter'
 import { Category } from '@/types/categories'
@@ -62,9 +62,32 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
     inputRef.current?.focus()
   }, [])
 
+  // Check if an item with the same name and description already exists
+  const checkDuplicateItem = (name: string, comment: string = '') => {
+    const trimmedName = name.trim().toLowerCase();
+    const trimmedComment = comment.trim().toLowerCase();
+    
+    for (const category of categories) {
+      for (const categoryItem of category.items) {
+        if (categoryItem.name.trim().toLowerCase() === trimmedName && 
+            (categoryItem.comment || '').trim().toLowerCase() === trimmedComment) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!item.trim()) return
+
+    // Check for duplicates first
+    if (checkDuplicateItem(item.trim(), comment.trim())) {
+      toast.warning('הפריט כבר קיים ברשימה');
+      onClose();
+      return;
+    }
 
     setIsLoading(true)
     try {

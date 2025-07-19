@@ -1,25 +1,18 @@
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
-import { CheckSquare, MoreVertical, Square, Trash2 } from 'lucide-react'
+import { CheckSquare, Edit, Square, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { Category } from '../types/categories'
 import { Item } from '../types/item'
 import PhotoModal from './PhotoModal'
 
 interface GroceryItemProps {
   item: Item
-  categories: Category[]
+  categoryId: number
   onToggle: () => void
   onDelete: () => void
-  onUpdateCategory: (newCategoryId: number) => void
+  onEdit: (item: Item, categoryId: number) => void
 }
 
-export default function GroceryItem({ item, categories, onToggle, onDelete, onUpdateCategory }: GroceryItemProps) {
+export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEdit }: GroceryItemProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -135,28 +128,12 @@ export default function GroceryItem({ item, categories, onToggle, onDelete, onUp
             )}
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex-shrink-0 p-1 hover:bg-black/5 rounded-lg">
-                <MoreVertical className="h-4 w-4 text-black/40" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="start" 
-              className="w-56 max-h-[300px] overflow-y-auto [direction:rtl] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track] [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar]:left-0 [&::-webkit-scrollbar]:!right-auto [&_*]:m-0"
-              sideOffset={5}
-            >
-              {categories.map((category) => (
-                <DropdownMenuItem
-                  key={category.id}
-                  onClick={() => onUpdateCategory(category.id)}
-                  className="text-right pr-3"
-                >
-                  {category.emoji} {category.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button 
+            onClick={() => onEdit(item, categoryId)}
+            className="flex-shrink-0 p-1 hover:bg-black/5 rounded-lg"
+          >
+            <Edit className="h-4 w-4 text-black/40" />
+          </button>
 
           <motion.button
             onClick={handleDelete}
