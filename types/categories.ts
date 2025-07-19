@@ -195,6 +195,12 @@ export const initialCategories: Category[] = [
     name: 'אחר',
     emoji: '📦',
     items: []
+  },
+  {
+    id: 17,
+    name: 'בית מרקחת',
+    emoji: '💊',
+    items: []
   }
 ]
 

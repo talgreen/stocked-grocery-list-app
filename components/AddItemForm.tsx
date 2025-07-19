@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useTabView } from '@/contexts/TabViewContext'
 import { OpenRouter } from '@/lib/openrouter'
 import { Category } from '@/types/categories'
 import type { Item } from '@/types/item'
@@ -57,17 +58,26 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
   const [isLoading, setIsLoading] = useState(false)
   const [categoryId, setCategoryId] = useState('auto')
   const inputRef = useRef<HTMLInputElement>(null)
+  const { activeTab } = useTabView()
 
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-  // Check if an item with the same name and description already exists
+  // Check if an item with the same name and description already exists in the current tab
   const checkDuplicateItem = (name: string, comment: string = '') => {
     const trimmedName = name.trim().toLowerCase();
     const trimmedComment = comment.trim().toLowerCase();
     
     for (const category of categories) {
+      // Only check categories relevant to the current tab
+      if (activeTab === 'grocery' && category.name === 'בית מרקחת') {
+        continue; // Skip pharmacy category when in grocery mode
+      }
+      if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') {
+        continue; // Skip non-pharmacy categories when in pharmacy mode
+      }
+      
       for (const categoryItem of category.items) {
         if (categoryItem.name.trim().toLowerCase() === trimmedName && 
             (categoryItem.comment || '').trim().toLowerCase() === trimmedComment) {
@@ -94,7 +104,11 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
       let category: string
       let emoji: string
 
-      if (categoryId === 'auto') {
+      if (activeTab === 'pharmacy') {
+        // For pharmacy mode, always use pharmacy category without smart categorization
+        category = 'בית מרקחת'
+        emoji = '💊'
+      } else if (categoryId === 'auto') {
         const result = await OpenRouter.categorize(`${item}${comment ? ` - ${comment}` : ''}`)
         category = result.category
         emoji = result.emoji
@@ -186,30 +200,32 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-              קטגוריה
-            </label>
-            <Select
-              value={categoryId}
-              onValueChange={setCategoryId}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center text-lg py-3">
-                <SelectValue placeholder="בחר קטגוריה" className="text-right" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto" className="flex flex-row-reverse">
-                  חכמה 🤖
-                </SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id.toString()} className="flex flex-row-reverse">
-                    {category.name} {category.emoji}
+          {activeTab !== 'pharmacy' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 mr-1">
+                קטגוריה
+              </label>
+              <Select
+                value={categoryId}
+                onValueChange={setCategoryId}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center text-lg py-3">
+                  <SelectValue placeholder="בחר קטגוריה" className="text-right" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto" className="flex flex-row-reverse">
+                    חכמה 🤖
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()} className="flex flex-row-reverse">
+                      {category.name} {category.emoji}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <motion.button

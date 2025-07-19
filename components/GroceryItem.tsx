@@ -130,7 +130,7 @@ export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEd
 
           <button 
             onClick={() => onEdit(item, categoryId)}
-            className="flex-shrink-0 p-1 hover:bg-black/5 rounded-lg"
+            className="flex-shrink-0 p-1 hover:bg-black/5 rounded-lg mt-0.5"
           >
             <Edit className="h-4 w-4 text-black/40" />
           </button>

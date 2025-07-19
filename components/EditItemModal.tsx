@@ -7,6 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
 import type { Item } from '@/types/item'
 import { motion } from 'framer-motion'
@@ -26,6 +27,7 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
   const [comment, setComment] = useState(item.comment || '')
   const [categoryId, setCategoryId] = useState(currentCategoryId.toString())
   const inputRef = useRef<HTMLInputElement>(null)
+  const { activeTab } = useTabView()
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -84,26 +86,28 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-              קטגוריה
-            </label>
-            <Select
-              value={categoryId}
-              onValueChange={setCategoryId}
-            >
-              <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center text-lg py-3">
-                <SelectValue placeholder="בחר קטגוריה" className="text-right" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id.toString()} className="flex flex-row-reverse">
-                    {category.name} {category.emoji}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {activeTab !== 'pharmacy' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 mr-1">
+                קטגוריה
+              </label>
+              <Select
+                value={categoryId}
+                onValueChange={setCategoryId}
+              >
+                <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center text-lg py-3">
+                  <SelectValue placeholder="בחר קטגוריה" className="text-right" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()} className="flex flex-row-reverse">
+                      {category.name} {category.emoji}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 mt-auto mb-6">

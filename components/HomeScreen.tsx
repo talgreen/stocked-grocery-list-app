@@ -1,5 +1,6 @@
 'use client'
 
+import { useTabView } from '@/contexts/TabViewContext'
 import { createNewList, getList, updateList } from '@/lib/db'
 import { OpenRouter } from '@/lib/openrouter'
 import { Category, initialCategories } from '@/types/categories'
@@ -15,6 +16,7 @@ import EditItemModal from './EditItemModal'
 import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>(initialCategories)
@@ -30,6 +32,7 @@ export default function HomeScreen() {
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
   const [isQuickAddLoading, setIsQuickAddLoading] = useState(false)
+  const { activeTab, setActiveTab } = useTabView()
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -42,6 +45,14 @@ export default function HomeScreen() {
     }> = []
     
     categories.forEach(category => {
+      // Filter categories based on active tab
+      if (activeTab === 'grocery' && category.name === 'בית מרקחת') {
+        return // Skip pharmacy category when in grocery mode
+      }
+      if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') {
+        return // Skip non-pharmacy categories when in pharmacy mode
+      }
+      
       category.items.forEach(item => {
         if (item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
           results.push({ item, category, categoryId: category.id })
@@ -227,12 +238,20 @@ export default function HomeScreen() {
     }
   };
 
-  // Check if an item with the same name and description already exists
+  // Check if an item with the same name and description already exists in the current tab
   const checkDuplicateItem = (name: string, comment: string = '') => {
     const trimmedName = name.trim().toLowerCase();
     const trimmedComment = comment.trim().toLowerCase();
     
     for (const category of categories) {
+      // Only check categories relevant to the current tab
+      if (activeTab === 'grocery' && category.name === 'בית מרקחת') {
+        continue; // Skip pharmacy category when in grocery mode
+      }
+      if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') {
+        continue; // Skip non-pharmacy categories when in pharmacy mode
+      }
+      
       for (const item of category.items) {
         if (item.name.trim().toLowerCase() === trimmedName && 
             (item.comment || '').trim().toLowerCase() === trimmedComment) {
@@ -260,16 +279,32 @@ export default function HomeScreen() {
       return;
     }
 
+    // Clear search immediately to switch back to normal view without flicker
+    setSearchQuery('');
+
     setIsQuickAddLoading(true);
     try {
-      const result = await OpenRouter.categorize(itemName);
+      let category: string;
+      let emoji: string;
+
+      if (activeTab === 'pharmacy') {
+        // For pharmacy mode, always use pharmacy category without smart categorization
+        category = 'בית מרקחת';
+        emoji = '💊';
+      } else {
+        // For grocery mode, use smart categorization
+        const result = await OpenRouter.categorize(itemName);
+        category = result.category;
+        emoji = result.emoji;
+      }
+
       await handleAddItemWithCategory(
         { name: itemName, comment: '' },
-        result.category,
-        result.emoji
+        category,
+        emoji
       );
       
-      toast.success(`הפריט "${itemName}" נוסף לקטגוריה ${result.emoji} ${result.category}`);
+      toast.success(`הפריט "${itemName}" נוסף לקטגוריה ${emoji} ${category}`);
       
       // Clear search and reset to show all items
       setSearchQuery('');
@@ -359,12 +394,24 @@ export default function HomeScreen() {
     setEditingItemCategoryId(categoryId);
   };
 
-  const uncheckedItems = categories.reduce((total, category) => 
-    total + category.items.filter(item => !item.purchased).length, 0
-  )
-  const totalItems = categories.reduce((total, category) => 
-    total + category.items.length, 0
-  )
+  const uncheckedItems = categories
+    .filter(category => {
+      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
+      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
+      return true
+    })
+    .reduce((total, category) => 
+      total + category.items.filter(item => !item.purchased).length, 0
+    )
+  const totalItems = categories
+    .filter(category => {
+      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
+      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
+      return true
+    })
+    .reduce((total, category) => 
+      total + category.items.length, 0
+    )
 
   const handleToggleAll = () => {
     if (isAllExpanded) {
@@ -472,6 +519,25 @@ export default function HomeScreen() {
         </header>
         <nav className="max-w-2xl mx-auto">
           <div className="bg-white">
+            {/* Tab Navigation */}
+            <div className="px-6 pt-4">
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'grocery' | 'pharmacy')}>
+                <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-lg">
+                  <TabsTrigger 
+                    value="pharmacy" 
+                    className="data-[state=active]:bg-[#FFB74D] data-[state=active]:text-white data-[state=active]:shadow-sm text-gray-600 font-medium transition-all duration-200"
+                  >
+                    בית מרקחת
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="grocery"
+                    className="data-[state=active]:bg-[#FFB74D] data-[state=active]:text-white data-[state=active]:shadow-sm text-gray-600 font-medium transition-all duration-200"
+                  >
+                    קניות
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
             <ProgressHeader
               uncheckedItems={uncheckedItems}
               totalItems={totalItems}
