@@ -100,10 +100,14 @@ export async function updateList(listId: string, categories: Category[]) {
       })
     } else {
       // Update existing list with only allowed fields
-      await setDoc(listRef, {
-        categories: sanitizedCategories,
-        updatedAt: timestamp
-      })
+      await setDoc(
+        listRef,
+        {
+          categories: sanitizedCategories,
+          updatedAt: timestamp
+        },
+        { merge: true }
+      )
     }
   } catch (error) {
     if (error instanceof FirebaseError) {
