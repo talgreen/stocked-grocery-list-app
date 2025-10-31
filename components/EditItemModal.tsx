@@ -13,12 +13,21 @@ import type { Item } from '@/types/item'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
 interface EditItemModalProps {
   item: Item
   currentCategoryId: number
   categories: Category[]
-  onSave: (itemId: number, name: string, comment: string, categoryId: number) => void
+  onSave: (
+    itemId: number,
+    name: string,
+    comment: string,
+    categoryId: number,
+    quantity: number | null,
+    unit: string | null,
+    price: number | null
+  ) => void
   onClose: () => void
 }
 
@@ -26,6 +35,9 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
   const [name, setName] = useState(item.name)
   const [comment, setComment] = useState(item.comment || '')
   const [categoryId, setCategoryId] = useState(currentCategoryId.toString())
+  const [quantity, setQuantity] = useState(item.quantity != null ? item.quantity.toString() : '')
+  const [unit, setUnit] = useState(item.unit || '')
+  const [price, setPrice] = useState(item.price != null ? item.price.toString() : '')
   const inputRef = useRef<HTMLInputElement>(null)
   const { activeTab } = useTabView()
 
@@ -37,7 +49,32 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
     e.preventDefault()
     if (!name.trim() || !categoryId) return
 
-    onSave(item.id, name.trim(), comment.trim(), parseInt(categoryId))
+    const normalizedQuantity = quantity.trim()
+      ? parseFloat(quantity.replace(',', '.'))
+      : null
+    const normalizedPrice = price.trim()
+      ? parseFloat(price.replace(',', '.'))
+      : null
+
+    if (normalizedQuantity !== null && Number.isNaN(normalizedQuantity)) {
+      toast.error('כמות לא תקינה')
+      return
+    }
+
+    if (normalizedPrice !== null && Number.isNaN(normalizedPrice)) {
+      toast.error('מחיר לא תקין')
+      return
+    }
+
+    onSave(
+      item.id,
+      name.trim(),
+      comment.trim(),
+      parseInt(categoryId),
+      normalizedQuantity,
+      unit.trim() || null,
+      normalizedPrice
+    )
     onClose()
   }
 
@@ -84,6 +121,48 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
               className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
               placeholder="הוסף הערה"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label htmlFor="edit-quantity" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
+                כמות
+              </label>
+              <input
+                type="text"
+                id="edit-quantity"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
+                placeholder="לדוגמה: 2 או 0.5"
+              />
+            </div>
+            <div>
+              <label htmlFor="edit-unit" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
+                יחידת מידה
+              </label>
+              <input
+                type="text"
+                id="edit-unit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
+                placeholder={'יחידה, ק"ג, ליטר'}
+              />
+            </div>
+            <div>
+              <label htmlFor="edit-price" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
+                מחיר משוער (₪)
+              </label>
+              <input
+                type="text"
+                id="edit-price"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
+                placeholder="לדוגמה: 12.90"
+              />
+            </div>
           </div>
 
           {activeTab !== 'pharmacy' && (

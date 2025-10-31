@@ -1,6 +1,7 @@
+import { formatCurrency } from '@/lib/utils'
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
 import { CheckSquare, Edit, Square, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Item } from '../types/item'
 import PhotoModal from './PhotoModal'
 
@@ -19,6 +20,36 @@ export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEd
 
   const x = useMotionValue(0)
   const itemRef = useRef<HTMLLIElement>(null)
+
+  const quantityLabel = useMemo(() => {
+    if (item.quantity === null || item.quantity === undefined) return null
+    return new Intl.NumberFormat('he-IL', {
+      maximumFractionDigits: 2
+    }).format(item.quantity)
+  }, [item.quantity])
+
+  const unitLabel = item.unit || ''
+
+  const priceLabel = useMemo(() => {
+    if (item.price === null || item.price === undefined) return null
+    const effectiveQuantity = item.quantity ?? 1
+    return formatCurrency(item.price * effectiveQuantity)
+  }, [item.price, item.quantity])
+
+  const metadataParts = useMemo(() => {
+    const parts: string[] = []
+    if (quantityLabel) {
+      parts.push(`${quantityLabel}${unitLabel ? ` ${unitLabel}` : ''}`)
+    } else if (unitLabel) {
+      parts.push(unitLabel)
+    }
+
+    if (priceLabel) {
+      parts.push(`≈ ${priceLabel}`)
+    }
+
+    return parts
+  }, [priceLabel, quantityLabel, unitLabel])
 
   const handleDelete = () => {
     if (isDeleting) {
@@ -115,16 +146,25 @@ export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEd
             </AnimatePresence>
           </motion.button>
           
-          <div className="flex-1 min-w-0 flex items-center gap-2">
-            <span className={`text-sm truncate ${
-              item.purchased ? 'line-through text-black/40' : 'text-black/80'
-            }`}>
+          <div className="flex-1 min-w-0">
+            <p
+              className={`text-sm truncate font-medium ${
+                item.purchased ? 'line-through text-black/40' : 'text-black/80'
+              }`}
+            >
               {item.name}
-            </span>
-            {item.comment && (
-              <span className="text-xs text-black/40 truncate">
-                ({item.comment})
-              </span>
+            </p>
+            {(metadataParts.length > 0 || item.comment) && (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                {metadataParts.length > 0 && (
+                  <span className={`${item.purchased ? 'text-black/30' : 'text-black/50'} text-xs`}>
+                    {metadataParts.join(' · ')}
+                  </span>
+                )}
+                {item.comment && (
+                  <span className={`${item.purchased ? 'text-black/30' : 'text-black/50'} text-xs truncate`}>{item.comment}</span>
+                )}
+              </div>
             )}
           </div>
 

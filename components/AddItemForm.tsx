@@ -55,6 +55,9 @@ const CartLoader = () => (
 export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormProps) {
   const [item, setItem] = useState('')
   const [comment, setComment] = useState('')
+  const [quantity, setQuantity] = useState('')
+  const [unit, setUnit] = useState('')
+  const [price, setPrice] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [categoryId, setCategoryId] = useState('auto')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -104,6 +107,25 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
       let category: string
       let emoji: string
 
+      const normalizedQuantity = quantity.trim()
+        ? parseFloat(quantity.replace(',', '.'))
+        : null
+      const normalizedPrice = price.trim()
+        ? parseFloat(price.replace(',', '.'))
+        : null
+
+      if (normalizedQuantity !== null && Number.isNaN(normalizedQuantity)) {
+        toast.error('כמות לא תקינה')
+        setIsLoading(false)
+        return
+      }
+
+      if (normalizedPrice !== null && Number.isNaN(normalizedPrice)) {
+        toast.error('מחיר לא תקין')
+        setIsLoading(false)
+        return
+      }
+
       if (activeTab === 'pharmacy') {
         // For pharmacy mode, always use pharmacy category without smart categorization
         category = 'בית מרקחת'
@@ -118,12 +140,25 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
         category = selectedCategory.name
         emoji = selectedCategory.emoji
       }
-      
-      onAdd({ name: item.trim(), comment: comment.trim() }, category, emoji)
+
+      onAdd(
+        {
+          name: item.trim(),
+          comment: comment.trim(),
+          quantity: normalizedQuantity,
+          unit: unit.trim() || null,
+          price: normalizedPrice
+        },
+        category,
+        emoji
+      )
       toast.success(`הפריט "${item}" נוסף לקטגוריה ${emoji} ${category}`)
-      
+
       setItem('')
       setComment('')
+      setQuantity('')
+      setUnit('')
+      setPrice('')
       setCategoryId('auto')
       onClose()
     } catch (error) {
@@ -198,6 +233,51 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
               placeholder="הוסף הערה"
               disabled={isLoading}
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
+                כמות
+              </label>
+              <input
+                type="text"
+                id="quantity"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
+                placeholder="לדוגמה: 2 או 0.5"
+                disabled={isLoading}
+              />
+            </div>
+            <div>
+              <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
+                יחידת מידה
+              </label>
+              <input
+                type="text"
+                id="unit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
+                placeholder={'יחידה, ק"ג, ליטר'}
+                disabled={isLoading}
+              />
+            </div>
+            <div>
+              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
+                מחיר משוער (₪)
+              </label>
+              <input
+                type="text"
+                id="price"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
+                placeholder="לדוגמה: 12.90"
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
           {activeTab !== 'pharmacy' && (

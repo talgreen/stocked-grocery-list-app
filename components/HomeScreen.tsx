@@ -1,14 +1,23 @@
 'use client'
 
 import { useTabView } from '@/contexts/TabViewContext'
-import { createNewList, getList, updateList } from '@/lib/db'
+import {
+  PresenceParticipant,
+  startPresenceSession,
+  subscribeToList,
+  subscribeToPresence,
+  updateList
+} from '@/lib/db'
 import { OpenRouter } from '@/lib/openrouter'
+import { listTemplates, TemplateItem } from '@/lib/templates'
+import { formatCurrency, generateFriendlyName } from '@/lib/utils'
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Search, X } from 'lucide-react'
-import { useParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { Plus, Search, Users, X } from 'lucide-react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'sonner'
 import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
@@ -27,12 +36,267 @@ export default function HomeScreen() {
   const modalRef = useRef<HTMLDivElement>(null)
   const params = useParams()
   const listId = (params?.listId as string) || 'default'
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const templateParam = searchParams.get('template')
+  const labelParam = searchParams.get('label')
+  const [listLabel, setListLabel] = useState('רשימה משותפת')
+  const [participantId, setParticipantId] = useState<string | null>(null)
+  const [displayName, setDisplayName] = useState('')
+  const [onlineParticipants, setOnlineParticipants] = useState<PresenceParticipant[]>([])
+  const presenceSessionRef = useRef<{ touch: () => Promise<void>; stop: () => Promise<void> } | null>(null)
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null)
+  const hasAppliedTemplateRef = useRef(false)
   const [isAllExpanded, setIsAllExpanded] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<number[]>([])
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
   const [isQuickAddLoading, setIsQuickAddLoading] = useState(false)
   const { activeTab, setActiveTab } = useTabView()
+
+  const mergeTemplateItems = (baseCategories: Category[], templateItems: TemplateItem[]) => {
+    let updatedCategories = baseCategories.map(category => ({
+      ...category,
+      items: category.items.map(item => ({ ...item }))
+    }))
+
+    let runningMaxId = updatedCategories.reduce((max, category) => Math.max(max, category.id), 0)
+
+    templateItems.forEach(templateItem => {
+      const matchingIndex = updatedCategories.findIndex(
+        category => category.name.toLowerCase() === templateItem.category.toLowerCase()
+      )
+
+      let targetCategory: Category
+
+      if (matchingIndex >= 0) {
+        targetCategory = updatedCategories[matchingIndex]
+      } else {
+        runningMaxId += 1
+        targetCategory = {
+          id: runningMaxId,
+          emoji: templateItem.emoji || '🛒',
+          name: templateItem.category,
+          items: []
+        }
+        updatedCategories = [...updatedCategories, targetCategory]
+      }
+
+      const alreadyExists = targetCategory.items.some(existingItem =>
+        existingItem.name.trim().toLowerCase() === templateItem.name.trim().toLowerCase()
+      )
+
+      if (alreadyExists) {
+        return
+      }
+
+      const newItem: Item = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        name: templateItem.name,
+        purchased: false,
+        comment: templateItem.comment || '',
+        quantity: templateItem.quantity ?? null,
+        unit: templateItem.unit ?? null,
+        price: templateItem.price ?? null
+      }
+
+      const updatedTarget = {
+        ...targetCategory,
+        items: [
+          ...targetCategory.items.filter(item => !item.purchased),
+          newItem,
+          ...targetCategory.items.filter(item => item.purchased)
+        ]
+      }
+
+      updatedCategories = updatedCategories.map(category =>
+        category.id === updatedTarget.id ? updatedTarget : category
+      )
+    })
+
+    return updatedCategories
+  }
+
+  useEffect(() => {
+    hasAppliedTemplateRef.current = false
+  }, [listId])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    let storedId = localStorage.getItem('stocked.presenceId')
+    if (!storedId) {
+      storedId = uuidv4()
+      localStorage.setItem('stocked.presenceId', storedId)
+    }
+    setParticipantId(storedId)
+
+    let storedName = localStorage.getItem('stocked.displayName')
+    if (!storedName) {
+      storedName = generateFriendlyName()
+      localStorage.setItem('stocked.displayName', storedName)
+    }
+    setDisplayName(storedName)
+  }, [])
+
+  useEffect(() => {
+    if (labelParam) {
+      setListLabel(labelParam)
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('stocked.recents')
+        let recents: Array<{ id: string; name: string; lastOpened: string; itemCount: number }> = []
+        try {
+          recents = raw ? JSON.parse(raw) : []
+        } catch (error) {
+          console.error('Failed to parse recents', error)
+        }
+        const existingIndex = recents.findIndex(entry => entry.id === listId)
+        if (existingIndex >= 0) {
+          recents[existingIndex].name = labelParam
+          localStorage.setItem('stocked.recents', JSON.stringify(recents))
+        }
+      }
+    } else if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('stocked.recents')
+      if (raw) {
+        try {
+          const recents: Array<{ id: string; name: string }> = JSON.parse(raw)
+          const match = recents.find(entry => entry.id === listId)
+          if (match && match.name) {
+            setListLabel(match.name)
+          }
+        } catch (error) {
+          console.error('Failed to parse recents', error)
+        }
+      }
+    }
+  }, [labelParam, listId])
+
+  useEffect(() => {
+    if (!listId) return
+
+    setIsLoading(true)
+    const unsubscribe = subscribeToList(
+      listId,
+      data => {
+        setCategories(data.categories)
+        setIsLoading(false)
+      },
+      () => setIsLoading(false)
+    )
+
+    return () => {
+      unsubscribe()
+    }
+  }, [listId])
+
+  useEffect(() => {
+    if (!listId || !participantId || !displayName) return
+
+    const unsubscribePresence = subscribeToPresence(listId, participants => {
+      setOnlineParticipants(participants)
+    })
+
+    let cancelled = false
+
+    startPresenceSession(listId, participantId, displayName)
+      .then(session => {
+        if (cancelled) {
+          session.stop()
+          return
+        }
+        presenceSessionRef.current = session
+        heartbeatRef.current = setInterval(() => {
+          session.touch().catch(error => console.error('Presence heartbeat failed', error))
+        }, 20000)
+      })
+      .catch(error => {
+        console.error('Failed to start presence session', error)
+      })
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        presenceSessionRef.current?.touch().catch(() => undefined)
+      }
+    }
+
+    const handleBeforeUnload = () => {
+      presenceSessionRef.current?.stop()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      cancelled = true
+      unsubscribePresence()
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current)
+        heartbeatRef.current = null
+      }
+      presenceSessionRef.current?.stop()
+      presenceSessionRef.current = null
+    }
+  }, [listId, participantId, displayName])
+
+  useEffect(() => {
+    if (!templateParam || isLoading || hasAppliedTemplateRef.current) return
+
+    const template = listTemplates.find(entry => entry.id === templateParam)
+    hasAppliedTemplateRef.current = true
+
+    if (!template) {
+      return
+    }
+
+    const hasItems = categories.some(category => category.items.length > 0)
+    if (!hasItems) {
+      const merged = mergeTemplateItems(categories, template.items)
+      setCategories(merged)
+      updateList(listId, merged)
+    }
+
+    const paramsCopy = new URLSearchParams(searchParams.toString())
+    paramsCopy.delete('template')
+    router.replace(`/share/${listId}${paramsCopy.toString() ? `?${paramsCopy.toString()}` : ''}`)
+  }, [templateParam, categories, isLoading, listId, router, searchParams])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || isLoading) return
+
+    const totalItemsCount = categories.reduce(
+      (sum, category) => sum + category.items.length,
+      0
+    )
+
+    const record = {
+      id: listId,
+      name: listLabel || 'רשימה משותפת',
+      lastOpened: new Date().toISOString(),
+      itemCount: totalItemsCount
+    }
+
+    const raw = localStorage.getItem('stocked.recents')
+    let recents: typeof record[] = []
+    if (raw) {
+      try {
+        recents = JSON.parse(raw)
+      } catch (error) {
+        console.error('Failed to parse recents', error)
+      }
+    }
+
+    const existingIndex = recents.findIndex(entry => entry.id === listId)
+    if (existingIndex >= 0) {
+      recents[existingIndex] = { ...recents[existingIndex], ...record }
+    } else {
+      recents.unshift(record)
+    }
+
+    localStorage.setItem('stocked.recents', JSON.stringify(recents.slice(0, 10)))
+  }, [categories, isLoading, listId, listLabel])
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -78,19 +342,75 @@ export default function HomeScreen() {
     return acc
   }, {} as Record<number, { category: Category; items: Item[] }>)
 
+  const activeParticipants = useMemo(() => {
+    const now = Date.now()
+    return onlineParticipants.filter(participant => now - participant.lastSeen.getTime() < 60000)
+  }, [onlineParticipants])
+
+  const participantNames = useMemo(
+    () =>
+      activeParticipants.map(participant =>
+        participantId && participant.id === participantId ? 'את/ה' : participant.displayName
+      ),
+    [activeParticipants, participantId]
+  )
+
+  const totalBudgetRemaining = useMemo(() => {
+    return categories.reduce((sum, category) => {
+      const categorySum = category.items.reduce((categoryTotal, item) => {
+        if (item.purchased) return categoryTotal
+        const price = item.price ?? 0
+        if (!price) return categoryTotal
+        const quantity = item.quantity ?? 1
+        return categoryTotal + price * quantity
+      }, 0)
+
+      return sum + categorySum
+    }, 0)
+  }, [categories])
+
+  const formattedBudget = useMemo(() => {
+    if (totalBudgetRemaining <= 0) return null
+    return formatCurrency(totalBudgetRemaining)
+  }, [totalBudgetRemaining])
+
   // Helper function to highlight matching text
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text
-    
+
     const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
     const parts = text.split(regex)
-    
+
     return parts.map((part, index) => {
       if (part.toLowerCase() === query.toLowerCase()) {
         return <mark key={index} className="bg-yellow-200 rounded px-1">{part}</mark>
       }
       return part
     })
+  }
+
+  const getItemMetadata = (item: Item) => {
+    const quantityLabel = item.quantity !== null && item.quantity !== undefined
+      ? new Intl.NumberFormat('he-IL', { maximumFractionDigits: 2 }).format(item.quantity)
+      : null
+    const unitLabel = item.unit || ''
+    const priceLabel = item.price !== null && item.price !== undefined
+      ? formatCurrency(item.price * (item.quantity ?? 1))
+      : null
+
+    const parts: string[] = []
+
+    if (quantityLabel) {
+      parts.push(`${quantityLabel}${unitLabel ? ` ${unitLabel}` : ''}`)
+    } else if (unitLabel) {
+      parts.push(unitLabel)
+    }
+
+    if (priceLabel) {
+      parts.push(`≈ ${priceLabel}`)
+    }
+
+    return parts.join(' · ')
   }
 
   const handleAddItemWithCategory = async (item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string) => {
@@ -112,6 +432,9 @@ export default function HomeScreen() {
       purchased: false,
       comment: item.comment || '',
       photo: item.photo || null,
+      quantity: item.quantity ?? null,
+      unit: item.unit ?? null,
+      price: item.price ?? null,
     };
 
     // Find existing category first
@@ -213,7 +536,10 @@ export default function HomeScreen() {
       name: name.trim(),
       purchased: false,
       comment: '',
-      categoryId
+      categoryId,
+      quantity: null,
+      unit: null,
+      price: null
     };
 
     const updatedCategories = categories.map(c => {
@@ -299,7 +625,7 @@ export default function HomeScreen() {
       }
 
       await handleAddItemWithCategory(
-        { name: itemName, comment: '' },
+        { name: itemName, comment: '', quantity: null, unit: null, price: null },
         category,
         emoji
       );
@@ -317,7 +643,15 @@ export default function HomeScreen() {
   };
 
   // Handle updating an existing item
-  const handleUpdateItem = async (itemId: number, name: string, comment: string, newCategoryId: number) => {
+  const handleUpdateItem = async (
+    itemId: number,
+    name: string,
+    comment: string,
+    newCategoryId: number,
+    quantity: number | null,
+    unit: string | null,
+    price: number | null
+  ) => {
     try {
       // Find the item and its current category
       let itemToUpdate: Item | null = null;
@@ -341,7 +675,10 @@ export default function HomeScreen() {
       const updatedItem = {
         ...itemToUpdate,
         name,
-        comment
+        comment,
+        quantity,
+        unit,
+        price
       };
 
       let updatedCategories;
@@ -423,35 +760,10 @@ export default function HomeScreen() {
   }
 
   useEffect(() => {
-    async function initializeList() {
-      try {
-        setIsLoading(true)
-        if (listId && listId !== 'default') {
-          const data = await getList(listId)
-          if (data) {
-            setCategories(data.categories)
-          } else {
-            await createNewList(listId, initialCategories)
-            setCategories(initialCategories)
-          }
-        } else {
-          setCategories(initialCategories)
-        }
-      } catch (error) {
-        console.error('Error initializing list:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    initializeList()
-  }, [listId])
-
-  useEffect(() => {
     if (isAddFormOpen) {
       // Small delay to ensure the modal is rendered
       setTimeout(() => {
-        modalRef.current?.scrollIntoView({ 
+        modalRef.current?.scrollIntoView({
           behavior: 'smooth',
           block: 'center'
         })
@@ -506,14 +818,30 @@ export default function HomeScreen() {
   return (
     <div className="min-h-screen bg-[#FDF6ED]">
       <div className="bg-white border-b border-black/5 shadow-sm sticky top-0 pt-safe z-30">
-        <header className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center">
-          <div className="flex items-center gap-2">
+        <header className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center gap-4">
+          <div className="flex flex-col items-start gap-1 text-right">
             <h1 className="text-2xl font-bold text-[#FFB74D] flex items-center gap-2">
               Stocked
               <SparkleIcon />
             </h1>
+            <span className="text-xs text-black/50 font-medium truncate max-w-[180px] sm:max-w-none">
+              {listLabel}
+            </span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-3">
+            {formattedBudget && (
+              <span className="text-xs bg-[#FFB74D]/10 text-[#FF9800] px-3 py-1 rounded-full font-medium">
+                תקציב נותר: {formattedBudget}
+              </span>
+            )}
+            {activeParticipants.length > 0 && (
+              <div className="flex items-center gap-2 bg-black/5 text-black/60 px-3 py-1 rounded-full text-xs max-w-[180px] sm:max-w-none">
+                <Users className="h-3.5 w-3.5" />
+                <span className="truncate" title={participantNames.join(', ')}>
+                  {participantNames.join(' · ')}
+                </span>
+              </div>
+            )}
             <ShareButton />
           </div>
         </header>
@@ -586,49 +914,60 @@ export default function HomeScreen() {
                     </div>
                   </div>
                   <div className="bg-white">
-                    {items.map((item, index) => (
-                      <div key={item.id} className={`px-4 py-2 ${index < items.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                        <div className="flex items-center gap-3 min-w-0">
-                          <motion.button
-                            onClick={() => handleToggleItem(category.id, item.id)}
-                            className={`flex-shrink-0 transition-colors duration-150 mt-0.5 ${
-                              item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
-                            }`}
-                            whileTap={{ scale: 0.9 }}
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.15 }}
-                          >
-                            {item.purchased ? (
-                              <div className="h-5 w-5">✓</div>
-                            ) : (
-                              <div className="h-5 w-5 border border-gray-300 rounded"></div>
-                            )}
-                          </motion.button>
-                          
-                          <div className="flex-1 min-w-0 flex items-center gap-2">
-                            <span className={`text-sm truncate ${
-                              item.purchased ? 'line-through text-black/40' : 'text-black/80'
-                            }`}>
-                              {highlightText(item.name, searchQuery)}
-                            </span>
-                            {item.comment && (
-                              <span className="text-xs text-black/40 truncate">
-                                ({item.comment})
-                              </span>
-                            )}
-                          </div>
+                    {items.map((item, index) => {
+                      const metadata = getItemMetadata(item)
 
-                          <button
-                            onClick={() => handleDeleteItem(category.id, item.id)}
-                            className="flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                      return (
+                        <div key={item.id} className={`px-4 py-2 ${index < items.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <motion.button
+                              onClick={() => handleToggleItem(category.id, item.id)}
+                              className={`flex-shrink-0 transition-colors duration-150 mt-0.5 ${
+                                item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
+                              }`}
+                              whileTap={{ scale: 0.9 }}
+                              whileHover={{ scale: 1.05 }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              {item.purchased ? (
+                                <div className="h-5 w-5">✓</div>
+                              ) : (
+                                <div className="h-5 w-5 border border-gray-300 rounded"></div>
+                              )}
+                            </motion.button>
+
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className={`text-sm truncate font-medium ${
+                                  item.purchased ? 'line-through text-black/40' : 'text-black/80'
+                                }`}
+                              >
+                                {highlightText(item.name, searchQuery)}
+                              </p>
+                              {(metadata || item.comment) && (
+                                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                                  {metadata && (
+                                    <span className={item.purchased ? 'text-black/30' : 'text-black/50'}>{metadata}</span>
+                                  )}
+                                  {item.comment && (
+                                    <span className={item.purchased ? 'text-black/30' : 'text-black/50'}>{item.comment}</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => handleDeleteItem(category.id, item.id)}
+                              className="flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               ))

@@ -5,5 +5,8 @@ export interface Item {
   comment?: string
   photo?: string | null
   categoryId?: number
+  quantity?: number | null
+  unit?: string | null
+  price?: number | null
 }
 
