@@ -1,7 +1,7 @@
 'use client'
 
 import { useTabView } from '@/contexts/TabViewContext'
-import { createNewList, getList, updateList } from '@/lib/db'
+import { subscribeToList, updateList } from '@/lib/db'
 import { OpenRouter } from '@/lib/openrouter'
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
@@ -423,28 +423,23 @@ export default function HomeScreen() {
   }
 
   useEffect(() => {
-    async function initializeList() {
-      try {
-        setIsLoading(true)
-        if (listId && listId !== 'default') {
-          const data = await getList(listId)
-          if (data) {
-            setCategories(data.categories)
-          } else {
-            await createNewList(listId, initialCategories)
-            setCategories(initialCategories)
-          }
-        } else {
-          setCategories(initialCategories)
-        }
-      } catch (error) {
-        console.error('Error initializing list:', error)
-      } finally {
+    setIsLoading(true)
+
+    const unsubscribe = subscribeToList(
+      listId,
+      data => {
+        setCategories(data.categories)
+        setIsLoading(false)
+      },
+      error => {
+        console.error('Error subscribing to list:', error)
         setIsLoading(false)
       }
-    }
+    )
 
-    initializeList()
+    return () => {
+      unsubscribe()
+    }
   }, [listId])
 
   useEffect(() => {

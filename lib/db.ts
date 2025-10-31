@@ -1,6 +1,6 @@
 import { Category, initialCategories } from '@/types/categories'
 import { FirebaseError } from 'firebase/app'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
 import { db } from './firebase'
 
@@ -114,4 +114,45 @@ export async function updateList(listId: string, categories: Category[]) {
     }
     throw error
   }
-} 
+}
+
+export function subscribeToList(
+  listId: string,
+  onData: (data: ListData) => void,
+  onError?: (error: Error) => void
+) {
+  const listRef = doc(db, 'lists', listId)
+
+  return onSnapshot(
+    listRef,
+    snapshot => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as ListData
+        const normalizedCategories = data.categories?.map(category => ({
+          ...category,
+          items:
+            category.items?.map(item => ({
+              ...item,
+              comment: item.comment || '',
+              photo: item.photo || null
+            })) ?? []
+        })) ?? []
+
+        onData({
+          ...data,
+          categories: normalizedCategories
+        })
+      } else {
+        onData({
+          categories: initialCategories,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+      }
+    },
+    error => {
+      console.error('Error subscribing to list:', error)
+      onError?.(error as Error)
+    }
+  )
+}
