@@ -1,30 +1,15 @@
 import { Category, initialCategories } from '@/types/categories'
 import { FirebaseError } from 'firebase/app'
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  onSnapshot,
-  serverTimestamp,
-  setDoc,
-  Timestamp
-} from 'firebase/firestore'
+import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
 import { db } from './firebase'
 
 
 
-export interface ListData {
+interface ListData {
   categories: Category[]
   createdAt: string
   updatedAt: string
-}
-
-export interface PresenceParticipant {
-  id: string
-  displayName: string
-  lastSeen: Date
 }
 
 export async function createNewList(listId: string, categories: Category[]) {
@@ -96,10 +81,7 @@ export async function updateList(listId: string, categories: Category[]) {
         name: item.name,
         purchased: item.purchased,
         comment: item.comment || '',
-        photo: item.photo || null,
-        quantity: item.quantity ?? null,
-        unit: item.unit ?? null,
-        price: item.price ?? null
+        photo: item.photo || null
       }))
     }))
 
@@ -148,14 +130,12 @@ export function subscribeToList(
         const data = snapshot.data() as ListData
         const normalizedCategories = data.categories?.map(category => ({
           ...category,
-          items: category.items?.map(item => ({
-            ...item,
-            comment: item.comment || '',
-            photo: item.photo || null,
-            quantity: item.quantity ?? null,
-            unit: item.unit ?? null,
-            price: item.price ?? null
-          })) ?? []
+          items:
+            category.items?.map(item => ({
+              ...item,
+              comment: item.comment || '',
+              photo: item.photo || null
+            })) ?? []
         })) ?? []
 
         onData({
@@ -175,67 +155,4 @@ export function subscribeToList(
       onError?.(error as Error)
     }
   )
-}
-
-export async function startPresenceSession(
-  listId: string,
-  participantId: string,
-  displayName: string
-) {
-  const presenceRef = doc(db, 'lists', listId, 'presence', participantId)
-
-  const touch = async () => {
-    await setDoc(
-      presenceRef,
-      {
-        displayName,
-        lastSeen: serverTimestamp()
-      },
-      { merge: true }
-    )
-  }
-
-  await touch()
-
-  const stop = async () => {
-    try {
-      await deleteDoc(presenceRef)
-    } catch (error) {
-      console.error('Error cleaning up presence:', error)
-    }
-  }
-
-  return {
-    touch,
-    stop
-  }
-}
-
-export function subscribeToPresence(
-  listId: string,
-  onParticipants: (participants: PresenceParticipant[]) => void
-) {
-  const presenceCollection = collection(db, 'lists', listId, 'presence')
-
-  return onSnapshot(presenceCollection, snapshot => {
-    const participants = snapshot.docs.map(docSnap => {
-      const data = docSnap.data() as {
-        displayName?: string
-        lastSeen?: Timestamp
-      }
-
-      const lastSeenField = data.lastSeen
-      const lastSeen = lastSeenField instanceof Timestamp
-        ? lastSeenField.toDate()
-        : new Date()
-
-      return {
-        id: docSnap.id,
-        displayName: data.displayName || 'משתמש',
-        lastSeen
-      }
-    })
-
-    onParticipants(participants)
-  })
 }
