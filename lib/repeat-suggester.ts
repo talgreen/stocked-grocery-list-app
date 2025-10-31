@@ -5,6 +5,8 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24
 const EWMA_BETA = 0.2
 const DEFAULT_EXPECTED_GAP_DAYS = 7
 const MIN_SCORE_THRESHOLD = 0.25
+const MIN_REAL_PURCHASE_GAP_DAYS = 0.5
+const MIN_DUE_SCORE_TO_SUGGEST = 0.45
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
@@ -43,6 +45,19 @@ export function updateItemPurchaseStats(item: Item, now: Date = new Date()): Ite
   if (lastPurchaseAt) {
     const deltaMs = now.getTime() - lastPurchaseAt.getTime()
     const deltaDays = Math.max(deltaMs / MS_PER_DAY, 0)
+
+    if (deltaDays < MIN_REAL_PURCHASE_GAP_DAYS) {
+      return {
+        ...item,
+        purchased: true,
+        lastPurchaseAt: item.lastPurchaseAt,
+        expectedGapDays: previousExpectedGap,
+        gapVariance: previousVariance,
+        decayedCount: previousDecayed,
+        purchaseCount: previousPurchaseCount,
+        snoozeUntil: null,
+      }
+    }
 
     updatedExpectedGap = previousExpectedGap + EWMA_BETA * (deltaDays - previousExpectedGap)
 
@@ -113,6 +128,10 @@ export function computeRepeatSuggestions(
 
       if (daysSinceLastPurchase > expectedGapDays * 6) {
         finalScore *= 0.1
+      }
+
+      if (dueScore < MIN_DUE_SCORE_TO_SUGGEST) {
+        return
       }
 
       finalScore = clamp(finalScore, 0, 1)
