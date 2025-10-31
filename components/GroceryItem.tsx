@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
 import { CheckSquare, Edit, Square, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { getDecayedPopularityScore, isStaple } from '@/lib/popularity'
 import { Item } from '../types/item'
 import PhotoModal from './PhotoModal'
 
@@ -19,6 +20,10 @@ export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEd
 
   const x = useMotionValue(0)
   const itemRef = useRef<HTMLLIElement>(null)
+
+  const now = Date.now()
+  const stapleScore = getDecayedPopularityScore(item, now)
+  const isStapleItem = isStaple(item, { now })
 
   const handleDelete = () => {
     if (isDeleting) {
@@ -124,6 +129,14 @@ export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEd
             {item.comment && (
               <span className="text-xs text-black/40 truncate">
                 ({item.comment})
+              </span>
+            )}
+            {isStapleItem && (
+              <span
+                className="text-[10px] font-semibold text-[#E65100] bg-[#FFF3E0] px-2 py-0.5 rounded-full flex-shrink-0"
+                title={`פריט קבוע (${item.totalPurchases ?? 0} רכישות, ציון ${Math.max(0, stapleScore).toFixed(2)})`}
+              >
+                קבוע
               </span>
             )}
           </div>

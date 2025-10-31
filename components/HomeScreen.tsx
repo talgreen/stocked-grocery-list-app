@@ -2,13 +2,14 @@
 
 import { useTabView } from '@/contexts/TabViewContext'
 import { createNewList, getList, updateList } from '@/lib/db'
+import { applyInteraction, findStapleCandidates, withDefaultMetrics } from '@/lib/popularity'
 import { OpenRouter } from '@/lib/openrouter'
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, Search, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
@@ -18,8 +19,60 @@ import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
+const PHARMACY_CATEGORY_NAME = 'בית מרקחת'
+
+function normalizeCategoriesWithMetrics(categories: Category[]): Category[] {
+  return categories.map(category => ({
+    ...category,
+    items: category.items.map(item => withDefaultMetrics(item)),
+  }))
+}
+
+function createItem(
+  id: number,
+  name: string,
+  extras: Partial<Item> = {}
+): Item {
+  const timestamp = new Date().toISOString()
+  const comment = typeof extras.comment === 'string'
+    ? extras.comment.trim()
+    : extras.comment ?? ''
+  return {
+    id,
+    name: name.trim(),
+    purchased: extras.purchased ?? false,
+    comment,
+    photo: extras.photo ?? null,
+    categoryId: extras.categoryId,
+    popularityScore: 0,
+    popularityUpdatedAt: timestamp,
+    totalPurchases: 0,
+    lastPurchasedAt: null,
+    interactionHistory: [],
+  }
+}
+
+function getAllowedCategoryIds(
+  categories: Category[],
+  activeTab: 'grocery' | 'pharmacy'
+): number[] {
+  return categories
+    .filter(category => {
+      if (activeTab === 'grocery') {
+        return category.name !== PHARMACY_CATEGORY_NAME
+      }
+      if (activeTab === 'pharmacy') {
+        return category.name === PHARMACY_CATEGORY_NAME
+      }
+      return true
+    })
+    .map(category => category.id)
+}
+
 export default function HomeScreen() {
-  const [categories, setCategories] = useState<Category[]>(initialCategories)
+  const [categories, setCategories] = useState<Category[]>(() =>
+    normalizeCategoriesWithMetrics(initialCategories)
+  )
   const [isLoading, setIsLoading] = useState(true)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [showEmptyCategories, setShowEmptyCategories] = useState(false)
@@ -32,7 +85,23 @@ export default function HomeScreen() {
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
   const [isQuickAddLoading, setIsQuickAddLoading] = useState(false)
+  const [isStaplesUnchecking, setIsStaplesUnchecking] = useState(false)
   const { activeTab, setActiveTab } = useTabView()
+
+  const visibleCategoryIds = useMemo(
+    () => getAllowedCategoryIds(categories, activeTab),
+    [categories, activeTab]
+  )
+
+  const stapleCandidates = useMemo(() => {
+    if (visibleCategoryIds.length === 0) {
+      return []
+    }
+
+    return findStapleCandidates(categories, {
+      allowedCategoryIds: new Set(visibleCategoryIds),
+    })
+  }, [categories, visibleCategoryIds])
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -46,10 +115,10 @@ export default function HomeScreen() {
     
     categories.forEach(category => {
       // Filter categories based on active tab
-      if (activeTab === 'grocery' && category.name === 'בית מרקחת') {
+      if (activeTab === 'grocery' && category.name === PHARMACY_CATEGORY_NAME) {
         return // Skip pharmacy category when in grocery mode
       }
-      if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') {
+      if (activeTab === 'pharmacy' && category.name !== PHARMACY_CATEGORY_NAME) {
         return // Skip non-pharmacy categories when in pharmacy mode
       }
       
@@ -105,20 +174,11 @@ export default function HomeScreen() {
       return;
     }
 
-    // Create a new item object
-    const newItem = {
-      ...item,
-      id: Date.now(),
-      purchased: false,
-      comment: item.comment || '',
-      photo: item.photo || null,
-    };
-
     // Find existing category first
     let updatedCategories = [...categories];
     let categoryId: number;
 
-    const existingCategory = categories.find(c => 
+    const existingCategory = categories.find(c =>
       c.name.toLowerCase() === categoryName.toLowerCase()
     );
 
@@ -138,6 +198,12 @@ export default function HomeScreen() {
       updatedCategories.push(newCategory);
       categoryId = newCategory.id;
     }
+
+    const newItem = createItem(Date.now(), item.name, {
+      comment: item.comment ?? '',
+      photo: item.photo ?? null,
+      categoryId,
+    });
 
     // Add the new item to the appropriate category
     updatedCategories = updatedCategories.map(category => {
@@ -160,15 +226,22 @@ export default function HomeScreen() {
   };
 
   const handleToggleItem = async (categoryId: number, itemId: number) => {
+    const timestamp = Date.now()
     const updatedCategories = categories.map(category =>
       category.id === categoryId
         ? {
             ...category,
-            items: category.items.map(item =>
-              item.id === itemId
-                ? { ...item, purchased: !item.purchased }
-                : item
-            ).sort((a, b) => (a.purchased === b.purchased) ? 0 : a.purchased ? 1 : -1)
+            items: category.items
+              .map(item => {
+                if (item.id !== itemId) {
+                  return item
+                }
+
+                const toggled = { ...item, purchased: !item.purchased }
+                const interactionType = toggled.purchased ? 'purchase' : 'reset'
+                return applyInteraction(toggled, interactionType, timestamp)
+              })
+              .sort((a, b) => (a.purchased === b.purchased) ? 0 : a.purchased ? 1 : -1)
           }
         : category
     )
@@ -182,6 +255,64 @@ export default function HomeScreen() {
         console.error('Error updating list:', error)
         setCategories(categories)
       }
+    }
+  }
+
+  const handleBulkUncheckStaples = async () => {
+    if (isStaplesUnchecking) {
+      return
+    }
+
+    if (stapleCandidates.length === 0) {
+      toast.info('אין פריטים קבועים לסמן כרגע')
+      return
+    }
+
+    setIsStaplesUnchecking(true)
+    const timestamp = Date.now()
+    const previousCategories = categories
+    const staplesByCategory = new Map<number, Set<number>>()
+
+    stapleCandidates.forEach(({ categoryId, item }) => {
+      if (!staplesByCategory.has(categoryId)) {
+        staplesByCategory.set(categoryId, new Set())
+      }
+      staplesByCategory.get(categoryId)!.add(item.id)
+    })
+
+    const updatedCategories = categories.map(category => {
+      const ids = staplesByCategory.get(category.id)
+      if (!ids) {
+        return category
+      }
+
+      return {
+        ...category,
+        items: category.items
+          .map(item => {
+            if (!ids.has(item.id)) {
+              return item
+            }
+            const toggled = { ...item, purchased: false }
+            return applyInteraction(toggled, 'reset', timestamp)
+          })
+          .sort((a, b) => (a.purchased === b.purchased) ? 0 : a.purchased ? 1 : -1)
+      }
+    })
+
+    setCategories(updatedCategories)
+
+    try {
+      if (listId) {
+        await updateList(listId, updatedCategories)
+      }
+      toast.success(`הסרנו סימון מ-${stapleCandidates.length} פריטים קבועים`)
+    } catch (error) {
+      console.error('Error bulk resetting staples:', error)
+      toast.error('שגיאה בהסרת הסימון מהפריטים הקבועים')
+      setCategories(previousCategories)
+    } finally {
+      setIsStaplesUnchecking(false)
     }
   }
 
@@ -208,13 +339,10 @@ export default function HomeScreen() {
     const category = categories.find(c => c.id === categoryId);
     if (!category) return;
 
-    const newItem = {
-      id: Date.now(),
-      name: name.trim(),
-      purchased: false,
+    const newItem = createItem(Date.now(), name, {
       comment: '',
       categoryId
-    };
+    });
 
     const updatedCategories = categories.map(c => {
       if (c.id === categoryId) {
@@ -245,10 +373,10 @@ export default function HomeScreen() {
     
     for (const category of categories) {
       // Only check categories relevant to the current tab
-      if (activeTab === 'grocery' && category.name === 'בית מרקחת') {
+      if (activeTab === 'grocery' && category.name === PHARMACY_CATEGORY_NAME) {
         continue; // Skip pharmacy category when in grocery mode
       }
-      if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') {
+      if (activeTab === 'pharmacy' && category.name !== PHARMACY_CATEGORY_NAME) {
         continue; // Skip non-pharmacy categories when in pharmacy mode
       }
       
@@ -289,7 +417,7 @@ export default function HomeScreen() {
 
       if (activeTab === 'pharmacy') {
         // For pharmacy mode, always use pharmacy category without smart categorization
-        category = 'בית מרקחת';
+        category = PHARMACY_CATEGORY_NAME;
         emoji = '💊';
       } else {
         // For grocery mode, use smart categorization
@@ -396,8 +524,8 @@ export default function HomeScreen() {
 
   const uncheckedItems = categories
     .filter(category => {
-      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
-      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
+      if (activeTab === 'grocery') return category.name !== PHARMACY_CATEGORY_NAME
+      if (activeTab === 'pharmacy') return category.name === PHARMACY_CATEGORY_NAME
       return true
     })
     .reduce((total, category) => 
@@ -405,8 +533,8 @@ export default function HomeScreen() {
     )
   const totalItems = categories
     .filter(category => {
-      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
-      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
+      if (activeTab === 'grocery') return category.name !== PHARMACY_CATEGORY_NAME
+      if (activeTab === 'pharmacy') return category.name === PHARMACY_CATEGORY_NAME
       return true
     })
     .reduce((total, category) => 
@@ -429,13 +557,13 @@ export default function HomeScreen() {
         if (listId && listId !== 'default') {
           const data = await getList(listId)
           if (data) {
-            setCategories(data.categories)
+            setCategories(normalizeCategoriesWithMetrics(data.categories))
           } else {
             await createNewList(listId, initialCategories)
-            setCategories(initialCategories)
+            setCategories(normalizeCategoriesWithMetrics(initialCategories))
           }
         } else {
-          setCategories(initialCategories)
+          setCategories(normalizeCategoriesWithMetrics(initialCategories))
         }
       } catch (error) {
         console.error('Error initializing list:', error)
@@ -545,6 +673,9 @@ export default function HomeScreen() {
               onToggleAll={handleToggleAll}
               showEmptyCategories={showEmptyCategories}
               onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
+              stapleCount={stapleCandidates.length}
+              onBulkUncheckStaples={handleBulkUncheckStaples}
+              isBulkUncheckingStaples={isStaplesUnchecking}
             />
             {/* Search Box */}
             <div className="px-6 pb-4">
