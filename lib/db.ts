@@ -81,7 +81,15 @@ export async function updateList(listId: string, categories: Category[]) {
         name: item.name,
         purchased: item.purchased,
         comment: item.comment || '',
-        photo: item.photo || null
+        photo: item.photo || null,
+        popularityScore: item.popularityScore ?? 0,
+        popularityUpdatedAt: item.popularityUpdatedAt ?? null,
+        totalPurchases: item.totalPurchases ?? 0,
+        lastPurchasedAt: item.lastPurchasedAt ?? null,
+        interactionHistory: item.interactionHistory?.map(interaction => ({
+          type: interaction.type,
+          at: interaction.at,
+        })) ?? []
       }))
     }))
 
