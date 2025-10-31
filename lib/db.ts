@@ -81,7 +81,25 @@ export async function updateList(listId: string, categories: Category[]) {
         name: item.name,
         purchased: item.purchased,
         comment: item.comment || '',
-        photo: item.photo || null
+        photo: item.photo || null,
+        lastPurchaseAt: item.lastPurchaseAt || null,
+        expectedGapDays:
+          typeof item.expectedGapDays === 'number' && Number.isFinite(item.expectedGapDays)
+            ? item.expectedGapDays
+            : null,
+        gapVariance:
+          typeof item.gapVariance === 'number' && Number.isFinite(item.gapVariance)
+            ? item.gapVariance
+            : null,
+        decayedCount:
+          typeof item.decayedCount === 'number' && Number.isFinite(item.decayedCount)
+            ? item.decayedCount
+            : 0,
+        purchaseCount:
+          typeof item.purchaseCount === 'number' && Number.isFinite(item.purchaseCount)
+            ? item.purchaseCount
+            : 0,
+        snoozeUntil: item.snoozeUntil || null
       }))
     }))
 

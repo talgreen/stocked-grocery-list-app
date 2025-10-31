@@ -17,6 +17,7 @@ next-env.d.ts
 # Production
 /build
 /dist
+/dist-test
 
 # Environment files
 .env
