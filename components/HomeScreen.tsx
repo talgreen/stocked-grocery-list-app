@@ -3,12 +3,13 @@
 import { useTabView } from '@/contexts/TabViewContext'
 import { createNewList, getList, updateList } from '@/lib/db'
 import { OpenRouter } from '@/lib/openrouter'
+import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-suggester'
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, Search, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
@@ -16,7 +17,10 @@ import EditItemModal from './EditItemModal'
 import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
+import RepeatSuggestions from './RepeatSuggestions'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24
 
 export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>(initialCategories)
@@ -78,6 +82,16 @@ export default function HomeScreen() {
     return acc
   }, {} as Record<number, { category: Category; items: Item[] }>)
 
+  const repeatSuggestions = useMemo(() => {
+    const relevantCategories = categories.filter(category => {
+      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
+      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
+      return true
+    })
+
+    return computeRepeatSuggestions(relevantCategories)
+  }, [categories, activeTab])
+
   // Helper function to highlight matching text
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text
@@ -106,12 +120,18 @@ export default function HomeScreen() {
     }
 
     // Create a new item object
-    const newItem = {
+    const newItem: Item = {
       ...item,
       id: Date.now(),
       purchased: false,
       comment: item.comment || '',
       photo: item.photo || null,
+      lastPurchaseAt: null,
+      expectedGapDays: null,
+      gapVariance: null,
+      decayedCount: 0,
+      purchaseCount: 0,
+      snoozeUntil: null,
     };
 
     // Find existing category first
@@ -160,21 +180,69 @@ export default function HomeScreen() {
   };
 
   const handleToggleItem = async (categoryId: number, itemId: number) => {
-    const updatedCategories = categories.map(category =>
-      category.id === categoryId
-        ? {
-            ...category,
-            items: category.items.map(item =>
-              item.id === itemId
-                ? { ...item, purchased: !item.purchased }
-                : item
-            ).sort((a, b) => (a.purchased === b.purchased) ? 0 : a.purchased ? 1 : -1)
+    const now = new Date()
+    const updatedCategories = categories.map(category => {
+      if (category.id !== categoryId) return category
+
+      const updatedItems = category.items
+        .map(item => {
+          if (item.id !== itemId) {
+            return item
           }
-        : category
-    )
+
+          if (item.purchased) {
+            return {
+              ...item,
+              purchased: false,
+              snoozeUntil: null,
+            }
+          }
+
+          return updateItemPurchaseStats(item, now)
+        })
+        .sort((a, b) => (a.purchased === b.purchased ? 0 : a.purchased ? 1 : -1))
+
+      return {
+        ...category,
+        items: updatedItems,
+      }
+    })
 
     setCategories(updatedCategories)
-    
+
+    if (listId) {
+      try {
+        await updateList(listId, updatedCategories)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        setCategories(categories)
+      }
+    }
+  }
+
+  const handleSnoozeItem = async (categoryId: number, itemId: number, days: number) => {
+    if (days <= 0) return
+
+    const snoozeUntil = new Date(Date.now() + days * MS_PER_DAY).toISOString()
+
+    const updatedCategories = categories.map(category => {
+      if (category.id !== categoryId) return category
+
+      return {
+        ...category,
+        items: category.items.map(item =>
+          item.id === itemId
+            ? {
+                ...item,
+                snoozeUntil,
+              }
+            : item
+        ),
+      }
+    })
+
+    setCategories(updatedCategories)
+
     if (listId) {
       try {
         await updateList(listId, updatedCategories)
@@ -208,12 +276,18 @@ export default function HomeScreen() {
     const category = categories.find(c => c.id === categoryId);
     if (!category) return;
 
-    const newItem = {
+    const newItem: Item = {
       id: Date.now(),
       name: name.trim(),
       purchased: false,
       comment: '',
-      categoryId
+      categoryId,
+      lastPurchaseAt: null,
+      expectedGapDays: null,
+      gapVariance: null,
+      decayedCount: 0,
+      purchaseCount: 0,
+      snoozeUntil: null,
     };
 
     const updatedCategories = categories.map(c => {
@@ -652,9 +726,19 @@ export default function HomeScreen() {
           </div>
         )}
 
+        {!isSearchMode && repeatSuggestions.length > 0 && (
+          <div className="mb-6">
+            <RepeatSuggestions
+              suggestions={repeatSuggestions}
+              onUncheck={handleToggleItem}
+              onSnooze={handleSnoozeItem}
+            />
+          </div>
+        )}
+
         {/* Category List - Only show when not in search mode */}
         {!isSearchMode && (
-          <CategoryList 
+          <CategoryList
             categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
             onToggleItem={handleToggleItem}
             onDeleteItem={handleDeleteItem}
