@@ -1,5 +1,5 @@
-import { Category } from '@/types/categories'
-import { Item } from '@/types/item'
+import { Category } from '../types/categories'
+import { Item } from '../types/item'
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 const EWMA_BETA = 0.2
