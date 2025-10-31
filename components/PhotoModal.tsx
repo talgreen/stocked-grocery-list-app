@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 
 interface PhotoModalProps {
   photoUrl: string
@@ -11,9 +12,18 @@ export default function PhotoModal({ photoUrl, onClose }: PhotoModalProps) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const img = new Image()
-    img.onload = () => setIsLoading(false)
-    img.src = photoUrl
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    setIsLoading(true)
+    const preloadImage = new window.Image()
+    preloadImage.onload = () => setIsLoading(false)
+    preloadImage.src = photoUrl
+
+    return () => {
+      preloadImage.onload = null
+    }
   }, [photoUrl])
 
   return (
@@ -38,7 +48,16 @@ export default function PhotoModal({ photoUrl, onClose }: PhotoModalProps) {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
               </div>
             ) : (
-              <img src={photoUrl} alt="Item" className="w-full h-auto" />
+              <div className="relative w-full min-h-[16rem] max-h-[70vh]">
+                <Image
+                  src={photoUrl}
+                  alt="Item"
+                  fill
+                  sizes="(max-width: 768px) 80vw, 640px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
             )}
             <button
               onClick={onClose}
