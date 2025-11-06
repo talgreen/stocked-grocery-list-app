@@ -3,7 +3,7 @@
 import { useTabView } from '@/contexts/TabViewContext'
 import { subscribeToList, updateList } from '@/lib/db'
 import { OpenRouter } from '@/lib/openrouter'
-import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-suggester'
+import { computeNextRunSuggestions, computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-suggester'
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -18,6 +18,7 @@ import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
 import RepeatSuggestions from './RepeatSuggestions'
+import NextRunPlanner from './NextRunPlanner'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
@@ -82,15 +83,27 @@ export default function HomeScreen() {
     return acc
   }, {} as Record<number, { category: Category; items: Item[] }>)
 
-  const repeatSuggestions = useMemo(() => {
-    const relevantCategories = categories.filter(category => {
+  const relevantCategories = useMemo(() => {
+    return categories.filter(category => {
       if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
       if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
       return true
     })
-
-    return computeRepeatSuggestions(relevantCategories)
   }, [categories, activeTab])
+
+  const repeatSuggestions = useMemo(() => {
+    return computeRepeatSuggestions(relevantCategories)
+  }, [relevantCategories])
+
+  const nextRunSuggestions = useMemo(() => {
+    if (relevantCategories.length === 0) return []
+
+    const repeatKeys = new Set(
+      repeatSuggestions.map(suggestion => `${suggestion.categoryId}-${suggestion.item.id}`)
+    )
+
+    return computeNextRunSuggestions(relevantCategories, repeatKeys)
+  }, [relevantCategories, repeatSuggestions])
 
   // Helper function to highlight matching text
   const highlightText = (text: string, query: string) => {
@@ -468,24 +481,14 @@ export default function HomeScreen() {
     setEditingItemCategoryId(categoryId);
   };
 
-  const uncheckedItems = categories
-    .filter(category => {
-      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
-      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
-      return true
-    })
-    .reduce((total, category) => 
-      total + category.items.filter(item => !item.purchased).length, 0
-    )
-  const totalItems = categories
-    .filter(category => {
-      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
-      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
-      return true
-    })
-    .reduce((total, category) => 
-      total + category.items.length, 0
-    )
+  const uncheckedItems = relevantCategories.reduce(
+    (total, category) => total + category.items.filter(item => !item.purchased).length,
+    0
+  )
+  const totalItems = relevantCategories.reduce(
+    (total, category) => total + category.items.length,
+    0
+  )
 
   const handleToggleAll = () => {
     if (isAllExpanded) {
@@ -726,6 +729,16 @@ export default function HomeScreen() {
             <RepeatSuggestions
               suggestions={repeatSuggestions}
               onUncheck={handleToggleItem}
+              onSnooze={handleSnoozeItem}
+            />
+          </div>
+        )}
+
+        {!isSearchMode && nextRunSuggestions.length > 0 && (
+          <div className="mb-6">
+            <NextRunPlanner
+              suggestions={nextRunSuggestions}
+              onPromote={handleToggleItem}
               onSnooze={handleSnoozeItem}
             />
           </div>
