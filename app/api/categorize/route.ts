@@ -46,7 +46,7 @@ export async function POST(request: Request) {
           content: `המוצר: ${itemName}`
         }
       ],
-      model: "gpt-4o-mini",
+      model: "gpt-5.2-xhigh",
       temperature: 0.3
     })
 
