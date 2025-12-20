@@ -36,6 +36,7 @@ export default function HomeScreen() {
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
   const [isQuickAddLoading, setIsQuickAddLoading] = useState(false)
+  const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
   const { activeTab, setActiveTab } = useTabView()
 
   // Filter items based on search query
@@ -172,6 +173,10 @@ export default function HomeScreen() {
 
     try {
       setCategories(updatedCategories);
+      setExpandedCategories((prev) => (
+        prev.includes(categoryId) ? prev : [...prev, categoryId]
+      ))
+      setPendingScrollItemId(newItem.id)
       await updateList(listId, updatedCategories);
     } catch (error) {
       console.error('Error updating list:', error);
@@ -180,6 +185,9 @@ export default function HomeScreen() {
   };
 
   const handleToggleItem = async (categoryId: number, itemId: number) => {
+    if (searchQuery.trim()) {
+      setSearchQuery('')
+    }
     const now = new Date()
     const updatedCategories = categories.map(category => {
       if (category.id !== categoryId) return category
@@ -301,6 +309,10 @@ export default function HomeScreen() {
     });
 
     setCategories(updatedCategories);
+    setExpandedCategories((prev) => (
+      prev.includes(categoryId) ? prev : [...prev, categoryId]
+    ))
+    setPendingScrollItemId(newItem.id)
     
     if (listId) {
       try {
@@ -389,6 +401,46 @@ export default function HomeScreen() {
       setIsQuickAddLoading(false);
     }
   };
+
+  const handleReorderItems = async (categoryId: number, items: Item[]) => {
+    const updatedCategories = categories.map(category => {
+      if (category.id !== categoryId) return category
+
+      const reorderedItems = [...items].sort((a, b) => (
+        a.purchased === b.purchased ? 0 : a.purchased ? 1 : -1
+      ))
+
+      return {
+        ...category,
+        items: reorderedItems,
+      }
+    })
+
+    setCategories(updatedCategories)
+
+    if (listId) {
+      try {
+        await updateList(listId, updatedCategories)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        setCategories(categories)
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (!pendingScrollItemId) return
+
+    const timeout = window.setTimeout(() => {
+      const element = document.querySelector(`[data-item-id="${pendingScrollItemId}"]`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      setPendingScrollItemId(null)
+    }, 100)
+
+    return () => window.clearTimeout(timeout)
+  }, [categories, pendingScrollItemId])
 
   // Handle updating an existing item
   const handleUpdateItem = async (itemId: number, name: string, comment: string, newCategoryId: number) => {
@@ -741,6 +793,7 @@ export default function HomeScreen() {
             setExpandedCategories={setExpandedCategories}
             onEditItem={handleEditItem}
             onAddItem={handleAddItem}
+            onReorderItems={handleReorderItems}
             isSearchMode={isSearchMode}
           />
         )}
@@ -837,4 +890,3 @@ export default function HomeScreen() {
     </div>
   )
 }
-
