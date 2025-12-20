@@ -46,8 +46,7 @@ export async function POST(request: Request) {
           content: `המוצר: ${itemName}`
         }
       ],
-      model: "gpt-5-nano",
-      temperature: 0.3
+      model: "gpt-5-nano"
     })
 
     if (!completion.choices[0]?.message?.content) {
