@@ -4,7 +4,7 @@ import { useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
 import { Item } from '@/types/item'
 import confetti from 'canvas-confetti'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, Reorder, motion } from 'framer-motion'
 import { Check, ChevronDown, Square } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import GroceryItem from './GroceryItem'
@@ -17,6 +17,7 @@ interface CategoryListProps {
   setExpandedCategories: React.Dispatch<React.SetStateAction<number[]>>
   onEditItem: (item: Item, categoryId: number) => void
   onAddItem?: (categoryId: number, name: string) => void
+  onReorderItems: (categoryId: number, items: Item[]) => void
   isSearchMode?: boolean
 }
 
@@ -57,6 +58,7 @@ export default function CategoryList({
   expandedCategories,
   setExpandedCategories,
   onAddItem,
+  onReorderItems,
   isSearchMode = false
 }: CategoryListProps) {
   const categoryRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
@@ -116,28 +118,39 @@ export default function CategoryList({
       {activeTab === 'pharmacy' ? (
         // Pharmacy view - flat list without category headers
         sortedCategories.some(category => category.items.length > 0) ? (
+          (() => {
+            const pharmacyCategory = sortedCategories.find(category => category.name === 'בית מרקחת')
+            if (!pharmacyCategory) {
+              return null
+            }
+            return (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm"
           >
-            <ul className="divide-y divide-black/5 list-none">
-              {sortedCategories.flatMap(category => 
-                category.items.map((item) => (
-                  <GroceryItem
-                    key={item.id}
-                    item={item}
-                    categoryId={category.id}
-                    onToggle={() => onToggleItem(category.id, item.id)}
-                    onDelete={() => onDeleteItem(category.id, item.id)}
-                    onEdit={onEditItem}
-                  />
-                ))
-              )}
+            <Reorder.Group
+              as="div"
+              axis="y"
+              values={pharmacyCategory.items}
+              onReorder={(items) => onReorderItems(pharmacyCategory.id, items)}
+              className="divide-y divide-black/5"
+            >
+              {pharmacyCategory.items.map((item) => (
+                <GroceryItem
+                  key={item.id}
+                  item={item}
+                  categoryId={pharmacyCategory.id}
+                  onToggle={() => onToggleItem(pharmacyCategory.id, item.id)}
+                  onDelete={() => onDeleteItem(pharmacyCategory.id, item.id)}
+                  onEdit={onEditItem}
+                />
+              ))}
+            </Reorder.Group>
               {!isSearchMode && sortedCategories.length > 0 && (
-                <motion.li 
+                <motion.div 
                   initial={false}
-                  className="list-none px-4 py-2 relative touch-pan-x bg-white"
+                  className="px-4 py-2 relative touch-pan-x bg-white border-t border-black/5"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex-shrink-0 text-black/20 mt-0.5">
@@ -159,10 +172,11 @@ export default function CategoryList({
                       }}
                     />
                   </div>
-                </motion.li>
+                </motion.div>
               )}
-            </ul>
           </motion.div>
+            )
+          })()
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -262,7 +276,13 @@ export default function CategoryList({
                       }}
                       className="overflow-hidden"
                     >
-                      <ul className="divide-y divide-black/5 list-none">
+                      <Reorder.Group
+                        as="div"
+                        axis="y"
+                        values={category.items}
+                        onReorder={(items) => onReorderItems(category.id, items)}
+                        className="divide-y divide-black/5"
+                      >
                         {category.items.map((item) => (
                           <GroceryItem
                             key={item.id}
@@ -273,30 +293,30 @@ export default function CategoryList({
                             onEdit={onEditItem}
                           />
                         ))}
-                        {!isSearchMode && (
-                          <motion.li 
-                            initial={false}
-                            className="list-none px-4 py-2 relative touch-pan-x bg-white"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="flex-shrink-0 text-black/20 mt-0.5">
-                                <Square className="h-5 w-5" />
-                              </div>
-                              <input
-                                type="text"
-                                placeholder="הוסף פריט חדש..."
-                                className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/80 placeholder:text-black/40 focus:ring-0 p-0 min-w-0"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                                    onAddItem?.(category.id, e.currentTarget.value.trim())
-                                    e.currentTarget.value = ''
-                                  }
-                                }}
-                              />
+                      </Reorder.Group>
+                      {!isSearchMode && (
+                        <motion.div 
+                          initial={false}
+                          className="px-4 py-2 relative touch-pan-x bg-white border-t border-black/5"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex-shrink-0 text-black/20 mt-0.5">
+                              <Square className="h-5 w-5" />
                             </div>
-                          </motion.li>
-                        )}
-                      </ul>
+                            <input
+                              type="text"
+                              placeholder="הוסף פריט חדש..."
+                              className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/80 placeholder:text-black/40 focus:ring-0 p-0 min-w-0"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                  onAddItem?.(category.id, e.currentTarget.value.trim())
+                                  e.currentTarget.value = ''
+                                }
+                              }}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -320,4 +340,3 @@ export default function CategoryList({
     </div>
   )
 }
-
