@@ -92,8 +92,11 @@ export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEd
             <button
               type="button"
               aria-label="Drag to reorder"
-              onPointerDown={(event) => dragControls.start(event)}
-              className="flex-shrink-0 text-black/30 hover:text-black/60 transition-colors duration-150 mt-0.5 cursor-grab active:cursor-grabbing"
+              onPointerDown={(event) => {
+                event.preventDefault()
+                dragControls.start(event)
+              }}
+              className="flex-shrink-0 text-black/30 hover:text-black/60 transition-colors duration-150 mt-0.5 cursor-grab active:cursor-grabbing touch-none"
             >
               <GripVertical className="h-4 w-4" />
             </button>

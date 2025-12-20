@@ -185,6 +185,9 @@ export default function HomeScreen() {
   };
 
   const handleToggleItem = async (categoryId: number, itemId: number) => {
+    if (searchQuery.trim()) {
+      setSearchQuery('')
+    }
     const now = new Date()
     const updatedCategories = categories.map(category => {
       if (category.id !== categoryId) return category
