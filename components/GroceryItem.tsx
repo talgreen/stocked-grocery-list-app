@@ -59,6 +59,7 @@ export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEd
 
       <motion.li
         ref={itemRef}
+        data-item-id={item.id}
         style={{ 
           x,
           willChange: 'transform',
@@ -157,4 +158,3 @@ export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEd
     </div>
   )
 }
-
