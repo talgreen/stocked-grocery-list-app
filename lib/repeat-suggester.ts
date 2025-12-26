@@ -31,6 +31,23 @@ export interface RepeatSuggestion {
   regularityScore: number
 }
 
+export interface NextRunSuggestion {
+  item: Item
+  categoryId: number
+  categoryName: string
+  categoryEmoji: string
+  score: number
+  expectedGapDays: number
+  daysSinceLastPurchase: number
+  daysUntilDue: number
+  dueScore: number
+  stapleScore: number
+  regularityScore: number
+  collaborationScore: number
+  insightType: 'timing' | 'crowd' | 'habit'
+  reason: string
+}
+
 export function updateItemPurchaseStats(item: Item, now: Date = new Date()): Item {
   const lastPurchaseAt = item.lastPurchaseAt ? new Date(item.lastPurchaseAt) : null
   const previousExpectedGap = sanitizeGap(item.expectedGapDays)
@@ -158,6 +175,118 @@ export function computeRepeatSuggestions(
   suggestions.sort((a, b) => b.score - a.score)
 
   return suggestions.slice(0, 15)
+}
+
+const formatNextRunReason = (
+  type: NextRunSuggestion['insightType'],
+  daysUntilDue: number,
+  expectedGapDays: number
+) => {
+  if (type === 'timing') {
+    if (daysUntilDue <= 0) {
+      return 'עבר הזמן המשוער לרכישה – כנראה שהפריט יחזור בקרוב לרשימה.'
+    }
+    if (daysUntilDue < 1.5) {
+      return 'ממש לקראת סוף המלאי, כדאי להכין אותו לרשימה הבאה.'
+    }
+    if (daysUntilDue < 7) {
+      return `צפוי להיגמר בעוד בערך ${Math.max(1, Math.round(daysUntilDue))} ימים.`
+    }
+    return `מחזור הקנייה הבא צפוי בעוד כ-${Math.max(1, Math.round(daysUntilDue / 7))} שבועות.`
+  }
+
+  if (type === 'crowd') {
+    return 'כל בני הבית מוסיפים אותו שוב ושוב – כנראה שלא נרצה לפספס אותו.'
+  }
+
+  return `זהו פריט שחוזר בקביעות כל ${Math.max(1, Math.round(expectedGapDays))} ימים בממוצע.`
+}
+
+export function computeNextRunSuggestions(
+  categories: Category[],
+  existingRepeatKeys: Set<string> = new Set(),
+  now: Date = new Date()
+): NextRunSuggestion[] {
+  const suggestions: NextRunSuggestion[] = []
+
+  categories.forEach(category => {
+    category.items.forEach(item => {
+      if (!item.purchased) return
+      if (!item.lastPurchaseAt) return
+
+      const key = `${category.id}-${item.id}`
+      if (existingRepeatKeys.has(key)) return
+
+      if (item.snoozeUntil) {
+        const snoozeUntil = new Date(item.snoozeUntil)
+        if (snoozeUntil.getTime() > now.getTime()) {
+          return
+        }
+      }
+
+      const purchaseCount = item.purchaseCount ?? 0
+      if (purchaseCount < 1) return
+
+      const lastPurchaseAt = new Date(item.lastPurchaseAt)
+      const deltaMs = now.getTime() - lastPurchaseAt.getTime()
+      if (deltaMs < 0) return
+
+      const daysSinceLastPurchase = deltaMs / MS_PER_DAY
+      const expectedGapDays = sanitizeGap(item.expectedGapDays)
+      const gapVariance = isFiniteNumber(item.gapVariance) ? item.gapVariance : 0
+      const decayedCount = Math.max(item.decayedCount ?? purchaseCount, 0)
+
+      const daysUntilDue = expectedGapDays - daysSinceLastPurchase
+      const denom = Math.max(expectedGapDays * 0.3, 1)
+      const dueScore = sigmoid((daysSinceLastPurchase - expectedGapDays) / denom)
+      const soonScore = Math.exp(-Math.max(daysUntilDue, 0) / Math.max(expectedGapDays * 0.8, 1))
+      const collaborationScore = clamp(Math.log1p(purchaseCount) / Math.log1p(12), 0, 1)
+      const stapleScore = 1 - Math.exp(-0.6 * decayedCount)
+      const regularityScore = clamp(1 - Math.sqrt(gapVariance) / (2 * DEFAULT_EXPECTED_GAP_DAYS), 0, 1)
+
+      if (dueScore >= MIN_DUE_SCORE_TO_SUGGEST) {
+        return
+      }
+
+      const combinedScore =
+        0.45 * dueScore + 0.3 * soonScore + 0.15 * collaborationScore + 0.1 * regularityScore
+
+      if (combinedScore < 0.25) {
+        return
+      }
+
+      let insightType: NextRunSuggestion['insightType'] = 'habit'
+
+      if (dueScore >= 0.35 || daysUntilDue <= 1) {
+        insightType = 'timing'
+      } else if (collaborationScore > 0.55 || stapleScore > 0.75) {
+        insightType = 'crowd'
+      }
+
+      const reason = formatNextRunReason(insightType, daysUntilDue, expectedGapDays)
+
+      suggestions.push({
+        item,
+        categoryId: category.id,
+        categoryName: category.name,
+        categoryEmoji: category.emoji,
+        score: combinedScore,
+        expectedGapDays,
+        daysSinceLastPurchase,
+        daysUntilDue,
+        dueScore,
+        stapleScore,
+        regularityScore,
+        collaborationScore,
+        insightType,
+        reason,
+      })
+    })
+  })
+
+  suggestions.sort((a, b) => b.score - a.score)
+
+  return suggestions.slice(0, 12)
 }
 
 export const REPEAT_SUGGESTER_CONSTANTS = {
