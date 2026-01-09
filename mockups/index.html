@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stocked - Design Mockups Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            font-size: 20px;
+            margin-bottom: 48px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 32px;
+        }
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 72px rgba(0,0,0,0.4);
+        }
+        .card-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: white;
+        }
+        .badge-1 { background: #4CAF50; }
+        .badge-2 { background: #2196F3; }
+        .badge-3 { background: #9C27B0; }
+        .badge-4 { background: #FF5722; }
+        .badge-5 { background: #673AB7; }
+
+        .card-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        .card-description {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .card-pros {
+            background: #f9f9f9;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .card-pros h3 {
+            font-size: 14px;
+            color: #4CAF50;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .card-pros ul {
+            list-style: none;
+            padding: 0;
+        }
+        .card-pros li {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+            padding-right: 20px;
+            position: relative;
+        }
+        .card-pros li:before {
+            content: '✓';
+            position: absolute;
+            right: 0;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .card-button {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        .card-button:hover {
+            transform: scale(1.02);
+        }
+        .recommendation {
+            background: linear-gradient(135deg, #FFB74D 0%, #FFA726 100%);
+            color: white;
+            text-align: center;
+            padding: 32px;
+            border-radius: 24px;
+            margin-top: 48px;
+            box-shadow: 0 20px 60px rgba(255, 183, 77, 0.3);
+        }
+        .recommendation h2 {
+            font-size: 32px;
+            margin-bottom: 16px;
+        }
+        .recommendation p {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Stocked - Design Mockups</h1>
+        <p class="subtitle">חמש אפשרויות עיצוב לשיפור חווית הוספת פריטים</p>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-badge badge-1">Option 1</div>
+                <h2 class="card-title">Bottom Sheet</h2>
+                <p class="card-description">גיליון שמגיח מלמטה, כמו Apple Maps או Google Keep. טבעי למגע והכפתור תמיד נראה.</p>
+                <div class="card-pros">
+                    <h3>יתרונות:</h3>
+                    <ul>
+                        <li>גישה נוחה באצבע בוהן</li>
+                        <li>ניתן לסגור בהחלקה למטה</li>
+                        <li>שדות קרובים למקלדת</li>
+                        <li>הכפתור אף פעם לא מוסתר</li>
+                    </ul>
+                </div>
+                <a href="option1-bottom-sheet.html" class="card-button">צפה במוק אפ →</a>
+            </div>
+
+            <div class="card">
+                <div class="card-badge badge-2">Option 2</div>
+                <h2 class="card-title">Inline Quick Add</h2>
+                <p class="card-description">שורת קלט פשוטה בראש הרשימה. מהיר וללא מעבר הקשר - כמו Todoist ו-Apple Reminders.</p>
+                <div class="card-pros">
+                    <h3>יתרונות:</h3>
+                    <ul>
+                        <li>אפס החלפת מסכים</li>
+                        <li>הוספה מהירה במיוחד</li>
+                        <li>רואים את הרשימה תוך כדי הקלדה</li>
+                        <li>מושלם להוספה בסדרה</li>
+                    </ul>
+                </div>
+                <a href="option2-inline-quick-add.html" class="card-button">צפה במוק אפ →</a>
+            </div>
+
+            <div class="card">
+                <div class="card-badge badge-3">Option 3</div>
+                <h2 class="card-title">Two-Tier System</h2>
+                <p class="card-description">מצב מהיר לפריטים פשוטים, מצב מתקדם לפרטים נוספים. הטוב משני העולמות.</p>
+                <div class="card-pros">
+                    <h3>יתרונות:</h3>
+                    <ul>
+                        <li>90% מהזמן - זורם מהר</li>
+                        <li>10% מהזמן - יש פרטים</li>
+                        <li>מורכבות לפי צורך</li>
+                        <li>תואם למשתמשים קיימים</li>
+                    </ul>
+                </div>
+                <a href="option3-two-tier.html" class="card-button">צפה במוק אפ →</a>
+            </div>
+
+            <div class="card">
+                <div class="card-badge badge-4">Option 4</div>
+                <h2 class="card-title">Voice-First</h2>
+                <p class="card-description">קול במרכז, AI מזהה פריט + הערה + קטגוריה. מהפכני ונגיש.</p>
+                <div class="card-pros">
+                    <h3>יתרונות:</h3>
+                    <ul>
+                        <li>מהיר יותר מהקלדה</li>
+                        <li>hands-free בזמן קניות</li>
+                        <li>טבעי לרשימות</li>
+                        <li>תכונה ייחודית ומבדלת</li>
+                    </ul>
+                </div>
+                <a href="option4-voice-first.html" class="card-button">צפה במוק אפ →</a>
+            </div>
+
+            <div class="card">
+                <div class="card-badge badge-5">Option 5</div>
+                <h2 class="card-title">Chat Interface</h2>
+                <p class="card-description">הוסף פריטים כאילו שולח הודעות לעצמך. מוכר, טבעי, ועם AI חכם.</p>
+                <div class="card-pros">
+                    <h3>יתרונות:</h3>
+                    <ul>
+                        <li>הממשק המוכר ביותר (כולם מתכתבים)</li>
+                        <li>שיחה טבעית עם AI</li>
+                        <li>מספר פריטים בבת אחת</li>
+                        <li>next-gen UX</li>
+                    </ul>
+                </div>
+                <a href="option5-chat-interface.html" class="card-button">צפה במוק אפ →</a>
+            </div>
+        </div>
+
+        <div class="recommendation">
+            <h2>🏆 ההמלצה שלי</h2>
+            <p><strong>Option 3: Two-Tier System</strong></p>
+            <p>משלב את הטוב מכל העולמות - מהיר לרוב המקרים, אבל עם אפשרויות מתקדמות כשצריך.</p>
+            <p>✅ פותר את בעיית המקלדת</p>
+            <p>✅ מהיר יותר ב-90% מהמקרים</p>
+            <p>✅ לא מסיר תכונות קיימות</p>
+            <p>✅ מאמץ פיתוח נמוך (~2-3 שעות)</p>
+        </div>
+    </div>
+</body>
+</html>
