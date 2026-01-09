@@ -8,17 +8,25 @@ import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, Search, X } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import AddItemForm from './AddItemForm'
 import CategoryList from './CategoryList'
-import EditItemModal from './EditItemModal'
 import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
 import RepeatSuggestions from './RepeatSuggestions'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
+
+// Lazy load modal components to reduce initial bundle size
+const AddItemForm = dynamic(() => import('./AddItemForm'), {
+  loading: () => <div className="text-center py-8">טוען...</div>
+})
+
+const EditItemModal = dynamic(() => import('./EditItemModal'), {
+  loading: () => <div className="text-center py-8">טוען...</div>
+})
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 

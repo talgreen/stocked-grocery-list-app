@@ -3,10 +3,9 @@
 import { useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
 import { Item } from '@/types/item'
-import confetti from 'canvas-confetti'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, ChevronDown, Square } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import GroceryItem from './GroceryItem'
 
 interface CategoryListProps {
@@ -49,10 +48,10 @@ function sortCategories(categories: Category[]): Category[] {
   })
 }
 
-export default function CategoryList({ 
-  categories, 
-  onToggleItem, 
-  onDeleteItem, 
+const CategoryList = memo(function CategoryList({
+  categories,
+  onToggleItem,
+  onDeleteItem,
   onEditItem,
   expandedCategories,
   setExpandedCategories,
@@ -86,14 +85,17 @@ export default function CategoryList({
 
       // If this was the last item checked
       if (previousUncheckedCount === 1 && uncheckedCount === 0) {
-        // Trigger confetti
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00']
+        // Trigger confetti (lazy loaded)
+        import('canvas-confetti').then((confettiModule) => {
+          const confetti = confettiModule.default
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00']
+          })
         })
-        
+
         // Collapse only this category
         setExpandedCategories((prev: number[]) => prev.filter((id: number) => id !== category.id))
       }
@@ -325,4 +327,6 @@ export default function CategoryList({
       )}
     </div>
   )
-}
+})
+
+export default CategoryList
