@@ -549,13 +549,24 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (isAddFormOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden'
+
       // Small delay to ensure the modal is rendered
       setTimeout(() => {
-        modalRef.current?.scrollIntoView({ 
+        modalRef.current?.scrollIntoView({
           behavior: 'smooth',
           block: 'center'
         })
       }, 100)
+    } else {
+      // Restore body scroll when modal is closed
+      document.body.style.overflow = ''
+    }
+
+    // Cleanup function to restore scroll on unmount
+    return () => {
+      document.body.style.overflow = ''
     }
   }, [isAddFormOpen])
 
@@ -794,10 +805,10 @@ export default function HomeScreen() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 50 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                className="fixed inset-x-4 top-[10vh] bottom-[10vh] bg-white rounded-2xl z-50 overflow-hidden shadow-2xl max-w-md mx-auto"
+                className="fixed inset-x-4 top-[10vh] bottom-[10vh] bg-white rounded-2xl z-50 overflow-hidden shadow-2xl max-w-md mx-auto flex flex-col"
               >
-                <div className="h-full overflow-y-auto p-6">
-                  <AddItemForm 
+                <div className="h-full p-6 flex flex-col overflow-hidden">
+                  <AddItemForm
                     onAdd={handleAddItemWithCategory}
                     onClose={() => setIsAddFormOpen(false)}
                     categories={categories}

@@ -166,8 +166,8 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
         </motion.div>
       )}
 
-      <form onSubmit={handleQuickAdd} className="flex-1 flex flex-col pb-20">
-        <div className="flex-1 space-y-4 overflow-y-auto">
+      <form onSubmit={handleQuickAdd} className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 space-y-4 overflow-y-auto min-h-0">
           <div>
             <input
               ref={inputRef}
@@ -175,7 +175,13 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
               id="item"
               value={item}
               onChange={(e) => setItem(e.target.value)}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !comment && item.trim()) {
+                  e.preventDefault()
+                  handleQuickAdd(e as any)
+                }
+              }}
+              className="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
               placeholder="הוסף פריט חדש"
               required
               disabled={isLoading}
@@ -194,7 +200,7 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
                   handleQuickAdd(e as any)
                 }
               }}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
+              className="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
               placeholder="הוסף הערה"
               disabled={isLoading}
             />
@@ -207,7 +213,7 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
                 onValueChange={setCategoryId}
                 disabled={isLoading}
               >
-                <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center text-lg py-3">
+                <SelectTrigger className="w-full h-[52px] border border-gray-300 flex flex-row-reverse justify-between items-center text-lg focus:ring-2 focus:ring-[#FFB74D] focus:border-[#FFB74D]">
                   <SelectValue placeholder="בחר קטגוריה" className="text-right" />
                 </SelectTrigger>
                 <SelectContent>
@@ -228,16 +234,8 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
         <motion.button
           type="submit"
           disabled={isLoading || !item.trim()}
-          className="fixed bottom-0 left-0 right-0 bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-4 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-lg font-medium shadow-lg"
+          className="w-full bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-4 rounded-xl transition-colors duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-lg mt-6 shrink-0"
           whileTap={{ scale: 0.98 }}
-          style={{
-            position: 'sticky',
-            bottom: 0,
-            zIndex: 20,
-            marginLeft: '-1.5rem',
-            marginRight: '-1.5rem',
-            width: 'calc(100% + 3rem)'
-          }}
         >
           {isLoading ? 'מוסיף...' : 'הוסף פריט'}
         </motion.button>
