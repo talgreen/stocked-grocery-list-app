@@ -18,7 +18,7 @@ interface EnvConfig {
 
 /**
  * Validates that all required environment variables are set
- * @throws Error if any required variable is missing
+ * Only throws in production runtime, warns during build
  */
 function validateEnv(): EnvConfig {
   const requiredClientVars = [
@@ -36,6 +36,7 @@ function validateEnv(): EnvConfig {
 
   const missing: string[] = []
   const isServer = typeof window === 'undefined'
+  const isBuild = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build'
 
   // Validate client-side variables (always required)
   for (const varName of requiredClientVars) {
@@ -54,11 +55,17 @@ function validateEnv(): EnvConfig {
   }
 
   if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables:\n${missing.map(v => `  - ${v}`).join('\n')}\n\n` +
+    const message = `Missing required environment variables:\n${missing.map(v => `  - ${v}`).join('\n')}\n\n` +
       'Please check your .env.local file and ensure all required variables are set.\n' +
       'See .env.example for a template.'
-    )
+
+    // During build, just warn - let the build complete
+    if (isBuild) {
+      console.warn('[ENV WARNING]', message)
+    } else {
+      // At runtime, throw error
+      throw new Error(message)
+    }
   }
 
   return {
@@ -74,6 +81,6 @@ function validateEnv(): EnvConfig {
 
 /**
  * Validated environment variables
- * This will throw an error at module load time if any required variables are missing
+ * Warns during build, throws at runtime if any required variables are missing
  */
 export const env = validateEnv()
