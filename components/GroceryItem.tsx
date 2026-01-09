@@ -1,8 +1,11 @@
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
 import { CheckSquare, Edit, Square, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
+import { memo, useRef, useState } from 'react'
 import { Item } from '../types/item'
-import PhotoModal from './PhotoModal'
+
+// Lazy load PhotoModal as it's rarely used
+const PhotoModal = dynamic(() => import('./PhotoModal'))
 
 interface GroceryItemProps {
   item: Item
@@ -12,7 +15,7 @@ interface GroceryItemProps {
   onEdit: (item: Item, categoryId: number) => void
 }
 
-export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEdit }: GroceryItemProps) {
+const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDelete, onEdit }: GroceryItemProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -157,4 +160,6 @@ export default function GroceryItem({ item, categoryId, onToggle, onDelete, onEd
       </motion.li>
     </div>
   )
-}
+})
+
+export default GroceryItem
