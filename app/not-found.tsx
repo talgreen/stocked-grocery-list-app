@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4" dir="rtl">
@@ -11,12 +13,12 @@ export default function NotFound() {
         </p>
 
         <div className="space-y-3">
-          <a
+          <Link
             href="/"
             className="block w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             חזור לעמוד הבית
-          </a>
+          </Link>
         </div>
 
         <p className="text-xs text-gray-500 mt-6">
