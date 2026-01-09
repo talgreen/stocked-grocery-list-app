@@ -74,8 +74,12 @@ describe('HomeScreen - Detailed Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset mock to return our test data
-    vi.mocked(subscribeToList).mockImplementation((listId, onData, onError) => {
-      onData({ categories: mockCategories })
+    vi.mocked(subscribeToList).mockImplementation((listId, onData) => {
+      onData({
+        categories: mockCategories,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
       return () => {}
     })
   })
@@ -290,11 +294,13 @@ describe('HomeScreen - Detailed Tests', () => {
 
     it('shows empty state when no items in any category', async () => {
       // Mock empty categories
-      vi.mocked(subscribeToList).mockImplementation((listId, onData, onError) => {
+      vi.mocked(subscribeToList).mockImplementation((listId, onData) => {
         onData({
           categories: [
             { id: 1, name: 'Empty', emoji: '📦', items: [] },
           ],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         })
         return () => {}
       })
@@ -433,8 +439,8 @@ describe('HomeScreen - Detailed Tests', () => {
     it('handles error from subscription', async () => {
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      vi.mocked(subscribeToList).mockImplementation((listId, onData, onError) => {
-        onError(new Error('Firebase error'))
+      vi.mocked(subscribeToList).mockImplementation((_listId, _onData, onError) => {
+        if (onError) onError(new Error('Firebase error'))
         return () => {}
       })
 

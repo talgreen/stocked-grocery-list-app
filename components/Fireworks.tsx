@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import confetti from 'canvas-confetti'
 
 interface FireworksProps {
@@ -8,8 +8,6 @@ interface FireworksProps {
 }
 
 export default function Fireworks({ onComplete }: FireworksProps) {
-  const count = useRef(0)
-
   useEffect(() => {
     const duration = 3000
     const animationEnd = Date.now() + duration

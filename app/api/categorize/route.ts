@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { env } from '@/lib/env'
 
 export async function POST(request: Request) {
   try {
     const { itemName } = await request.json()
-    
+
     console.log('Categorization request:', { itemName })
-    
+
+    if (!env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not configured')
+      return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 })
+    }
+
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
+      apiKey: env.OPENAI_API_KEY
     })
 
     const completion = await openai.chat.completions.create({

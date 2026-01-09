@@ -16,7 +16,13 @@ describe('Database Operations', () => {
 
       const unsubscribe = subscribeToList('test-list', onData, onError)
 
-      expect(onData).toHaveBeenCalledWith({ categories: [] })
+      expect(onData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          categories: [],
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String)
+        })
+      )
       expect(onError).not.toHaveBeenCalled()
 
       unsubscribe()

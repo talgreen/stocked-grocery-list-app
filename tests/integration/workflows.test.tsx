@@ -58,7 +58,11 @@ describe('Integration Tests - User Workflows', () => {
       ]
 
       vi.mocked(subscribeToList).mockImplementation((listId, onData) => {
-        onData({ categories: initialCategories })
+        onData({
+          categories: initialCategories,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
         return () => {}
       })
 
@@ -109,7 +113,11 @@ describe('Integration Tests - User Workflows', () => {
       const user = userEvent.setup()
 
       vi.mocked(subscribeToList).mockImplementation((listId, onData) => {
-        onData({ categories: [] })
+        onData({
+          categories: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
         return () => {}
       })
 
@@ -183,7 +191,11 @@ describe('Integration Tests - User Workflows', () => {
       ]
 
       vi.mocked(subscribeToList).mockImplementation((listId, onData) => {
-        onData({ categories })
+        onData({
+          categories,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
         return () => {}
       })
 
@@ -288,7 +300,11 @@ describe('Integration Tests - User Workflows', () => {
       ]
 
       vi.mocked(subscribeToList).mockImplementation((listId, onData) => {
-        onData({ categories })
+        onData({
+          categories,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
         return () => {}
       })
 
@@ -339,6 +355,8 @@ describe('Integration Tests - User Workflows', () => {
           categories: [
             { id: 1, name: 'Empty', emoji: '📦', items: [] },
           ],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         })
         return () => {}
       })
@@ -363,6 +381,8 @@ describe('Integration Tests - User Workflows', () => {
               items: [],
             },
           ],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         })
         return () => {}
       })
@@ -387,8 +407,8 @@ describe('Integration Tests - User Workflows', () => {
     it('handles Firebase subscription errors gracefully', async () => {
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      vi.mocked(subscribeToList).mockImplementation((listId, onData, onError) => {
-        onError(new Error('Connection failed'))
+      vi.mocked(subscribeToList).mockImplementation((_listId, _onData, onError) => {
+        if (onError) onError(new Error('Connection failed'))
         return () => {}
       })
 
@@ -433,7 +453,11 @@ describe('Integration Tests - User Workflows', () => {
       ]
 
       vi.mocked(subscribeToList).mockImplementation((listId, onData) => {
-        onData({ categories })
+        onData({
+          categories,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
         return () => {}
       })
 

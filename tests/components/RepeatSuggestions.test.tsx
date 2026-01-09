@@ -23,9 +23,12 @@ const mockSuggestions: RepeatSuggestion[] = [
     categoryId: 1,
     categoryName: 'מוצרי חלב',
     categoryEmoji: '🥛',
+    score: 0.7,
     expectedGapDays: 7,
     daysSinceLastPurchase: 8,
     dueScore: 0.5,
+    stapleScore: 0.8,
+    regularityScore: 0.9,
   },
   {
     item: {
@@ -45,9 +48,12 @@ const mockSuggestions: RepeatSuggestion[] = [
     categoryId: 2,
     categoryName: 'לחם ומאפים',
     categoryEmoji: '🍞',
+    score: 0.8,
     expectedGapDays: 3,
     daysSinceLastPurchase: 4,
     dueScore: 0.6,
+    stapleScore: 0.9,
+    regularityScore: 0.85,
   },
 ]
 

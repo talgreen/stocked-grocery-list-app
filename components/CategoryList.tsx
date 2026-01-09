@@ -63,9 +63,10 @@ const CategoryList = memo(function CategoryList({
   const { activeTab } = useTabView()
 
   // Preload confetti after component mounts so it's ready when needed
-  const [confetti, setConfetti] = useState<any>(null)
+  const [confetti, setConfetti] = useState<((options?: unknown) => void) | null>(null)
   useEffect(() => {
     import('canvas-confetti').then((module) => setConfetti(() => module.default))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Filter categories based on the active tab

@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { expect, afterEach, vi } from 'vitest'
+import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
 // Cleanup after each test
@@ -25,9 +25,13 @@ vi.mock('next/navigation', () => ({
 
 // Mock Firebase to prevent network calls in tests
 vi.mock('@/lib/db', () => ({
-  subscribeToList: vi.fn((listId, onData, onError) => {
-    // Return mock data immediately
-    onData({ categories: [] })
+  subscribeToList: vi.fn((listId, onData) => {
+    // Return mock data immediately with required fields
+    onData({
+      categories: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })
     return () => {} // unsubscribe function
   }),
   updateList: vi.fn(() => Promise.resolve()),
