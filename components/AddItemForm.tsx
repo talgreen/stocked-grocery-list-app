@@ -148,14 +148,14 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
       </div>
 
       {isLoading && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center"
         >
           <motion.div className="flex flex-col items-center gap-3">
             <CartLoader />
-            <motion.span 
+            <motion.span
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-sm font-medium text-gray-600"
@@ -166,12 +166,9 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
         </motion.div>
       )}
 
-      <form onSubmit={handleQuickAdd} className="flex-1 flex flex-col">
-        <div className="flex-1 space-y-6">
+      <form onSubmit={handleQuickAdd} className="flex-1 flex flex-col pb-20">
+        <div className="flex-1 space-y-4 overflow-y-auto">
           <div>
-            <label htmlFor="item" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-              שם הפריט
-            </label>
             <input
               ref={inputRef}
               type="text"
@@ -186,14 +183,17 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
           </div>
 
           <div>
-            <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-              הערה (אופציונלי)
-            </label>
             <input
               type="text"
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && item.trim()) {
+                  e.preventDefault()
+                  handleQuickAdd(e as any)
+                }
+              }}
               className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
               placeholder="הוסף הערה"
               disabled={isLoading}
@@ -202,9 +202,6 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
 
           {activeTab !== 'pharmacy' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-                קטגוריה
-              </label>
               <Select
                 value={categoryId}
                 onValueChange={setCategoryId}
@@ -231,17 +228,18 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
         <motion.button
           type="submit"
           disabled={isLoading || !item.trim()}
-          className="w-full bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-4 rounded-xl transition-colors duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-lg mt-auto mb-6"
+          className="fixed bottom-0 left-0 right-0 bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-4 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-lg font-medium shadow-lg"
           whileTap={{ scale: 0.98 }}
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 20,
+            marginLeft: '-1.5rem',
+            marginRight: '-1.5rem',
+            width: 'calc(100% + 3rem)'
+          }}
         >
-          {isLoading ? (
-            <>
-              <CartLoader />
-              מוסיף...
-            </>
-          ) : (
-            'הוסף פריט'
-          )}
+          {isLoading ? 'מוסיף...' : 'הוסף פריט'}
         </motion.button>
       </form>
     </div>
