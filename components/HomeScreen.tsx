@@ -103,17 +103,21 @@ export default function HomeScreen() {
 
   // Helper function to highlight matching text
   const highlightText = (text: string, query: string) => {
-    if (!query.trim()) return text
-    
+    if (!text || !query || !query.trim()) return text
+
     const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
     const parts = text.split(regex)
-    
-    return parts.map((part, index) => {
-      if (part.toLowerCase() === query.toLowerCase()) {
-        return <mark key={index} className="bg-yellow-200 rounded px-1">{part}</mark>
-      }
-      return part
-    })
+
+    return (
+      <>
+        {parts.map((part, index) => {
+          if (part.toLowerCase() === query.toLowerCase()) {
+            return <mark key={index} className="bg-yellow-200 rounded px-1">{part}</mark>
+          }
+          return <span key={index}>{part}</span>
+        })}
+      </>
+    )
   }
 
   const handleAddItemWithCategory = async (item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string) => {
@@ -358,7 +362,7 @@ export default function HomeScreen() {
     if (!searchQuery.trim()) return;
 
     const itemName = searchQuery.trim();
-    
+
     // Check for duplicates
     if (checkDuplicateItem(itemName)) {
       toast.error('הפריט כבר קיים ברשימה', {
@@ -394,9 +398,9 @@ export default function HomeScreen() {
         category,
         emoji
       );
-      
+
       toast.success(`הפריט "${itemName}" נוסף לקטגוריה ${emoji} ${category}`);
-      
+
       // Clear search and reset to show all items
       setSearchQuery('');
     } catch (error) {
@@ -672,84 +676,87 @@ export default function HomeScreen() {
       </div>
       <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
         <div className="h-4" aria-hidden="true" />
-        
-        {/* Search Results */}
+
+        {/* Search Results Card */}
         {isSearchMode && (
-          <div className="space-y-4 mb-6">
-            {searchResults.length > 0 ? (
-              Object.values(groupedSearchResults).map(({ category, items }) => (
-                <div key={category.id} className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm">
-                  <div className="p-3 bg-gray-50 border-b border-gray-100">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <span>{category.emoji}</span>
-                      <span>{category.name}</span>
-                    </div>
-                  </div>
-                  <div className="bg-white">
-                    {items.map((item, index) => (
-                      <div key={item.id} className={`px-4 py-2 ${index < items.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                        <div className="flex items-center gap-3 min-w-0">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <div className="bg-white rounded-2xl overflow-hidden border-2 border-[#FFB74D]/30 shadow-lg">
+              {/* Search Results */}
+              {searchResults.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {searchResults.map((item) => {
+                    const category = categories.find(c => c.id === item.categoryId)
+                    return (
+                      <div key={item.id} className="p-4 hover:bg-gray-50/50 transition-colors">
+                        <div className="flex items-start gap-3">
+                          {/* Add button (+ icon) */}
                           <motion.button
-                            onClick={() => handleToggleItem(category.id, item.id)}
-                            className={`flex-shrink-0 transition-colors duration-150 mt-0.5 ${
-                              item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
-                            }`}
-                            whileTap={{ scale: 0.9 }}
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.15 }}
+                            onClick={() => handleToggleItem(item.categoryId, item.id)}
+                            className="flex-shrink-0 w-10 h-10 rounded-full bg-[#FFB74D]/10 hover:bg-[#FFB74D]/20 flex items-center justify-center transition-colors"
+                            whileTap={{ scale: 0.95 }}
                           >
-                            {item.purchased ? (
-                              <div className="h-5 w-5">✓</div>
-                            ) : (
-                              <div className="h-5 w-5 border border-gray-300 rounded"></div>
-                            )}
+                            <Plus className="w-5 h-5 text-[#FFB74D]" />
                           </motion.button>
-                          
-                          <div className="flex-1 min-w-0 flex items-center gap-2">
-                            <span className={`text-sm truncate ${
-                              item.purchased ? 'line-through text-black/40' : 'text-black/80'
-                            }`}>
-                              {highlightText(item.name, searchQuery)}
-                            </span>
-                            {item.comment && (
-                              <span className="text-xs text-black/40 truncate">
-                                ({item.comment})
+
+                          {/* Item info */}
+                          <div className="flex-1 min-w-0 text-right">
+                            <div className="flex items-center gap-2 justify-end">
+                              <span className="text-base font-medium text-gray-900">
+                                {highlightText(item.name, searchQuery)}
                               </span>
+                              {category && (
+                                <span className="text-2xl flex-shrink-0">{category.emoji}</span>
+                              )}
+                            </div>
+                            {item.comment && (
+                              <div className="text-sm text-gray-500 mt-0.5">
+                                {item.comment}
+                              </div>
+                            )}
+                            {category && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                {category.name}
+                              </div>
                             )}
                           </div>
-
-                          <button
-                            onClick={() => handleDeleteItem(category.id, item.id)}
-                            className="flex-shrink-0 text-black/40 hover:text-red-500 transition-colors duration-200"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
-              ))
-            ) : (
-              <div className="bg-white rounded-2xl p-8 text-center border border-black/5 shadow-sm">
-                <div className="text-4xl mb-4">🔍</div>
-                <h3 className="text-lg font-semibold text-black/80 mb-2">לא נמצאו תוצאות</h3>
-                <p className="text-sm text-black/60 mb-4">
-                  נסה לחפש במילות מפתח אחרות
-                </p>
-                <motion.button
-                  onClick={handleQuickAddItem}
-                  className="bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm"
-                  whileTap={{ scale: 0.95 }}
-                  disabled={isQuickAddLoading}
-                >
-                  {isQuickAddLoading ? 'מוסיף...' : `הוסף את ${searchQuery} לרשימה`}
-                </motion.button>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <div className="text-4xl mb-3">🔍</div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-1">לא נמצאו תוצאות</h3>
+                  <p className="text-sm text-gray-500">נסה לחפש במילות מפתח אחרות</p>
+                </div>
+              )}
+
+              {/* Add as new item button */}
+              <motion.button
+                onClick={handleQuickAddItem}
+                disabled={isQuickAddLoading}
+                className="w-full p-4 bg-gradient-to-l from-[#FFB74D]/5 to-transparent hover:from-[#FFB74D]/10 transition-all border-t-2 border-[#FFB74D]/20 disabled:opacity-50"
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center justify-center gap-2 text-[#FFB74D]">
+                  <motion.div
+                    className="w-6 h-6 rounded-full bg-[#FFB74D] flex items-center justify-center"
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <Plus className="w-4 h-4 text-white" />
+                  </motion.div>
+                  <span className="text-sm font-medium">
+                    {isQuickAddLoading ? 'מוסיף...' : `הוסף את ${searchQuery} לרשימה`}
+                  </span>
+                </div>
+              </motion.button>
+            </div>
+          </motion.div>
         )}
 
         {!isSearchMode && repeatSuggestions.length > 0 && (
