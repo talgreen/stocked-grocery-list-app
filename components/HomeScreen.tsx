@@ -46,6 +46,8 @@ export default function HomeScreen() {
   const [isQuickAddLoading, setIsQuickAddLoading] = useState(false)
   const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
   const { activeTab, setActiveTab } = useTabView()
+  const [quickAddInput, setQuickAddInput] = useState('')
+  const quickAddInputRef = useRef<HTMLInputElement>(null)
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -358,7 +360,7 @@ export default function HomeScreen() {
     if (!searchQuery.trim()) return;
 
     const itemName = searchQuery.trim();
-    
+
     // Check for duplicates
     if (checkDuplicateItem(itemName)) {
       toast.error('הפריט כבר קיים ברשימה', {
@@ -394,11 +396,68 @@ export default function HomeScreen() {
         category,
         emoji
       );
-      
+
       toast.success(`הפריט "${itemName}" נוסף לקטגוריה ${emoji} ${category}`);
-      
+
       // Clear search and reset to show all items
       setSearchQuery('');
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error('שגיאה בהוספת הפריט');
+    } finally {
+      setIsQuickAddLoading(false);
+    }
+  };
+
+  // Handle Quick Add from home screen input
+  const handleQuickAddFromHome = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+
+    if (!quickAddInput.trim()) return;
+
+    const itemName = quickAddInput.trim();
+
+    // Check for duplicates
+    if (checkDuplicateItem(itemName)) {
+      toast.error('הפריט כבר קיים ברשימה', {
+        style: {
+          background: '#FFA726',
+          color: 'white',
+        }
+      });
+      setQuickAddInput('');
+      return;
+    }
+
+    setIsQuickAddLoading(true);
+    try {
+      let category: string;
+      let emoji: string;
+
+      if (activeTab === 'pharmacy') {
+        // For pharmacy mode, always use pharmacy category without smart categorization
+        category = 'בית מרקחת';
+        emoji = '💊';
+      } else {
+        // For grocery mode, use smart categorization
+        const result = await OpenRouter.categorize(itemName);
+        category = result.category;
+        emoji = result.emoji;
+      }
+
+      await handleAddItemWithCategory(
+        { name: itemName, comment: '' },
+        category,
+        emoji
+      );
+
+      toast.success(`הפריט "${itemName}" נוסף לקטגוריה ${emoji} ${category}`);
+
+      // Clear input
+      setQuickAddInput('');
+      quickAddInputRef.current?.focus();
     } catch (error) {
       console.error('Error adding item:', error);
       toast.error('שגיאה בהוספת הפריט');
@@ -672,7 +731,49 @@ export default function HomeScreen() {
       </div>
       <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
         <div className="h-4" aria-hidden="true" />
-        
+
+        {/* Quick Add Input - Only show when not searching */}
+        {!isSearchMode && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <form onSubmit={handleQuickAddFromHome} className="relative">
+              <input
+                ref={quickAddInputRef}
+                type="text"
+                value={quickAddInput}
+                onChange={(e) => setQuickAddInput(e.target.value)}
+                placeholder="הוסף פריט מהיר..."
+                disabled={isQuickAddLoading}
+                className="w-full bg-white border-2 border-[#FFB74D]/30 rounded-xl px-4 py-3 text-right text-base focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              />
+              {quickAddInput && (
+                <div className="absolute left-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                  <motion.button
+                    type="button"
+                    onClick={() => setQuickAddInput('')}
+                    className="text-gray-400 hover:text-gray-600 p-1"
+                    whileTap={{ scale: 0.95 }}
+                    disabled={isQuickAddLoading}
+                  >
+                    <X className="h-4 w-4" />
+                  </motion.button>
+                  <motion.button
+                    type="submit"
+                    disabled={isQuickAddLoading || !quickAddInput.trim()}
+                    className="bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-1.5 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {isQuickAddLoading ? 'מוסיף...' : 'הוסף'}
+                  </motion.button>
+                </div>
+              )}
+            </form>
+          </motion.div>
+        )}
+
         {/* Search Results */}
         {isSearchMode && (
           <div className="space-y-4 mb-6">
