@@ -13,12 +13,9 @@ import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import CategoryList from './CategoryList'
+import CompactHeader from './CompactHeader'
 import EmptySearchState from './EmptySearchState'
-import ProgressHeader from './ProgressHeader'
-import ShareButton from './ShareButton'
-import SparkleIcon from './SparkleIcon'
 import RepeatSuggestions from './RepeatSuggestions'
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 // Lazy load modal components to reduce initial bundle size
 const AddItemForm = dynamic(() => import('./AddItemForm'), {
@@ -39,18 +36,16 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>(initialCategories)
   const [isLoading, setIsLoading] = useState(true)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
-  const [showEmptyCategories, setShowEmptyCategories] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const modalRef = useRef<HTMLDivElement>(null)
   const params = useParams()
   const listId = (params?.listId as string) || 'default'
-  const [isAllExpanded, setIsAllExpanded] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<number[]>([])
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
   const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
   const [pendingAddCount, setPendingAddCount] = useState(0)
-  const { activeTab, setActiveTab } = useTabView()
+  const { activeTab } = useTabView()
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -591,15 +586,6 @@ export default function HomeScreen() {
       total + category.items.length, 0
     )
 
-  const handleToggleAll = () => {
-    if (isAllExpanded) {
-      setExpandedCategories([])
-    } else {
-      setExpandedCategories(categories.map(c => c.id))
-    }
-    setIsAllExpanded(!isAllExpanded)
-  }
-
   useEffect(() => {
     setIsLoading(true)
 
@@ -635,24 +621,34 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FDF6ED]">
-        <header className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
-          <div className="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-24 bg-gray-200 animate-pulse rounded-lg" />
+        {/* Header skeleton */}
+        <div className="bg-white border-b border-black/5 shadow-sm">
+          <div className="max-w-2xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between gap-4">
+              {/* Progress ring skeleton */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gray-200 animate-pulse rounded-full" />
+                <div className="flex flex-col gap-1">
+                  <div className="h-4 w-24 bg-gray-200 animate-pulse rounded" />
+                  <div className="h-3 w-12 bg-gray-200 animate-pulse rounded" />
+                </div>
+              </div>
+              {/* Tabs skeleton */}
+              <div className="flex bg-gray-100 rounded-full p-1 gap-1">
+                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded-full" />
+                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded-full" />
+              </div>
+              {/* Share button skeleton */}
+              <div className="w-9 h-9 bg-gray-200 animate-pulse rounded-full" />
             </div>
-            <div className="h-8 w-8 bg-gray-200 animate-pulse rounded-full" />
           </div>
-        </header>
-        <nav className="bg-white/50 backdrop-blur-sm border-b border-black/5 shadow-sm">
-          <div className="max-w-2xl mx-auto px-6 py-3">
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-8 w-20 bg-gray-200 animate-pulse rounded-full" />
-              ))}
-            </div>
-          </div>
-        </nav>
-        <main className="flex-grow max-w-2xl w-full mx-auto p-6">
+        </div>
+        {/* Search skeleton */}
+        <div className="pt-4 px-4 max-w-2xl mx-auto">
+          <div className="h-10 bg-white animate-pulse rounded-xl shadow-sm" />
+        </div>
+        {/* Content skeleton */}
+        <main className="flex-grow max-w-2xl w-full mx-auto p-4 pt-6">
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="bg-white rounded-2xl p-4 shadow-sm">
@@ -678,70 +674,31 @@ export default function HomeScreen() {
 
   return (
     <div className="min-h-screen bg-[#FDF6ED]">
-      <div className="bg-white border-b border-black/5 shadow-sm sticky top-0 pt-safe z-30">
-        <header className="max-w-2xl mx-auto px-6 py-2 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-[#FFB74D] flex items-center gap-2">
-              Stocked
-              <SparkleIcon />
-            </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <ShareButton />
-          </div>
-        </header>
-        <nav className="max-w-2xl mx-auto">
-          <div className="bg-white">
-            {/* Tab Navigation */}
-            <div className="px-6 pt-4">
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'grocery' | 'pharmacy')}>
-                <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-lg">
-                  <TabsTrigger 
-                    value="pharmacy" 
-                    className="data-[state=active]:bg-[#FFB74D] data-[state=active]:text-white data-[state=active]:shadow-sm text-gray-600 font-medium transition-all duration-200"
-                  >
-                    בית מרקחת
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="grocery"
-                    className="data-[state=active]:bg-[#FFB74D] data-[state=active]:text-white data-[state=active]:shadow-sm text-gray-600 font-medium transition-all duration-200"
-                  >
-                    קניות
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-            <ProgressHeader
-              uncheckedItems={uncheckedItems}
-              totalItems={totalItems}
-              isAllExpanded={isAllExpanded}
-              onToggleAll={handleToggleAll}
-              showEmptyCategories={showEmptyCategories}
-              onToggleEmptyCategories={() => setShowEmptyCategories(!showEmptyCategories)}
-            />
-            {/* Search Box */}
-            <div className="px-6 pb-4">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="חפש פריטים..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 pr-10 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D]"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </nav>
+      <CompactHeader
+        uncheckedItems={uncheckedItems}
+        totalItems={totalItems}
+      />
+
+      {/* Search Box - Below sticky header */}
+      <div className="bg-[#FDF6ED] pt-4 px-4 max-w-2xl mx-auto">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <input
+            type="text"
+            placeholder="חפש פריטים..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] shadow-sm"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
       <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
         <div className="h-4" aria-hidden="true" />
@@ -832,7 +789,7 @@ export default function HomeScreen() {
         {/* Category List - Only show when not in search mode */}
         {!isSearchMode && (
           <CategoryList
-            categories={showEmptyCategories ? categories : categories.filter(category => category.items.length > 0)}
+            categories={categories.filter(category => category.items.length > 0)}
             onToggleItem={handleToggleItem}
             onDeleteItem={handleDeleteItem}
             expandedCategories={expandedCategories}
