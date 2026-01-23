@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/select"
 import { useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
-import { motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { MessageSquarePlus, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -29,7 +29,9 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
   const [item, setItem] = useState('')
   const [comment, setComment] = useState('')
   const [categoryId, setCategoryId] = useState('auto')
+  const [showComment, setShowComment] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const commentRef = useRef<HTMLInputElement>(null)
   const { activeTab } = useTabView()
 
   useEffect(() => {
@@ -80,6 +82,7 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
     setItem('')
     setComment('')
     setCategoryId('auto')
+    setShowComment(false)
 
     // Close form immediately
     onClose()
@@ -102,61 +105,73 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
       </div>
 
       <form onSubmit={handleQuickAdd} className="flex-1 flex flex-col">
-        <div className="flex-1 space-y-6">
-          <div>
-            <label htmlFor="item" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-              שם הפריט
-            </label>
-            <input
-              ref={inputRef}
-              type="text"
-              id="item"
-              value={item}
-              onChange={(e) => setItem(e.target.value)}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
-              placeholder="הוסף פריט חדש"
-              required
-            />
-          </div>
+        <div className="flex-1 space-y-4">
+          <input
+            ref={inputRef}
+            type="text"
+            id="item"
+            value={item}
+            onChange={(e) => setItem(e.target.value)}
+            className="w-full border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-4 text-right text-lg"
+            placeholder="שם הפריט"
+            required
+          />
 
-          <div>
-            <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-              הערה (אופציונלי)
-            </label>
-            <input
-              type="text"
-              id="comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
-              placeholder="הוסף הערה"
-            />
-          </div>
+          <AnimatePresence>
+            {showComment ? (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <input
+                  ref={commentRef}
+                  type="text"
+                  id="comment"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-4 text-right text-lg"
+                  placeholder="הערה (אופציונלי)"
+                />
+              </motion.div>
+            ) : (
+              <motion.button
+                type="button"
+                onClick={() => {
+                  setShowComment(true)
+                  setTimeout(() => commentRef.current?.focus(), 100)
+                }}
+                className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 py-2 text-sm transition-colors"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                הוסף הערה
+              </motion.button>
+            )}
+          </AnimatePresence>
 
           {activeTab !== 'pharmacy' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-                קטגוריה
-              </label>
-              <Select
-                value={categoryId}
-                onValueChange={setCategoryId}
-              >
-                <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center text-lg py-3">
-                  <SelectValue placeholder="בחר קטגוריה" className="text-right" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto" className="flex flex-row-reverse">
-                    חכמה 🤖
+            <Select
+              value={categoryId}
+              onValueChange={setCategoryId}
+            >
+              <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center text-lg py-4 rounded-xl border-gray-300">
+                <SelectValue placeholder="קטגוריה" className="text-right" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto" className="flex flex-row-reverse">
+                  חכמה 🤖
+                </SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()} className="flex flex-row-reverse">
+                    {category.name} {category.emoji}
                   </SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id.toString()} className="flex flex-row-reverse">
-                      {category.name} {category.emoji}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
 
