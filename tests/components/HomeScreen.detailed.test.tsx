@@ -127,7 +127,8 @@ describe('HomeScreen - Detailed Tests', () => {
       await user.type(searchInput, 'xyz123notfound')
 
       await waitFor(() => {
-        expect(screen.getByText('לא נמצאו תוצאות')).toBeInTheDocument()
+        // New empty state shows "לא מצאנו את" with the search query
+        expect(screen.getByText(/לא מצאנו את/)).toBeInTheDocument()
       })
     })
 
