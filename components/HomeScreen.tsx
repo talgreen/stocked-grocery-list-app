@@ -7,7 +7,7 @@ import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Search, X } from 'lucide-react'
+import { Loader2, Plus, Search, X } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -43,8 +43,8 @@ export default function HomeScreen() {
   const [expandedCategories, setExpandedCategories] = useState<number[]>([])
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
-  const [isQuickAddLoading, setIsQuickAddLoading] = useState(false)
   const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
+  const [pendingAddCount, setPendingAddCount] = useState(0)
   const { activeTab, setActiveTab } = useTabView()
 
   // Filter items based on search query
@@ -189,6 +189,64 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Error updating list:', error);
       setCategories(categories);
+    }
+  };
+
+  // Handle adding item with background categorization (closes form immediately)
+  const handleAddItemBackground = async (
+    itemName: string,
+    itemComment: string,
+    categorySelection: string,
+    currentActiveTab: 'grocery' | 'pharmacy'
+  ) => {
+    // Check for duplicates first
+    if (checkDuplicateItem(itemName, itemComment)) {
+      toast.error('הפריט כבר קיים ברשימה', {
+        style: {
+          background: '#FFA726',
+          color: 'white',
+        }
+      });
+      return;
+    }
+
+    // Increment pending count to show indicator
+    setPendingAddCount(prev => prev + 1);
+
+    try {
+      let category: string;
+      let emoji: string;
+
+      if (currentActiveTab === 'pharmacy') {
+        // For pharmacy mode, always use pharmacy category without smart categorization
+        category = 'בית מרקחת';
+        emoji = '💊';
+      } else if (categorySelection === 'auto') {
+        // Smart categorization via API
+        const result = await OpenRouter.categorize(`${itemName}${itemComment ? ` - ${itemComment}` : ''}`);
+        category = result.category;
+        emoji = result.emoji;
+      } else {
+        // Use manually selected category
+        const selectedCategory = categories.find(c => c.id.toString() === categorySelection);
+        if (!selectedCategory) throw new Error('Category not found');
+        category = selectedCategory.name;
+        emoji = selectedCategory.emoji;
+      }
+
+      await handleAddItemWithCategory(
+        { name: itemName, comment: itemComment },
+        category,
+        emoji
+      );
+
+      toast.success(`הפריט "${itemName}" נוסף לקטגוריה ${emoji} ${category}`);
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error('שגיאה בהוספת הפריט');
+    } finally {
+      // Decrement pending count
+      setPendingAddCount(prev => prev - 1);
     }
   };
 
@@ -363,7 +421,7 @@ export default function HomeScreen() {
     if (!searchQuery.trim()) return;
 
     const itemName = searchQuery.trim();
-    
+
     // Check for duplicates
     if (checkDuplicateItem(itemName)) {
       toast.error('הפריט כבר קיים ברשימה', {
@@ -375,10 +433,12 @@ export default function HomeScreen() {
       return;
     }
 
-    // Clear search immediately to switch back to normal view without flicker
+    // Clear search immediately to switch back to normal view
     setSearchQuery('');
 
-    setIsQuickAddLoading(true);
+    // Show adding indicator
+    setPendingAddCount(prev => prev + 1);
+
     try {
       let category: string;
       let emoji: string;
@@ -399,16 +459,14 @@ export default function HomeScreen() {
         category,
         emoji
       );
-      
+
       toast.success(`הפריט "${itemName}" נוסף לקטגוריה ${emoji} ${category}`);
-      
-      // Clear search and reset to show all items
-      setSearchQuery('');
     } catch (error) {
       console.error('Error adding item:', error);
       toast.error('שגיאה בהוספת הפריט');
     } finally {
-      setIsQuickAddLoading(false);
+      // Hide adding indicator
+      setPendingAddCount(prev => prev - 1);
     }
   };
 
@@ -748,9 +806,8 @@ export default function HomeScreen() {
                   onClick={handleQuickAddItem}
                   className="bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm"
                   whileTap={{ scale: 0.95 }}
-                  disabled={isQuickAddLoading}
                 >
-                  {isQuickAddLoading ? 'מוסיף...' : `הוסף את ${searchQuery} לרשימה`}
+                  הוסף את {searchQuery} לרשימה
                 </motion.button>
               </div>
             )}
@@ -802,8 +859,8 @@ export default function HomeScreen() {
                 className="fixed inset-x-4 top-[10vh] bottom-[10vh] bg-white rounded-2xl z-50 overflow-hidden shadow-2xl max-w-md mx-auto"
               >
                 <div className="h-full overflow-y-auto p-6">
-                  <AddItemForm 
-                    onAdd={handleAddItemWithCategory}
+                  <AddItemForm
+                    onAddBackground={handleAddItemBackground}
                     onClose={() => setIsAddFormOpen(false)}
                     categories={categories}
                   />
@@ -853,9 +910,27 @@ export default function HomeScreen() {
           )}
         </AnimatePresence>
       </main>
+      {/* Adding Item Indicator */}
+      <AnimatePresence>
+        {pendingAddCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className="fixed bottom-6 left-6 z-30"
+          >
+            <div className="bg-white border border-black/10 shadow-lg rounded-full px-4 py-2 flex items-center gap-2">
+              <Loader2 className="h-4 w-4 text-[#FFB74D] animate-spin" />
+              <span className="text-sm text-black/70">מוסיף פריט...</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {!isAddFormOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
