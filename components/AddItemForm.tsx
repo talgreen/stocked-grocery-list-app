@@ -8,54 +8,26 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useTabView } from '@/contexts/TabViewContext'
-import { OpenRouter } from '@/lib/openrouter'
 import { Category } from '@/types/categories'
-import type { Item } from '@/types/item'
 import { motion } from 'framer-motion'
-import { ShoppingCart, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 interface AddItemFormProps {
-  onAdd: (item: Omit<Item, 'id' | 'purchased'>, categoryName: string, emoji: string) => void
+  onAddBackground: (
+    itemName: string,
+    itemComment: string,
+    categorySelection: string,
+    activeTab: 'grocery' | 'pharmacy'
+  ) => void
   onClose: () => void
   categories: Category[]
 }
 
-// Shopping Cart Loader Animation
-const CartLoader = () => (
-  <motion.div 
-    className="relative"
-    animate={{ 
-      x: [0, 10, 0],
-      rotate: [0, 5, -5, 0]
-    }}
-    transition={{ 
-      duration: 1.5,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }}
-  >
-    <motion.div
-      className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full"
-      animate={{ 
-        scale: [1, 1.5, 1],
-        opacity: [1, 0.5, 1]
-      }}
-      transition={{ 
-        duration: 1,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }}
-    />
-    <ShoppingCart className="w-5 h-5" />
-  </motion.div>
-)
-
-export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormProps) {
+export default function AddItemForm({ onAddBackground, onClose, categories }: AddItemFormProps) {
   const [item, setItem] = useState('')
   const [comment, setComment] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [categoryId, setCategoryId] = useState('auto')
   const inputRef = useRef<HTMLInputElement>(null)
   const { activeTab } = useTabView()
@@ -88,54 +60,36 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
     return false;
   };
 
-  const handleQuickAdd = async (e: React.FormEvent) => {
+  const handleQuickAdd = (e: React.FormEvent) => {
     e.preventDefault()
     if (!item.trim()) return
 
-    // Check for duplicates first
+    // Check for duplicates first (quick client-side check)
     if (checkDuplicateItem(item.trim(), comment.trim())) {
       toast.warning('הפריט כבר קיים ברשימה');
       onClose();
       return;
     }
 
-    setIsLoading(true)
-    try {
-      let category: string
-      let emoji: string
+    // Close form immediately and trigger background add
+    const itemName = item.trim()
+    const itemComment = comment.trim()
+    const selectedCategory = categoryId
 
-      if (activeTab === 'pharmacy') {
-        // For pharmacy mode, always use pharmacy category without smart categorization
-        category = 'בית מרקחת'
-        emoji = '💊'
-      } else if (categoryId === 'auto') {
-        const result = await OpenRouter.categorize(`${item}${comment ? ` - ${comment}` : ''}`)
-        category = result.category
-        emoji = result.emoji
-      } else {
-        const selectedCategory = categories.find(c => c.id.toString() === categoryId)
-        if (!selectedCategory) throw new Error('Category not found')
-        category = selectedCategory.name
-        emoji = selectedCategory.emoji
-      }
-      
-      onAdd({ name: item.trim(), comment: comment.trim() }, category, emoji)
-      toast.success(`הפריט "${item}" נוסף לקטגוריה ${emoji} ${category}`)
-      
-      setItem('')
-      setComment('')
-      setCategoryId('auto')
-      onClose()
-    } catch (error) {
-      console.error('Error adding item:', error)
-      toast.error('שגיאה בהוספת הפריט')
-    } finally {
-      setIsLoading(false)
-    }
+    // Reset form state
+    setItem('')
+    setComment('')
+    setCategoryId('auto')
+
+    // Close form immediately
+    onClose()
+
+    // Trigger background categorization and add
+    onAddBackground(itemName, itemComment, selectedCategory, activeTab)
   }
 
   return (
-    <div className={`relative ${isLoading ? 'pointer-events-none' : ''} text-right h-full flex flex-col`}>
+    <div className="relative text-right h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={onClose}
@@ -146,25 +100,6 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
         <h2 className="text-lg font-semibold">הוסף פריט חדש</h2>
         <div className="w-6" /> {/* Spacer for alignment */}
       </div>
-
-      {isLoading && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center"
-        >
-          <motion.div className="flex flex-col items-center gap-3">
-            <CartLoader />
-            <motion.span 
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-sm font-medium text-gray-600"
-            >
-              מקטלג את הפריט...
-            </motion.span>
-          </motion.div>
-        </motion.div>
-      )}
 
       <form onSubmit={handleQuickAdd} className="flex-1 flex flex-col">
         <div className="flex-1 space-y-6">
@@ -181,7 +116,6 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
               className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
               placeholder="הוסף פריט חדש"
               required
-              disabled={isLoading}
             />
           </div>
 
@@ -196,7 +130,6 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
               onChange={(e) => setComment(e.target.value)}
               className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
               placeholder="הוסף הערה"
-              disabled={isLoading}
             />
           </div>
 
@@ -208,7 +141,6 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
               <Select
                 value={categoryId}
                 onValueChange={setCategoryId}
-                disabled={isLoading}
               >
                 <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center text-lg py-3">
                   <SelectValue placeholder="בחר קטגוריה" className="text-right" />
@@ -230,18 +162,11 @@ export default function AddItemForm({ onAdd, onClose, categories }: AddItemFormP
 
         <motion.button
           type="submit"
-          disabled={isLoading || !item.trim()}
+          disabled={!item.trim()}
           className="w-full bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-4 rounded-xl transition-colors duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-lg mt-auto mb-6"
           whileTap={{ scale: 0.98 }}
         >
-          {isLoading ? (
-            <>
-              <CartLoader />
-              מוסיף...
-            </>
-          ) : (
-            'הוסף פריט'
-          )}
+          הוסף פריט
         </motion.button>
       </form>
     </div>
