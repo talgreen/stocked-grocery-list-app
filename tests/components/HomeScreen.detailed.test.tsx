@@ -180,6 +180,121 @@ describe('HomeScreen - Detailed Tests', () => {
         expect(screen.getByText('אספירין')).toBeInTheDocument()
       })
     })
+
+    it('clears search when toggling item in search results', async () => {
+      const user = userEvent.setup()
+      renderWithProvider(<HomeScreen />)
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('חפש פריטים...')).toBeInTheDocument()
+      })
+
+      // Type a search query
+      const searchInput = screen.getByPlaceholderText('חפש פריטים...')
+      await user.type(searchInput, 'חלב')
+
+      await waitFor(() => {
+        expect(searchInput).toHaveValue('חלב')
+      })
+
+      // Search results should show the item
+      await waitFor(() => {
+        expect(screen.getByText('חלב')).toBeInTheDocument()
+      })
+
+      // Find and click the checkbox in search results to toggle the item
+      // The text is inside: <mark>חלב</mark> (from highlightText)
+      // Structure: mark > span > div.flex-1 > div.flex (which contains button, div, button)
+      const itemText = screen.getByText('חלב')
+      // Navigate up: mark -> span -> div.flex-1 -> div.flex items-center
+      const span = itemText.parentElement // span (or mark's parent if it's inside mark)
+      const flexOneDiv = span?.parentElement // div.flex-1
+      const flexContainer = flexOneDiv?.parentElement // div.flex items-center gap-3
+      const toggleButton = flexContainer?.querySelector('button')
+
+      expect(toggleButton).toBeTruthy()
+      if (toggleButton) {
+        await user.click(toggleButton)
+      }
+
+      // Search input should be cleared after toggling
+      await waitFor(() => {
+        expect(searchInput).toHaveValue('')
+      })
+    })
+
+    it('clears search when unchecking a purchased item in search results', async () => {
+      const user = userEvent.setup()
+      renderWithProvider(<HomeScreen />)
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('חפש פריטים...')).toBeInTheDocument()
+      })
+
+      // Search for the purchased item (גבינה)
+      const searchInput = screen.getByPlaceholderText('חפש פריטים...')
+      await user.type(searchInput, 'גבינה')
+
+      await waitFor(() => {
+        expect(searchInput).toHaveValue('גבינה')
+      })
+
+      // Search results should show the purchased item
+      await waitFor(() => {
+        expect(screen.getByText('גבינה')).toBeInTheDocument()
+      })
+
+      // Find and click the checkbox in search results to toggle (uncheck) the item
+      const itemText = screen.getByText('גבינה')
+      const span = itemText.parentElement
+      const flexOneDiv = span?.parentElement
+      const flexContainer = flexOneDiv?.parentElement
+      const toggleButton = flexContainer?.querySelector('button')
+
+      expect(toggleButton).toBeTruthy()
+      if (toggleButton) {
+        await user.click(toggleButton)
+      }
+
+      // Search input should be cleared after toggling
+      await waitFor(() => {
+        expect(searchInput).toHaveValue('')
+      })
+    })
+
+    it('updates list in database when toggling item in search results', async () => {
+      const user = userEvent.setup()
+      renderWithProvider(<HomeScreen />)
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('חפש פריטים...')).toBeInTheDocument()
+      })
+
+      // Type a search query
+      const searchInput = screen.getByPlaceholderText('חפש פריטים...')
+      await user.type(searchInput, 'חלב')
+
+      await waitFor(() => {
+        expect(screen.getByText('חלב')).toBeInTheDocument()
+      })
+
+      // Find and click the checkbox in search results
+      const itemText = screen.getByText('חלב')
+      const span = itemText.parentElement
+      const flexOneDiv = span?.parentElement
+      const flexContainer = flexOneDiv?.parentElement
+      const toggleButton = flexContainer?.querySelector('button')
+
+      expect(toggleButton).toBeTruthy()
+      if (toggleButton) {
+        await user.click(toggleButton)
+      }
+
+      // Should call updateList to persist the change
+      await waitFor(() => {
+        expect(updateList).toHaveBeenCalled()
+      })
+    })
   })
 
   describe('Tab Switching', () => {
