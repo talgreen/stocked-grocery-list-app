@@ -230,7 +230,9 @@ export default function HomeScreen() {
         // Smart categorization via API
         const result = await OpenRouter.categorize(`${itemName}${itemComment ? ` - ${itemComment}` : ''}`);
         category = result.category?.trim() || 'אחר';
-        emoji = result.emoji?.trim() || '📦';
+        // Look up emoji from existing category, fallback to default
+        const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category));
+        emoji = matchedCategory?.emoji || '📦';
       } else {
         // Use manually selected category
         const selectedCategory = categories.find(c => c.id.toString() === categorySelection);
@@ -456,7 +458,9 @@ export default function HomeScreen() {
         // For grocery mode, use smart categorization
         const result = await OpenRouter.categorize(itemName);
         category = result.category?.trim() || 'אחר';
-        emoji = result.emoji?.trim() || '📦';
+        // Look up emoji from existing category, fallback to default
+        const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category));
+        emoji = matchedCategory?.emoji || '📦';
       }
 
       await handleAddItemWithCategory(
