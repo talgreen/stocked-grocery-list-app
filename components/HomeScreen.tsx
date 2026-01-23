@@ -193,6 +193,11 @@ export default function HomeScreen() {
   };
 
   const handleToggleItem = async (categoryId: number, itemId: number) => {
+    // Clear search when toggling an item in search mode
+    if (searchQuery.trim()) {
+      setSearchQuery('')
+    }
+
     const now = new Date()
     const updatedCategories = categories.map(category => {
       if (category.id !== categoryId) return category
