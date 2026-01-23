@@ -7,7 +7,7 @@ import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, Plus, Search, X } from 'lucide-react'
+import { Plus, Search, X } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -44,7 +44,7 @@ export default function HomeScreen() {
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
   const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
-  const [pendingAddCount, setPendingAddCount] = useState(0)
+  const [pendingItems, setPendingItems] = useState<Array<{ id: number; name: string }>>([])
   const { activeTab, setActiveTab } = useTabView()
 
   // Filter items based on search query
@@ -210,8 +210,9 @@ export default function HomeScreen() {
       return;
     }
 
-    // Increment pending count to show indicator
-    setPendingAddCount(prev => prev + 1);
+    // Add to pending items to show skeleton
+    const pendingId = Date.now();
+    setPendingItems(prev => [...prev, { id: pendingId, name: itemName }]);
 
     try {
       let category: string;
@@ -245,8 +246,8 @@ export default function HomeScreen() {
       console.error('Error adding item:', error);
       toast.error('שגיאה בהוספת הפריט');
     } finally {
-      // Decrement pending count
-      setPendingAddCount(prev => prev - 1);
+      // Remove from pending items
+      setPendingItems(prev => prev.filter(item => item.id !== pendingId));
     }
   };
 
@@ -431,8 +432,9 @@ export default function HomeScreen() {
     // Clear search immediately to switch back to normal view
     setSearchQuery('');
 
-    // Show adding indicator
-    setPendingAddCount(prev => prev + 1);
+    // Add to pending items to show skeleton
+    const pendingId = Date.now();
+    setPendingItems(prev => [...prev, { id: pendingId, name: itemName }]);
 
     try {
       let category: string;
@@ -460,8 +462,8 @@ export default function HomeScreen() {
       console.error('Error adding item:', error);
       toast.error('שגיאה בהוספת הפריט');
     } finally {
-      // Hide adding indicator
-      setPendingAddCount(prev => prev - 1);
+      // Remove from pending items
+      setPendingItems(prev => prev.filter(item => item.id !== pendingId));
     }
   };
 
@@ -730,7 +732,47 @@ export default function HomeScreen() {
       </div>
       <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
         <div className="h-4" aria-hidden="true" />
-        
+
+        {/* Pending Items Skeleton */}
+        <AnimatePresence>
+          {pendingItems.length > 0 && !isSearchMode && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-4"
+            >
+              <div className="bg-white rounded-2xl overflow-hidden border border-[#FFB74D]/30 shadow-sm">
+                <div className="p-3 bg-[#FFB74D]/10 border-b border-[#FFB74D]/20">
+                  <div className="flex items-center gap-2 text-sm text-[#FFB74D]">
+                    <span>✨</span>
+                    <span>מוסיף לרשימה...</span>
+                  </div>
+                </div>
+                <div className="bg-white">
+                  {pendingItems.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className={`px-4 py-3 ${index < pendingItems.length - 1 ? 'border-b border-gray-100' : ''}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-5 w-5 rounded border border-gray-200 bg-gray-100 animate-pulse" />
+                        <span className="text-sm text-black/70 animate-pulse">
+                          {item.name}
+                        </span>
+                        <div className="mr-auto h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Search Results */}
         {isSearchMode && (
           <div className="space-y-4 mb-6">
@@ -905,24 +947,6 @@ export default function HomeScreen() {
           )}
         </AnimatePresence>
       </main>
-      {/* Adding Item Indicator */}
-      <AnimatePresence>
-        {pendingAddCount > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className="fixed bottom-6 left-6 z-30"
-          >
-            <div className="bg-white border border-black/10 shadow-lg rounded-full px-4 py-2 flex items-center gap-2">
-              <Loader2 className="h-4 w-4 text-[#FFB74D] animate-spin" />
-              <span className="text-sm text-black/70">מוסיף פריט...</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <AnimatePresence>
         {!isAddFormOpen && (
           <motion.div
