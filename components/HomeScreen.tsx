@@ -13,6 +13,7 @@ import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import CategoryList from './CategoryList'
+import EmptySearchState from './EmptySearchState'
 import ProgressHeader from './ProgressHeader'
 import ShareButton from './ShareButton'
 import SparkleIcon from './SparkleIcon'
@@ -796,20 +797,15 @@ export default function HomeScreen() {
                 </div>
               ))
             ) : (
-              <div className="bg-white rounded-2xl p-8 text-center border border-black/5 shadow-sm">
-                <div className="text-4xl mb-4">🔍</div>
-                <h3 className="text-lg font-semibold text-black/80 mb-2">לא נמצאו תוצאות</h3>
-                <p className="text-sm text-black/60 mb-4">
-                  נסה לחפש במילות מפתח אחרות
-                </p>
-                <motion.button
-                  onClick={handleQuickAddItem}
-                  className="bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm"
-                  whileTap={{ scale: 0.95 }}
-                >
-                  הוסף את {searchQuery} לרשימה
-                </motion.button>
-              </div>
+              <EmptySearchState
+                searchQuery={searchQuery}
+                onQuickAdd={handleQuickAddItem}
+                onOpenAddForm={() => {
+                  setSearchQuery('')
+                  setIsAddFormOpen(true)
+                }}
+                isLoading={pendingAddCount > 0}
+              />
             )}
           </div>
         )}

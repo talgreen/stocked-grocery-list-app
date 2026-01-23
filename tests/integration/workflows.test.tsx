@@ -123,13 +123,23 @@ describe('Integration Tests - User Workflows', () => {
       const searchInput = screen.getByPlaceholderText('חפש פריטים...')
       await user.type(searchInput, 'לחם')
 
+      // Wait for the search input to have the full value
       await waitFor(() => {
-        expect(screen.getByText('לא נמצאו תוצאות')).toBeInTheDocument()
+        expect(searchInput).toHaveValue('לחם')
+      })
+
+      await waitFor(() => {
+        // New empty state shows "לא מצאנו את" with the search query
+        expect(screen.getByText(/לא מצאנו את.*לחם/)).toBeInTheDocument()
       })
 
       // 2. Quick add button should appear
-      const quickAddButton = screen.getByText(/הוסף את לחם לרשימה/)
-      expect(quickAddButton).toBeInTheDocument()
+      await waitFor(() => {
+        const quickAddButton = screen.getByRole('button', {
+          name: (name) => name.includes('הוסף') && name.includes('לחם')
+        })
+        expect(quickAddButton).toBeInTheDocument()
+      })
     })
   })
 
