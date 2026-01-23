@@ -31,6 +31,10 @@ const EditItemModal = dynamic(() => import('./EditItemModal'), {
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 
+// Normalize category name for comparison - strips leading emojis and whitespace
+const normalizeCategory = (name: string): string =>
+  name.replace(/^[\p{Emoji_Presentation}\p{Emoji}\uFE0F\s]+/gu, '').trim()
+
 export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>(initialCategories)
   const [isLoading, setIsLoading] = useState(true)
@@ -148,8 +152,9 @@ export default function HomeScreen() {
     let updatedCategories = [...categories];
     let categoryId: number;
 
-    const existingCategory = categories.find(c => 
-      c.name.toLowerCase() === categoryName.toLowerCase()
+    const normalizedInput = normalizeCategory(categoryName);
+    const existingCategory = categories.find(c =>
+      normalizeCategory(c.name) === normalizedInput
     );
 
     if (existingCategory) {
@@ -225,8 +230,10 @@ export default function HomeScreen() {
       } else if (categorySelection === 'auto') {
         // Smart categorization via API
         const result = await OpenRouter.categorize(`${itemName}${itemComment ? ` - ${itemComment}` : ''}`);
-        category = result.category;
-        emoji = result.emoji;
+        category = result.category?.trim() || 'אחר';
+        // Look up emoji from existing category, fallback to default
+        const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category));
+        emoji = matchedCategory?.emoji || '📦';
       } else {
         // Use manually selected category
         const selectedCategory = categories.find(c => c.id.toString() === categorySelection);
@@ -451,8 +458,10 @@ export default function HomeScreen() {
       } else {
         // For grocery mode, use smart categorization
         const result = await OpenRouter.categorize(itemName);
-        category = result.category;
-        emoji = result.emoji;
+        category = result.category?.trim() || 'אחר';
+        // Look up emoji from existing category, fallback to default
+        const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category));
+        emoji = matchedCategory?.emoji || '📦';
       }
 
       await handleAddItemWithCategory(
