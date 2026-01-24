@@ -7,7 +7,7 @@ import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, Plus, Search, X } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -677,29 +677,9 @@ export default function HomeScreen() {
       <CompactHeader
         uncheckedItems={uncheckedItems}
         totalItems={totalItems}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
-
-      {/* Search Box - Below sticky header */}
-      <div className="bg-[#FDF6ED] pt-4 px-4 max-w-2xl mx-auto">
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <input
-            type="text"
-            placeholder="חפש פריטים..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] shadow-sm"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      </div>
       <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
         <div className="h-4" aria-hidden="true" />
         

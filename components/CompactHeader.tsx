@@ -1,13 +1,15 @@
 'use client'
 
 import { useTabView } from '@/contexts/TabViewContext'
-import { Share2, ShoppingCart, Pill, Check } from 'lucide-react'
+import { Share2, ShoppingCart, Pill, Check, Search, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 
 interface CompactHeaderProps {
   uncheckedItems: number
   totalItems: number
+  searchQuery: string
+  onSearchChange: (query: string) => void
 }
 
 function CircularProgress({ percentage }: { percentage: number }) {
@@ -60,7 +62,7 @@ function CircularProgress({ percentage }: { percentage: number }) {
   )
 }
 
-export default function CompactHeader({ uncheckedItems, totalItems }: CompactHeaderProps) {
+export default function CompactHeader({ uncheckedItems, totalItems, searchQuery, onSearchChange }: CompactHeaderProps) {
   const params = useParams()
   const listId = params?.listId as string
   const { activeTab, setActiveTab } = useTabView()
@@ -152,6 +154,28 @@ export default function CompactHeader({ uncheckedItems, totalItems }: CompactHea
           >
             <Share2 className="w-5 h-5" />
           </button>
+        </div>
+      </div>
+
+      {/* Search Box */}
+      <div className="max-w-2xl mx-auto px-4 pb-3">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <input
+            type="text"
+            placeholder="חפש פריטים..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D]"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => onSearchChange('')}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
