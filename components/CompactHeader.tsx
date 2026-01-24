@@ -4,6 +4,7 @@ import { useTabView } from '@/contexts/TabViewContext'
 import { Share2, ShoppingCart, Pill, Check, Search, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 
 interface CompactHeaderProps {
   uncheckedItems: number
@@ -104,9 +105,20 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
     <div className="bg-white border-b border-black/5 shadow-sm sticky top-0 pt-safe z-30">
       {/* Main header row */}
       <div className="max-w-2xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-3">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Image
+              src="/apple-icon.png"
+              alt="Stocked"
+              width={40}
+              height={40}
+              className="rounded-lg"
+            />
+          </div>
+
           {/* Progress ring and message */}
-          <div className="flex items-center gap-3 flex-1">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <CircularProgress percentage={progressPercentage} />
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-medium text-gray-700 truncate">
