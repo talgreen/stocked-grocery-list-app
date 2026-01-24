@@ -1,18 +1,12 @@
 'use client'
 
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
 import type { Item } from '@/types/item'
 import { motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { Pencil, Save, Sparkles, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import ItemFormFields from './ItemFormFields'
 
 interface EditItemModalProps {
   item: Item
@@ -30,7 +24,10 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
   const { activeTab } = useTabView()
 
   useEffect(() => {
-    inputRef.current?.focus()
+    const timer = setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   const handleSave = (e: React.FormEvent) => {
@@ -41,94 +38,96 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
     onClose()
   }
 
+  const filteredCategories = categories.filter(cat =>
+    activeTab === 'pharmacy' ? cat.name === 'בית מרקחת' : cat.name !== 'בית מרקחת'
+  )
+
   return (
-    <div className="relative text-right h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700 transition-colors"
+    <div className="relative text-right flex flex-col">
+      {/* Decorative Sparkle */}
+      <div className="absolute top-0 right-0 opacity-20 pointer-events-none">
+        <motion.div
+          animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.1, 1] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <X className="h-6 w-6" />
-        </button>
-        <h2 className="text-lg font-semibold">ערוך פריט</h2>
-        <div className="w-6" /> {/* Spacer for alignment */}
+          <Sparkles className="w-5 h-5 text-[#FFB74D]" />
+        </motion.div>
       </div>
 
-      <form onSubmit={handleSave} className="flex-1 flex flex-col">
-        <div className="flex-1 space-y-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-              שם הפריט
-            </label>
-            <input
-              ref={inputRef}
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
-              placeholder="שם הפריט"
-              required
-            />
+      {/* Compact Header */}
+      <div className="flex items-center justify-between mb-3">
+        <motion.button
+          onClick={onClose}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+        >
+          <X className="h-5 w-5" />
+        </motion.button>
+
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          className="relative"
+        >
+          <div className="bg-gradient-to-br from-[#FFB74D] to-[#FFA726] w-9 h-9 rounded-lg flex items-center justify-center shadow-md shadow-orange-200/50">
+            <Pencil className="w-4 h-4 text-white" />
           </div>
+        </motion.div>
 
-          <div>
-            <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-              הערה (אופציונלי)
-            </label>
-            <input
-              type="text"
-              id="comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-[#FFB74D] focus:border-[#FFB74D] px-4 py-3 text-right text-lg"
-              placeholder="הוסף הערה"
-            />
-          </div>
+        <div className="w-7" />
+      </div>
 
-          {activeTab !== 'pharmacy' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 mr-1">
-                קטגוריה
-              </label>
-              <Select
-                value={categoryId}
-                onValueChange={setCategoryId}
-              >
-                <SelectTrigger className="w-full flex flex-row-reverse justify-between items-center text-lg py-3">
-                  <SelectValue placeholder="בחר קטגוריה" className="text-right" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id.toString()} className="flex flex-row-reverse">
-                      {category.name} {category.emoji}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
+      {/* Title */}
+      <h2 className="text-base font-bold text-gray-800 text-center mb-3">ערוך פריט</h2>
 
-        <div className="flex gap-3 mt-auto mb-6">
+      <form onSubmit={handleSave} className="flex flex-col gap-2">
+        <ItemFormFields
+          ref={inputRef}
+          itemName={name}
+          onItemNameChange={setName}
+          comment={comment}
+          onCommentChange={setComment}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+          categories={filteredCategories}
+          showCategorySelector={activeTab !== 'pharmacy'}
+          showSmartOption={false}
+        />
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-1">
           <motion.button
             type="button"
             onClick={onClose}
-            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-4 rounded-xl transition-colors duration-200 text-lg"
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2.5 px-4 rounded-xl transition-all"
           >
             בטל
           </motion.button>
           <motion.button
             type="submit"
             disabled={!name.trim() || !categoryId}
-            className="flex-1 bg-[#FFB74D] hover:bg-[#FFA726] text-white px-4 py-4 rounded-xl transition-colors duration-200 disabled:opacity-50 text-lg"
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="flex-1 relative overflow-hidden bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-orange-200/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/30"
           >
-            שמור
+            {/* Shimmer effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+              initial={{ x: '-100%' }}
+              animate={{ x: '200%' }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+            />
+            <span className="relative flex items-center justify-center gap-1.5 text-sm">
+              <Save className="w-4 h-4" />
+              <span>שמור</span>
+            </span>
           </motion.button>
         </div>
       </form>
     </div>
   )
-} 
+}

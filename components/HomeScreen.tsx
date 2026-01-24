@@ -792,15 +792,15 @@ export default function HomeScreen() {
                 className="fixed inset-0 bg-black/50 z-50"
               />
               
-              {/* Modal */}
+              {/* Modal - Compact and positioned at top for keyboard visibility */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 50 }}
+                initial={{ opacity: 0, scale: 0.95, y: -20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 50 }}
+                exit={{ opacity: 0, scale: 0.95, y: -20 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                className="fixed inset-x-4 top-[10vh] bottom-[10vh] bg-white rounded-2xl z-50 overflow-hidden shadow-2xl max-w-md mx-auto"
+                className="fixed inset-x-4 top-[12vh] bg-white rounded-2xl z-50 shadow-2xl max-w-md mx-auto"
               >
-                <div className="h-full overflow-y-auto p-6">
+                <div className="p-4">
                   <AddItemForm
                     onAddBackground={handleAddItemBackground}
                     onClose={() => setIsAddFormOpen(false)}
@@ -827,16 +827,16 @@ export default function HomeScreen() {
                 className="fixed inset-0 bg-black/50 z-50"
               />
               
-              {/* Modal */}
+              {/* Modal - Compact and positioned at top for keyboard visibility */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 50 }}
+                initial={{ opacity: 0, scale: 0.95, y: -20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 50 }}
+                exit={{ opacity: 0, scale: 0.95, y: -20 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                className="fixed inset-x-4 top-[10vh] bottom-[10vh] bg-white rounded-2xl z-50 overflow-hidden shadow-2xl max-w-md mx-auto"
+                className="fixed inset-x-4 top-[12vh] bg-white rounded-2xl z-50 shadow-2xl max-w-md mx-auto"
               >
-                <div className="h-full overflow-y-auto p-6">
-                  <EditItemModal 
+                <div className="p-4">
+                  <EditItemModal
                     item={editingItem}
                     currentCategoryId={editingItemCategoryId}
                     categories={categories}
