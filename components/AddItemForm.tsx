@@ -1,18 +1,12 @@
 'use client'
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
 import { motion } from 'framer-motion'
 import { Package, Plus, Sparkles, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import ItemFormFields from './ItemFormFields'
 
 interface AddItemFormProps {
   onAddBackground: (
@@ -40,31 +34,31 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
   }, [])
 
   const checkDuplicateItem = (name: string, itemComment: string = '') => {
-    const trimmedName = name.trim().toLowerCase();
-    const trimmedComment = itemComment.trim().toLowerCase();
+    const trimmedName = name.trim().toLowerCase()
+    const trimmedComment = itemComment.trim().toLowerCase()
 
     for (const category of categories) {
-      if (activeTab === 'grocery' && category.name === 'בית מרקחת') continue;
-      if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') continue;
+      if (activeTab === 'grocery' && category.name === 'בית מרקחת') continue
+      if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') continue
 
       for (const categoryItem of category.items) {
         if (categoryItem.name.trim().toLowerCase() === trimmedName &&
             (categoryItem.comment || '').trim().toLowerCase() === trimmedComment) {
-          return true;
+          return true
         }
       }
     }
-    return false;
-  };
+    return false
+  }
 
   const handleQuickAdd = (e: React.FormEvent) => {
     e.preventDefault()
     if (!item.trim()) return
 
     if (checkDuplicateItem(item.trim(), comment.trim())) {
-      toast.warning('הפריט כבר קיים ברשימה');
-      onClose();
-      return;
+      toast.warning('הפריט כבר קיים ברשימה')
+      onClose()
+      return
     }
 
     const itemName = item.trim()
@@ -77,6 +71,10 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
     onClose()
     onAddBackground(itemName, itemComment, selectedCategory, activeTab)
   }
+
+  const filteredCategories = categories.filter(cat =>
+    activeTab === 'pharmacy' ? cat.name === 'בית מרקחת' : cat.name !== 'בית מרקחת'
+  )
 
   return (
     <div className="relative text-right flex flex-col">
@@ -122,82 +120,26 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
       <h2 className="text-base font-bold text-gray-800 text-center mb-3">הוסף פריט חדש</h2>
 
       <form onSubmit={handleQuickAdd} className="flex flex-col gap-2">
-        {/* Item Name + Category Row */}
-        <div className="flex gap-2">
-          {/* Item Name */}
-          <div className="relative flex-[2]">
-            <input
-              ref={inputRef}
-              type="text"
-              value={item}
-              onChange={(e) => setItem(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] px-3 py-2.5 text-right text-sm transition-all"
-              placeholder="שם הפריט"
-              required
-            />
-            {item.trim() && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              </motion.div>
-            )}
-          </div>
-
-          {/* Category */}
-          {activeTab !== 'pharmacy' && (
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger className="flex-1 flex-row-reverse justify-between items-center text-sm py-2.5 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D]">
-                <SelectValue>
-                  {categoryId === 'auto' ? (
-                    <span className="flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-[#FFB74D]" />
-                      <span className="text-xs">חכם</span>
-                    </span>
-                  ) : (
-                    <span className="text-sm">
-                      {categories.find(c => c.id.toString() === categoryId)?.emoji}
-                    </span>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#FFB74D]" />
-                    זיהוי חכם
-                  </span>
-                </SelectItem>
-                {categories
-                  .filter(cat => cat.name !== 'בית מרקחת')
-                  .map((category) => (
-                  <SelectItem key={category.id} value={category.id.toString()}>
-                    {category.emoji} {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        {/* Comment - Always visible */}
-        <input
-          type="text"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          className="w-full bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] px-3 py-2.5 text-right text-sm transition-all"
-          placeholder="הערה (אופציונלי)"
+        <ItemFormFields
+          ref={inputRef}
+          itemName={item}
+          onItemNameChange={setItem}
+          comment={comment}
+          onCommentChange={setComment}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+          categories={filteredCategories}
+          showCategorySelector={activeTab !== 'pharmacy'}
+          showSmartOption={true}
         />
 
-        {/* Submit Button - Compact */}
+        {/* Submit Button */}
         <motion.button
           type="submit"
           disabled={!item.trim()}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
-          className="w-full relative overflow-hidden bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-orange-200/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/30"
+          className="w-full relative overflow-hidden bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-orange-200/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/30 mt-1"
         >
           {/* Shimmer effect */}
           <motion.div

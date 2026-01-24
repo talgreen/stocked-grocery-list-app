@@ -1,18 +1,12 @@
 'use client'
 
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
 import type { Item } from '@/types/item'
 import { motion } from 'framer-motion'
 import { Pencil, Save, Sparkles, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import ItemFormFields from './ItemFormFields'
 
 interface EditItemModalProps {
   item: Item
@@ -43,6 +37,10 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
     onSave(item.id, name.trim(), comment.trim(), parseInt(categoryId))
     onClose()
   }
+
+  const filteredCategories = categories.filter(cat =>
+    activeTab === 'pharmacy' ? cat.name === 'בית מרקחת' : cat.name !== 'בית מרקחת'
+  )
 
   return (
     <div className="relative text-right flex flex-col">
@@ -85,64 +83,21 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
       <h2 className="text-base font-bold text-gray-800 text-center mb-3">ערוך פריט</h2>
 
       <form onSubmit={handleSave} className="flex flex-col gap-2">
-        {/* Item Name + Category Row */}
-        <div className="flex gap-2">
-          {/* Item Name */}
-          <div className="relative flex-[2]">
-            <input
-              ref={inputRef}
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] px-3 py-2.5 text-right text-sm transition-all"
-              placeholder="שם הפריט"
-              required
-            />
-            {name.trim() && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              </motion.div>
-            )}
-          </div>
-
-          {/* Category */}
-          {activeTab !== 'pharmacy' && (
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger className="flex-1 flex-row-reverse justify-between items-center text-sm py-2.5 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D]">
-                <SelectValue>
-                  <span className="text-sm">
-                    {categories.find(c => c.id.toString() === categoryId)?.emoji}
-                  </span>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {categories
-                  .filter(cat => activeTab === 'pharmacy' ? cat.name === 'בית מרקחת' : cat.name !== 'בית מרקחת')
-                  .map((category) => (
-                  <SelectItem key={category.id} value={category.id.toString()}>
-                    {category.emoji} {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        {/* Comment - Always visible */}
-        <input
-          type="text"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          className="w-full bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] px-3 py-2.5 text-right text-sm transition-all"
-          placeholder="הערה (אופציונלי)"
+        <ItemFormFields
+          ref={inputRef}
+          itemName={name}
+          onItemNameChange={setName}
+          comment={comment}
+          onCommentChange={setComment}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+          categories={filteredCategories}
+          showCategorySelector={activeTab !== 'pharmacy'}
+          showSmartOption={false}
         />
 
-        {/* Action Buttons - Compact */}
-        <div className="flex gap-2 pt-2">
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-1">
           <motion.button
             type="button"
             onClick={onClose}
