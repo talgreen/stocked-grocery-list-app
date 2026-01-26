@@ -51,57 +51,14 @@ const mockSuggestions: RepeatSuggestion[] = [
   },
 ]
 
+// Helper function to expand the component (since it starts collapsed)
+async function expandComponent(user: ReturnType<typeof userEvent.setup>) {
+  const headerButton = screen.getByRole('button', { name: /קניות חוזרות/i })
+  await user.click(headerButton)
+}
+
 describe('RepeatSuggestions', () => {
-  it('renders suggestions with item names', () => {
-    const onUncheck = vi.fn()
-    const onSnooze = vi.fn()
-
-    render(
-      <RepeatSuggestions
-        suggestions={mockSuggestions}
-        onUncheck={onUncheck}
-        onSnooze={onSnooze}
-      />
-    )
-
-    expect(screen.getByText('חלב')).toBeInTheDocument()
-    expect(screen.getByText('לחם')).toBeInTheDocument()
-  })
-
-  it('displays category emoji and name for each suggestion', () => {
-    const onUncheck = vi.fn()
-    const onSnooze = vi.fn()
-
-    render(
-      <RepeatSuggestions
-        suggestions={mockSuggestions}
-        onUncheck={onUncheck}
-        onSnooze={onSnooze}
-      />
-    )
-
-    expect(screen.getByText(/🥛.*מוצרי חלב/)).toBeInTheDocument()
-    expect(screen.getByText(/🍞.*לחם ומאפים/)).toBeInTheDocument()
-  })
-
-  it('shows formatted interval text', () => {
-    const onUncheck = vi.fn()
-    const onSnooze = vi.fn()
-
-    render(
-      <RepeatSuggestions
-        suggestions={mockSuggestions}
-        onUncheck={onUncheck}
-        onSnooze={onSnooze}
-      />
-    )
-
-    // Should show intervals - using getAllByText since there are multiple suggestions
-    const intervalTexts = screen.getAllByText(/בערך כל/)
-    expect(intervalTexts.length).toBeGreaterThan(0)
-  })
-
-  it('calls onUncheck when "החזר לרשימה" button is clicked', async () => {
+  it('renders suggestions with item names when expanded', async () => {
     const user = userEvent.setup()
     const onUncheck = vi.fn()
     const onSnooze = vi.fn()
@@ -114,8 +71,70 @@ describe('RepeatSuggestions', () => {
       />
     )
 
-    const returnButtons = screen.getAllByText('החזר לרשימה')
-    await user.click(returnButtons[0])
+    // Expand the component first (starts collapsed by default)
+    await expandComponent(user)
+
+    expect(screen.getByText('חלב')).toBeInTheDocument()
+    expect(screen.getByText('לחם')).toBeInTheDocument()
+  })
+
+  it('displays category emoji for each suggestion when expanded', async () => {
+    const user = userEvent.setup()
+    const onUncheck = vi.fn()
+    const onSnooze = vi.fn()
+
+    render(
+      <RepeatSuggestions
+        suggestions={mockSuggestions}
+        onUncheck={onUncheck}
+        onSnooze={onSnooze}
+      />
+    )
+
+    await expandComponent(user)
+
+    expect(screen.getByText('🥛')).toBeInTheDocument()
+    expect(screen.getByText('🍞')).toBeInTheDocument()
+  })
+
+  it('shows formatted interval text when expanded', async () => {
+    const user = userEvent.setup()
+    const onUncheck = vi.fn()
+    const onSnooze = vi.fn()
+
+    render(
+      <RepeatSuggestions
+        suggestions={mockSuggestions}
+        onUncheck={onUncheck}
+        onSnooze={onSnooze}
+      />
+    )
+
+    await expandComponent(user)
+
+    // Should show intervals - using getAllByText since there are multiple suggestions
+    const intervalTexts = screen.getAllByText(/כל \d+ ימים/)
+    expect(intervalTexts.length).toBeGreaterThan(0)
+  })
+
+  it('calls onUncheck when add button is clicked', async () => {
+    const user = userEvent.setup()
+    const onUncheck = vi.fn()
+    const onSnooze = vi.fn()
+
+    render(
+      <RepeatSuggestions
+        suggestions={mockSuggestions}
+        onUncheck={onUncheck}
+        onSnooze={onSnooze}
+      />
+    )
+
+    await expandComponent(user)
+
+    // Add buttons now use aria-label
+    const addButtons = screen.getAllByRole('button', { name: 'הוסף לרשימה' })
+    await user.click(addButtons[0])
 
     expect(onUncheck).toHaveBeenCalledWith(
       mockSuggestions[0].categoryId,
@@ -136,14 +155,17 @@ describe('RepeatSuggestions', () => {
       />
     )
 
-    const snoozeButtons = screen.getAllByText('השהה')
+    await expandComponent(user)
+
+    // Snooze buttons now use aria-label
+    const snoozeButtons = screen.getAllByRole('button', { name: 'השהה פריט' })
     await user.click(snoozeButtons[0])
 
     // Dropdown should show snooze options
     // Note: Radix UI dropdowns may need special handling in tests
   })
 
-  it('can be collapsed and expanded', async () => {
+  it('starts collapsed and can be expanded', async () => {
     const user = userEvent.setup()
     const onUncheck = vi.fn()
     const onSnooze = vi.fn()
@@ -156,34 +178,34 @@ describe('RepeatSuggestions', () => {
       />
     )
 
-    // Should show items initially (expanded by default based on useState(false))
+    // Should start collapsed - items not visible
+    expect(screen.queryByText('חלב')).not.toBeInTheDocument()
+
+    // Should show preview text when collapsed
+    expect(screen.getByText('קניות חוזרות')).toBeInTheDocument()
+
+    // Expand the component
+    await expandComponent(user)
+
+    // Items should now be visible
     expect(screen.getByText('חלב')).toBeInTheDocument()
-
-    // Find and click the collapse button
-    const collapseButton = screen.getByText('הצעות חכמות לפריטים שחוזרים')
-    await user.click(collapseButton)
-
-    // Items should be hidden, collapsed message shown
-    // Note: This depends on the actual implementation of collapse/expand
+    expect(screen.getByText('לחם')).toBeInTheDocument()
   })
 
-  it('shows appropriate message for suggestion count', () => {
+  it('shows count badge', () => {
     const onUncheck = vi.fn()
     const onSnooze = vi.fn()
 
-    const singleSuggestion = [mockSuggestions[0]]
-
     render(
       <RepeatSuggestions
-        suggestions={singleSuggestion}
+        suggestions={mockSuggestions}
         onUncheck={onUncheck}
         onSnooze={onSnooze}
       />
     )
 
-    // Should indicate there's one suggestion when collapsed
-    // (This is shown in the collapse button text)
-    expect(screen.getByText(/הוספה מהירה/)).toBeInTheDocument()
+    // Should show count badge
+    expect(screen.getByText('2')).toBeInTheDocument()
   })
 
   it('does not render when suggestions array is empty', () => {
@@ -202,7 +224,8 @@ describe('RepeatSuggestions', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('displays purchase history information', () => {
+  it('displays purchase history information when expanded', async () => {
+    const user = userEvent.setup()
     const onUncheck = vi.fn()
     const onSnooze = vi.fn()
 
@@ -214,12 +237,15 @@ describe('RepeatSuggestions', () => {
       />
     )
 
+    await expandComponent(user)
+
     // Should show purchase history - using getAllByText since there are multiple suggestions
-    const purchaseTexts = screen.getAllByText(/נקנה/)
+    const purchaseTexts = screen.getAllByText(/לפני \d+ ימים/)
     expect(purchaseTexts.length).toBeGreaterThan(0)
   })
 
-  it('shows privacy notice about local storage', () => {
+  it('shows footer text when expanded', async () => {
+    const user = userEvent.setup()
     const onUncheck = vi.fn()
     const onSnooze = vi.fn()
 
@@ -231,12 +257,15 @@ describe('RepeatSuggestions', () => {
       />
     )
 
+    await expandComponent(user)
+
     expect(
-      screen.getByText(/ההצעות מבוססות על הרגלי הקנייה האישיים שלך ונשמרות מקומית בלבד/)
+      screen.getByText(/מבוסס על היסטוריית הקניות שלך/)
     ).toBeInTheDocument()
   })
 
-  it('handles multiple suggestions correctly', () => {
+  it('handles multiple suggestions correctly when expanded', async () => {
+    const user = userEvent.setup()
     const onUncheck = vi.fn()
     const onSnooze = vi.fn()
 
@@ -248,11 +277,13 @@ describe('RepeatSuggestions', () => {
       />
     )
 
-    // Should render both suggestions
-    const returnButtons = screen.getAllByText('החזר לרשימה')
-    expect(returnButtons).toHaveLength(2)
+    await expandComponent(user)
 
-    const snoozeButtons = screen.getAllByText('השהה')
+    // Should render both suggestions with add buttons
+    const addButtons = screen.getAllByRole('button', { name: 'הוסף לרשימה' })
+    expect(addButtons).toHaveLength(2)
+
+    const snoozeButtons = screen.getAllByRole('button', { name: 'השהה פריט' })
     expect(snoozeButtons).toHaveLength(2)
   })
 })
