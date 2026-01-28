@@ -8,6 +8,29 @@ import { Check, ChevronDown, Square } from 'lucide-react'
 import { memo, useEffect, useRef, useState } from 'react'
 import GroceryItem from './GroceryItem'
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24
+const RARE_ITEM_AGE_DAYS = 45
+
+function isRareItem(item: Item): boolean {
+  if (!item.purchased) return false
+  if ((item.purchaseCount ?? 0) > 1) return false
+  if (!item.lastPurchaseAt) return false
+  const daysSince = (Date.now() - new Date(item.lastPurchaseAt).getTime()) / MS_PER_DAY
+  return daysSince > RARE_ITEM_AGE_DAYS
+}
+
+function sortItemsWithRareLast(items: Item[]): Item[] {
+  return [...items].sort((a, b) => {
+    const aRare = isRareItem(a)
+    const bRare = isRareItem(b)
+    // Rare items go to bottom
+    if (aRare !== bRare) return aRare ? 1 : -1
+    // Then sort by purchased status (unpurchased first)
+    if (a.purchased !== b.purchased) return a.purchased ? 1 : -1
+    return 0
+  })
+}
+
 interface CategoryListProps {
   categories: Category[]
   onToggleItem: (categoryId: number, itemId: number) => void
@@ -135,7 +158,7 @@ const CategoryList = memo(function CategoryList({
             className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm"
           >
             <ul className="divide-y divide-black/5 list-none">
-              {pharmacyCategory.items.map((item) => (
+              {sortItemsWithRareLast(pharmacyCategory.items).map((item) => (
                 <GroceryItem
                   key={item.id}
                   item={item}
@@ -276,7 +299,7 @@ const CategoryList = memo(function CategoryList({
                       className="overflow-hidden"
                     >
                       <ul className="divide-y divide-black/5 list-none">
-                        {category.items.map((item) => (
+                        {sortItemsWithRareLast(category.items).map((item) => (
                           <GroceryItem
                             key={item.id}
                             item={item}
