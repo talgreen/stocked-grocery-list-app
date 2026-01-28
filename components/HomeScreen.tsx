@@ -7,7 +7,7 @@ import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, Plus } from 'lucide-react'
+import { ChevronDown, Clock, Loader2, Plus } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -27,6 +27,40 @@ const EditItemModal = dynamic(() => import('./EditItemModal'), {
 })
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
+const RARE_ITEM_AGE_DAYS = 45
+
+function isRareItem(item: Item): boolean {
+  if (!item.purchased) return false
+  if ((item.purchaseCount ?? 0) > 1) return false
+  if (!item.lastPurchaseAt) return false
+  const daysSince = (Date.now() - new Date(item.lastPurchaseAt).getTime()) / MS_PER_DAY
+  return daysSince > RARE_ITEM_AGE_DAYS
+}
+
+function filterRareItems(categories: Category[]): { filtered: Category[]; rareCount: number; rareCategories: Category[] } {
+  let rareCount = 0
+  const filtered: Category[] = []
+  const rareCategoryMap: Record<number, Category> = {}
+
+  for (const category of categories) {
+    const kept: Item[] = []
+    const rare: Item[] = []
+    for (const item of category.items) {
+      if (isRareItem(item)) {
+        rare.push(item)
+      } else {
+        kept.push(item)
+      }
+    }
+    rareCount += rare.length
+    filtered.push({ ...category, items: kept })
+    if (rare.length > 0) {
+      rareCategoryMap[category.id] = { ...category, items: rare }
+    }
+  }
+
+  return { filtered, rareCount, rareCategories: Object.values(rareCategoryMap) }
+}
 
 // Normalize category name for comparison - strips leading emojis and whitespace
 const normalizeCategory = (name: string): string =>
@@ -46,6 +80,12 @@ export default function HomeScreen() {
   const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
   const [pendingAddCount, setPendingAddCount] = useState(0)
   const { activeTab } = useTabView()
+  const [showRareItems, setShowRareItems] = useState(false)
+
+  const { filtered: categoriesWithoutRare, rareCount, rareCategories } = useMemo(
+    () => filterRareItems(categories),
+    [categories]
+  )
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -768,16 +808,61 @@ export default function HomeScreen() {
 
         {/* Category List - Only show when not in search mode */}
         {!isSearchMode && (
-          <CategoryList
-            categories={categories.filter(category => category.items.length > 0)}
-            onToggleItem={handleToggleItem}
-            onDeleteItem={handleDeleteItem}
-            expandedCategories={expandedCategories}
-            setExpandedCategories={setExpandedCategories}
-            onEditItem={handleEditItem}
-            onAddItem={handleAddItem}
-            isSearchMode={isSearchMode}
-          />
+          <>
+            <CategoryList
+              categories={categoriesWithoutRare.filter(category => category.items.length > 0)}
+              onToggleItem={handleToggleItem}
+              onDeleteItem={handleDeleteItem}
+              expandedCategories={expandedCategories}
+              setExpandedCategories={setExpandedCategories}
+              onEditItem={handleEditItem}
+              onAddItem={handleAddItem}
+              isSearchMode={isSearchMode}
+            />
+
+            {/* Rare / one-time purchases section */}
+            {rareCount > 0 && (
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowRareItems(prev => !prev)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white/60 rounded-2xl border border-black/5 text-sm text-black/50 hover:bg-white/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{rareCount} פריטים שנקנו פעם אחת</span>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: showRareItems ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </motion.div>
+                </button>
+                <AnimatePresence>
+                  {showRareItems && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden mt-2"
+                    >
+                      <CategoryList
+                        categories={rareCategories}
+                        onToggleItem={handleToggleItem}
+                        onDeleteItem={handleDeleteItem}
+                        expandedCategories={expandedCategories}
+                        setExpandedCategories={setExpandedCategories}
+                        onEditItem={handleEditItem}
+                        onAddItem={handleAddItem}
+                        isSearchMode={isSearchMode}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </>
         )}
 
         <AnimatePresence>
