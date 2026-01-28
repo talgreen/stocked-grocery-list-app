@@ -12,13 +12,14 @@ interface EditItemModalProps {
   item: Item
   currentCategoryId: number
   categories: Category[]
-  onSave: (itemId: number, name: string, comment: string, categoryId: number) => void
+  onSave: (itemId: number, name: string, comment: string, categoryId: number, quantity?: number | null) => void
   onClose: () => void
 }
 
 export default function EditItemModal({ item, currentCategoryId, categories, onSave, onClose }: EditItemModalProps) {
   const [name, setName] = useState(item.name)
   const [comment, setComment] = useState(item.comment || '')
+  const [quantity, setQuantity] = useState(item.quantity ? item.quantity.toString() : '')
   const [categoryId, setCategoryId] = useState(currentCategoryId.toString())
   const inputRef = useRef<HTMLInputElement>(null)
   const { activeTab } = useTabView()
@@ -34,7 +35,8 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
     e.preventDefault()
     if (!name.trim() || !categoryId) return
 
-    onSave(item.id, name.trim(), comment.trim(), parseInt(categoryId))
+    const parsedQuantity = quantity ? parseInt(quantity) : null
+    onSave(item.id, name.trim(), comment.trim(), parseInt(categoryId), parsedQuantity)
     onClose()
   }
 
@@ -89,6 +91,8 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
           onItemNameChange={setName}
           comment={comment}
           onCommentChange={setComment}
+          quantity={quantity}
+          onQuantityChange={setQuantity}
           categoryId={categoryId}
           onCategoryChange={setCategoryId}
           categories={filteredCategories}

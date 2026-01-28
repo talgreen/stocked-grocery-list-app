@@ -13,7 +13,8 @@ interface AddItemFormProps {
     itemName: string,
     itemComment: string,
     categorySelection: string,
-    activeTab: 'grocery' | 'pharmacy'
+    activeTab: 'grocery' | 'pharmacy',
+    quantity?: number | null
   ) => void
   onClose: () => void
   categories: Category[]
@@ -22,6 +23,7 @@ interface AddItemFormProps {
 export default function AddItemForm({ onAddBackground, onClose, categories }: AddItemFormProps) {
   const [item, setItem] = useState('')
   const [comment, setComment] = useState('')
+  const [quantity, setQuantity] = useState('')
   const [categoryId, setCategoryId] = useState('auto')
   const inputRef = useRef<HTMLInputElement>(null)
   const { activeTab } = useTabView()
@@ -64,12 +66,14 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
     const itemName = item.trim()
     const itemComment = comment.trim()
     const selectedCategory = categoryId
+    const parsedQuantity = quantity ? parseInt(quantity) : null
 
     setItem('')
     setComment('')
+    setQuantity('')
     setCategoryId('auto')
     onClose()
-    onAddBackground(itemName, itemComment, selectedCategory, activeTab)
+    onAddBackground(itemName, itemComment, selectedCategory, activeTab, parsedQuantity)
   }
 
   const filteredCategories = categories.filter(cat =>
@@ -126,6 +130,8 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
           onItemNameChange={setItem}
           comment={comment}
           onCommentChange={setComment}
+          quantity={quantity}
+          onQuantityChange={setQuantity}
           categoryId={categoryId}
           onCategoryChange={setCategoryId}
           categories={filteredCategories}

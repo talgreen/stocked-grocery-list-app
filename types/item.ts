@@ -3,6 +3,7 @@ export interface Item {
   name: string
   purchased: boolean
   comment?: string
+  quantity?: number | null
   photo?: string | null
   categoryId?: number
   lastPurchaseAt?: string | null

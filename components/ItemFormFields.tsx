@@ -16,6 +16,8 @@ interface ItemFormFieldsProps {
   onItemNameChange: (value: string) => void
   comment: string
   onCommentChange: (value: string) => void
+  quantity: string
+  onQuantityChange: (value: string) => void
   categoryId: string
   onCategoryChange: (value: string) => void
   categories: Category[]
@@ -29,6 +31,8 @@ const ItemFormFields = forwardRef<HTMLInputElement, ItemFormFieldsProps>(({
   onItemNameChange,
   comment,
   onCommentChange,
+  quantity,
+  onQuantityChange,
   categoryId,
   onCategoryChange,
   categories,
@@ -86,14 +90,25 @@ const ItemFormFields = forwardRef<HTMLInputElement, ItemFormFieldsProps>(({
         )}
       </div>
 
-      {/* Comment - Always visible */}
-      <input
-        type="text"
-        value={comment}
-        onChange={(e) => onCommentChange(e.target.value)}
-        className="w-full bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] px-3 py-2.5 text-right text-sm transition-all"
-        placeholder="הערה (אופציונלי)"
-      />
+      {/* Quantity + Comment Row */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={comment}
+          onChange={(e) => onCommentChange(e.target.value)}
+          className="flex-[2] bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] px-3 py-2.5 text-right text-sm transition-all"
+          placeholder="הערה (אופציונלי)"
+        />
+        <input
+          type="number"
+          inputMode="numeric"
+          value={quantity}
+          onChange={(e) => onQuantityChange(e.target.value)}
+          min="1"
+          className="flex-1 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D] px-3 py-2.5 text-center text-sm transition-all"
+          placeholder="כמות"
+        />
+      </div>
     </div>
   )
 })

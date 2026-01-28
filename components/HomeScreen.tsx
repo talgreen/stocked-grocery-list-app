@@ -198,7 +198,8 @@ export default function HomeScreen() {
     itemName: string,
     itemComment: string,
     categorySelection: string,
-    currentActiveTab: 'grocery' | 'pharmacy'
+    currentActiveTab: 'grocery' | 'pharmacy',
+    quantity?: number | null
   ) => {
     // Check for duplicates first
     if (checkDuplicateItem(itemName, itemComment)) {
@@ -238,7 +239,7 @@ export default function HomeScreen() {
       }
 
       await handleAddItemWithCategory(
-        { name: itemName, comment: itemComment },
+        { name: itemName, comment: itemComment, quantity: quantity || undefined },
         category,
         emoji
       );
@@ -490,7 +491,7 @@ export default function HomeScreen() {
   }, [categories, pendingScrollItemId])
 
   // Handle updating an existing item
-  const handleUpdateItem = async (itemId: number, name: string, comment: string, newCategoryId: number) => {
+  const handleUpdateItem = async (itemId: number, name: string, comment: string, newCategoryId: number, quantity?: number | null) => {
     try {
       // Find the item and its current category
       let itemToUpdate: Item | null = null;
@@ -514,7 +515,8 @@ export default function HomeScreen() {
       const updatedItem = {
         ...itemToUpdate,
         name,
-        comment
+        comment,
+        quantity: quantity || null
       };
 
       let updatedCategories;
