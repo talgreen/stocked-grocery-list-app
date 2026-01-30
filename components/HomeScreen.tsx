@@ -157,46 +157,42 @@ export default function HomeScreen() {
     };
 
     // Find existing category first
-    let updatedCategories: Category[] = [];
+    const normalizedInput = normalizeCategory(categoryName);
+    let working = [...categoriesRef.current];
     let categoryId: number;
 
-    const normalizedInput = normalizeCategory(categoryName);
+    const existingCategory = working.find(c =>
+      normalizeCategory(c.name) === normalizedInput
+    );
 
-    setCategories(prev => {
-      let working = [...prev];
+    if (existingCategory) {
+      categoryId = existingCategory.id;
+    } else {
+      const maxId = Math.max(...working.map(cat => cat.id), 0);
+      const newCategory = {
+        id: maxId + 1,
+        emoji: emoji,
+        name: categoryName,
+        items: [],
+      };
+      working.push(newCategory);
+      categoryId = newCategory.id;
+    }
 
-      const existingCategory = working.find(c =>
-        normalizeCategory(c.name) === normalizedInput
-      );
-
-      if (existingCategory) {
-        categoryId = existingCategory.id;
-      } else {
-        const maxId = Math.max(...working.map(cat => cat.id), 0);
-        const newCategory = {
-          id: maxId + 1,
-          emoji: emoji,
-          name: categoryName,
-          items: [],
+    const updatedCategories = working.map(category => {
+      if (category.id === categoryId) {
+        return {
+          ...category,
+          items: [...category.items.filter(item => !item.purchased), newItem, ...category.items.filter(item => item.purchased)],
         };
-        working.push(newCategory);
-        categoryId = newCategory.id;
       }
-
-      updatedCategories = working.map(category => {
-        if (category.id === categoryId) {
-          return {
-            ...category,
-            items: [...category.items.filter(item => !item.purchased), newItem, ...category.items.filter(item => item.purchased)],
-          };
-        }
-        return category;
-      });
-      return updatedCategories;
+      return category;
     });
 
+    categoriesRef.current = updatedCategories;
+    setCategories(updatedCategories);
     setExpandedCategories((prev) => (
-      prev.includes(categoryId!) ? prev : [...prev, categoryId!]
+      prev.includes(categoryId) ? prev : [...prev, categoryId]
     ))
     setPendingScrollItemId(newItem.id)
 
@@ -274,37 +270,39 @@ export default function HomeScreen() {
     }
 
     const now = new Date()
-    let updatedCategories: Category[] = []
 
-    setCategories(prev => {
-      updatedCategories = prev.map(category => {
-        if (category.id !== categoryId) return category
+    // Use ref to get latest state, avoiding stale closure issues
+    const prevCategories = categoriesRef.current
+    const updatedCategories = prevCategories.map(category => {
+      if (category.id !== categoryId) return category
 
-        const updatedItems = category.items
-          .map(item => {
-            if (item.id !== itemId) {
-              return item
+      const updatedItems = category.items
+        .map(item => {
+          if (item.id !== itemId) {
+            return item
+          }
+
+          if (item.purchased) {
+            return {
+              ...item,
+              purchased: false,
+              snoozeUntil: null,
             }
+          }
 
-            if (item.purchased) {
-              return {
-                ...item,
-                purchased: false,
-                snoozeUntil: null,
-              }
-            }
+          return updateItemPurchaseStats(item, now)
+        })
+        .sort((a, b) => (a.purchased === b.purchased ? 0 : a.purchased ? 1 : -1))
 
-            return updateItemPurchaseStats(item, now)
-          })
-          .sort((a, b) => (a.purchased === b.purchased ? 0 : a.purchased ? 1 : -1))
-
-        return {
-          ...category,
-          items: updatedItems,
-        }
-      })
-      return updatedCategories
+      return {
+        ...category,
+        items: updatedItems,
+      }
     })
+
+    // Update ref immediately so subsequent rapid clicks see the new state
+    categoriesRef.current = updatedCategories
+    setCategories(updatedCategories)
 
     if (listId) {
       try {
@@ -319,26 +317,26 @@ export default function HomeScreen() {
     if (days <= 0) return
 
     const snoozeUntil = new Date(Date.now() + days * MS_PER_DAY).toISOString()
-    let updatedCategories: Category[] = []
 
-    setCategories(prev => {
-      updatedCategories = prev.map(category => {
-        if (category.id !== categoryId) return category
+    const prevCategories = categoriesRef.current
+    const updatedCategories = prevCategories.map(category => {
+      if (category.id !== categoryId) return category
 
-        return {
-          ...category,
-          items: category.items.map(item =>
-            item.id === itemId
-              ? {
-                  ...item,
-                  snoozeUntil,
-                }
-              : item
-          ),
-        }
-      })
-      return updatedCategories
+      return {
+        ...category,
+        items: category.items.map(item =>
+          item.id === itemId
+            ? {
+                ...item,
+                snoozeUntil,
+              }
+            : item
+        ),
+      }
     })
+
+    categoriesRef.current = updatedCategories
+    setCategories(updatedCategories)
 
     if (listId) {
       try {
@@ -350,16 +348,15 @@ export default function HomeScreen() {
   }
 
   const handleDeleteItem = async (categoryId: number, itemId: number) => {
-    let updatedCategories: Category[] = []
+    const prevCategories = categoriesRef.current
+    const updatedCategories = prevCategories.map(category =>
+      category.id === categoryId
+        ? { ...category, items: category.items.filter(item => item.id !== itemId) }
+        : category
+    )
 
-    setCategories(prev => {
-      updatedCategories = prev.map(category =>
-        category.id === categoryId
-          ? { ...category, items: category.items.filter(item => item.id !== itemId) }
-          : category
-      )
-      return updatedCategories
-    })
+    categoriesRef.current = updatedCategories
+    setCategories(updatedCategories)
 
     if (listId) {
       try {
@@ -388,20 +385,19 @@ export default function HomeScreen() {
       snoozeUntil: null,
     };
 
-    let updatedCategories: Category[] = [];
-
-    setCategories(prev => {
-      updatedCategories = prev.map(c => {
-        if (c.id === categoryId) {
-          return {
-            ...c,
-            items: [...c.items.filter(item => !item.purchased), newItem, ...c.items.filter(item => item.purchased)]
-          };
-        }
-        return c;
-      });
-      return updatedCategories;
+    const prevCategories = categoriesRef.current;
+    const updatedCategories = prevCategories.map(c => {
+      if (c.id === categoryId) {
+        return {
+          ...c,
+          items: [...c.items.filter(item => !item.purchased), newItem, ...c.items.filter(item => item.purchased)]
+        };
+      }
+      return c;
     });
+
+    categoriesRef.current = updatedCategories;
+    setCategories(updatedCategories);
     setExpandedCategories((prev) => (
       prev.includes(categoryId) ? prev : [...prev, categoryId]
     ))
@@ -514,10 +510,11 @@ export default function HomeScreen() {
   const handleUpdateItem = async (itemId: number, name: string, comment: string, newCategoryId: number) => {
     try {
       // Find the item and its current category
+      const prevCategories = categoriesRef.current;
       let itemToUpdate: Item | null = null;
       let sourceCategory: number | null = null;
 
-      for (const category of categories) {
+      for (const category of prevCategories) {
         const foundItem = category.items.find(item => item.id === itemId);
         if (foundItem) {
           itemToUpdate = foundItem;
@@ -538,39 +535,39 @@ export default function HomeScreen() {
         comment
       };
 
-      let updatedCategories: Category[] = [];
+      let updatedCategories: Category[];
 
-      setCategories(prev => {
-        if (sourceCategory === newCategoryId) {
-          updatedCategories = prev.map(category => {
-            if (category.id === sourceCategory) {
-              return {
-                ...category,
-                items: category.items.map(item =>
-                  item.id === itemId ? updatedItem : item
-                )
-              };
-            }
-            return category;
-          });
-        } else {
-          updatedCategories = prev.map(category => {
-            if (category.id === sourceCategory) {
-              return {
-                ...category,
-                items: category.items.filter(item => item.id !== itemId)
-              };
-            } else if (category.id === newCategoryId) {
-              return {
-                ...category,
-                items: [...category.items.filter(item => !item.purchased), updatedItem, ...category.items.filter(item => item.purchased)]
-              };
-            }
-            return category;
-          });
-        }
-        return updatedCategories;
-      });
+      if (sourceCategory === newCategoryId) {
+        updatedCategories = prevCategories.map(category => {
+          if (category.id === sourceCategory) {
+            return {
+              ...category,
+              items: category.items.map(item =>
+                item.id === itemId ? updatedItem : item
+              )
+            };
+          }
+          return category;
+        });
+      } else {
+        updatedCategories = prevCategories.map(category => {
+          if (category.id === sourceCategory) {
+            return {
+              ...category,
+              items: category.items.filter(item => item.id !== itemId)
+            };
+          } else if (category.id === newCategoryId) {
+            return {
+              ...category,
+              items: [...category.items.filter(item => !item.purchased), updatedItem, ...category.items.filter(item => item.purchased)]
+            };
+          }
+          return category;
+        });
+      }
+
+      categoriesRef.current = updatedCategories;
+      setCategories(updatedCategories);
 
       await persistCategories(listId, updatedCategories);
       toast.success('הפריט עודכן בהצלחה');

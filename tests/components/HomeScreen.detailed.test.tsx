@@ -633,4 +633,187 @@ describe('HomeScreen - Detailed Tests', () => {
       })
     })
   })
+
+  describe('Race Condition Prevention', () => {
+    it('both items remain checked after toggling two items rapidly', async () => {
+      const user = userEvent.setup()
+
+      // Mock categories with two unchecked items
+      const twoItemCategories: Category[] = [
+        {
+          id: 1,
+          name: 'מוצרי חלב',
+          emoji: '🥛',
+          items: [
+            {
+              id: 1,
+              name: 'חלב',
+              purchased: false,
+              comment: '',
+              photo: null,
+              categoryId: 1,
+              lastPurchaseAt: null,
+              expectedGapDays: null,
+              gapVariance: null,
+              decayedCount: 0,
+              purchaseCount: 0,
+              snoozeUntil: null,
+            },
+            {
+              id: 2,
+              name: 'גבינה',
+              purchased: false,
+              comment: '',
+              photo: null,
+              categoryId: 1,
+              lastPurchaseAt: null,
+              expectedGapDays: null,
+              gapVariance: null,
+              decayedCount: 0,
+              purchaseCount: 0,
+              snoozeUntil: null,
+            },
+          ],
+        },
+      ]
+
+      vi.mocked(subscribeToList).mockImplementation((listId, onData) => {
+        onData({ categories: twoItemCategories })
+        return () => {}
+      })
+
+      vi.mocked(updateList).mockResolvedValue(undefined)
+
+      renderWithProvider(<HomeScreen />)
+
+      await waitFor(() => {
+        expect(screen.getByText('מוצרי חלב')).toBeInTheDocument()
+      })
+
+      // Expand category
+      const categoryHeader = screen.getByText('מוצרי חלב')
+      await user.click(categoryHeader)
+
+      await waitFor(() => {
+        expect(screen.getByText('חלב')).toBeInTheDocument()
+        expect(screen.getByText('גבינה')).toBeInTheDocument()
+      })
+
+      // Find both item checkboxes
+      const milkRow = screen.getByText('חלב').closest('li')
+      const cheeseRow = screen.getByText('גבינה').closest('li')
+      const milkCheckbox = milkRow?.querySelectorAll('button')[0]
+      const cheeseCheckbox = cheeseRow?.querySelectorAll('button')[0]
+
+      expect(milkCheckbox).toBeDefined()
+      expect(cheeseCheckbox).toBeDefined()
+
+      // Click both checkboxes rapidly
+      await user.click(milkCheckbox!)
+      await user.click(cheeseCheckbox!)
+
+      // Both items should show as checked (line-through style)
+      // This verifies the functional updater preserves both state changes
+      await waitFor(() => {
+        const updatedMilkRow = screen.getByText('חלב').closest('li')
+        const updatedCheeseRow = screen.getByText('גבינה').closest('li')
+
+        const milkText = updatedMilkRow?.querySelector('span')
+        const cheeseText = updatedCheeseRow?.querySelector('span')
+
+        expect(milkText?.className).toContain('line-through')
+        expect(cheeseText?.className).toContain('line-through')
+      })
+
+      // Verify updateList was called twice
+      expect(updateList).toHaveBeenCalledTimes(2)
+    })
+
+    it('ignores onSnapshot updates while writes are pending', async () => {
+      const user = userEvent.setup()
+      let snapshotCallback: ((data: { categories: Category[] }) => void) | null = null
+
+      const initialCategories: Category[] = [
+        {
+          id: 1,
+          name: 'מוצרי חלב',
+          emoji: '🥛',
+          items: [
+            {
+              id: 1,
+              name: 'חלב',
+              purchased: false,
+              comment: '',
+              photo: null,
+              categoryId: 1,
+              lastPurchaseAt: null,
+              expectedGapDays: null,
+              gapVariance: null,
+              decayedCount: 0,
+              purchaseCount: 0,
+              snoozeUntil: null,
+            },
+          ],
+        },
+      ]
+
+      // Capture the snapshot callback so we can trigger it manually
+      vi.mocked(subscribeToList).mockImplementation((listId, onData) => {
+        snapshotCallback = onData
+        onData({ categories: initialCategories })
+        return () => {}
+      })
+
+      // Track calls and control when the promise resolves
+      let resolveUpdate: (() => void) | null = null
+      vi.mocked(updateList).mockImplementation(() => {
+        return new Promise(resolve => {
+          resolveUpdate = resolve
+        })
+      })
+
+      renderWithProvider(<HomeScreen />)
+
+      await waitFor(() => {
+        expect(screen.getByText('מוצרי חלב')).toBeInTheDocument()
+      })
+
+      // Expand category
+      const categoryHeader = screen.getByText('מוצרי חלב')
+      await user.click(categoryHeader)
+
+      await waitFor(() => {
+        expect(screen.getByText('חלב')).toBeInTheDocument()
+      })
+
+      // Find and click the checkbox
+      const milkRow = screen.getByText('חלב').closest('li')
+      const checkbox = milkRow?.querySelectorAll('button')[0]
+
+      // Toggle the item (this starts the write)
+      await user.click(checkbox!)
+
+      // Wait for updateList to be called (write is now pending)
+      await waitFor(() => {
+        expect(updateList).toHaveBeenCalled()
+      })
+
+      // Simulate a stale onSnapshot update arriving while write is pending
+      // This mimics the Firestore echo that was causing items to revert
+      snapshotCallback!({ categories: initialCategories })
+
+      // Give React time to process the snapshot update
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      // The UI should still show the item as checked (optimistic update preserved)
+      // because the snapshot update should be ignored while write is pending
+      const updatedMilkRow = screen.getByText('חלב').closest('li')
+      // Check that the item is rendered with checked styling (line-through on text)
+      const itemText = updatedMilkRow?.querySelector('span')
+      expect(itemText?.className).toContain('line-through')
+
+      // Complete the write
+      resolveUpdate!()
+    })
+  })
 })
