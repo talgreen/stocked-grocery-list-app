@@ -122,4 +122,63 @@ describe('GroceryItem', () => {
     expect(screen.getByText('למחוק?')).toBeInTheDocument()
     expect(onDelete).not.toHaveBeenCalled()
   })
+
+  it('displays quantity when set', () => {
+    const itemWithQuantity = { ...mockItem, quantity: 3 }
+    const onToggle = vi.fn()
+    const onDelete = vi.fn()
+    const onEdit = vi.fn()
+
+    render(
+      <GroceryItem
+        item={itemWithQuantity}
+        categoryId={1}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        onEdit={onEdit}
+      />
+    )
+
+    expect(screen.getByText('3')).toBeInTheDocument()
+  })
+
+  it('displays quantity of 1 when explicitly set', () => {
+    const itemWithQuantity = { ...mockItem, quantity: 1 }
+    const onToggle = vi.fn()
+    const onDelete = vi.fn()
+    const onEdit = vi.fn()
+
+    render(
+      <GroceryItem
+        item={itemWithQuantity}
+        categoryId={1}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        onEdit={onEdit}
+      />
+    )
+
+    expect(screen.getByText('1')).toBeInTheDocument()
+  })
+
+  it('does not display quantity badge when quantity is not set', () => {
+    const itemWithoutQuantity = { ...mockItem, quantity: null }
+    const onToggle = vi.fn()
+    const onDelete = vi.fn()
+    const onEdit = vi.fn()
+
+    render(
+      <GroceryItem
+        item={itemWithoutQuantity}
+        categoryId={1}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        onEdit={onEdit}
+      />
+    )
+
+    // The quantity badge should not be present
+    const quantityBadge = screen.queryByText(/^\d+$/)
+    expect(quantityBadge).not.toBeInTheDocument()
+  })
 })

@@ -125,11 +125,11 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
             }`}>
               {item.name}
             </span>
-            {item.quantity && item.quantity > 1 && (
+            {item.quantity != null && item.quantity >= 1 && (
               <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
                 item.purchased ? 'bg-black/5 text-black/30' : 'bg-[#FFB74D]/15 text-[#F57C00]'
               }`}>
-                x{item.quantity}
+                {item.quantity}
               </span>
             )}
             {item.comment && (
