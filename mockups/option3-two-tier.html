@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Option 3: Two-Tier System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .phone {
+            width: 375px;
+            height: 812px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            position: relative;
+        }
+        .status-bar {
+            height: 44px;
+            background: linear-gradient(135deg, #FFB74D 0%, #FFA726 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: 600;
+            font-size: 17px;
+        }
+        .main-content {
+            padding: 20px;
+            background: #f9f9f9;
+            height: calc(100% - 44px);
+            position: relative;
+        }
+        .list-item {
+            background: white;
+            padding: 16px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+        }
+        .backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 20;
+        }
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 24px 24px 0 0;
+            padding: 20px;
+            z-index: 30;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+        }
+        .drag-handle {
+            width: 40px;
+            height: 4px;
+            background: #d0d0d0;
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+        .sheet-title {
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 12px;
+            text-align: right;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #FFB74D;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: #FFB74D;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 12px;
+        }
+        .submit-btn:hover {
+            background: #FFA726;
+        }
+        .advanced-toggle {
+            text-align: center;
+            color: #FFB74D;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px;
+        }
+        .advanced-fields {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .category-select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 12px;
+            text-align: right;
+            background: white;
+        }
+        .note {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #9C27B0;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 100;
+        }
+        .mode-label {
+            background: #4CAF50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Quick Mode -->
+    <div class="phone">
+        <div class="note">Option 3</div>
+        <div class="status-bar">
+            🛒 Stocked
+        </div>
+        <div class="main-content">
+            <div class="list-item">🍞 לחם</div>
+            <div class="list-item">🥛 חלב</div>
+            <div class="list-item">🍎 תפוחים</div>
+
+            <div class="backdrop"></div>
+
+            <div class="bottom-sheet">
+                <div class="drag-handle"></div>
+                <div class="mode-label">מצב מהיר</div>
+                <div class="sheet-title">הוסף פריט</div>
+
+                <input type="text" class="form-input" placeholder="שם הפריט" value="בננות" autofocus>
+
+                <button class="submit-btn">הוסף פריט</button>
+
+                <div class="advanced-toggle">+ הוסף פרטים נוספים</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Mode -->
+    <div class="phone">
+        <div class="note">Option 3</div>
+        <div class="status-bar">
+            🛒 Stocked
+        </div>
+        <div class="main-content">
+            <div class="list-item">🍞 לחם</div>
+            <div class="list-item">🥛 חלב</div>
+            <div class="list-item">🍎 תפוחים</div>
+
+            <div class="backdrop"></div>
+
+            <div class="bottom-sheet" style="height: 480px;">
+                <div class="drag-handle"></div>
+                <div class="mode-label" style="background: #FF9800;">מצב מתקדם</div>
+                <div class="sheet-title">הוסף פריט</div>
+
+                <input type="text" class="form-input" placeholder="שם הפריט" value="בננות">
+
+                <div class="advanced-fields">
+                    <label class="form-label">הערה (אופציונלי)</label>
+                    <input type="text" class="form-input" placeholder="הוסף הערה">
+
+                    <label class="form-label">קטגוריה</label>
+                    <select class="category-select">
+                        <option>חכמה 🤖</option>
+                        <option>פירות 🍎</option>
+                        <option>ירקות 🥬</option>
+                        <option>חלבי 🥛</option>
+                    </select>
+                </div>
+
+                <button class="submit-btn">הוסף פריט</button>
+
+                <div class="advanced-toggle">- הסתר פרטים נוספים</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
