@@ -3,9 +3,8 @@
 import { useMemo, useState } from 'react'
 
 import { type RepeatSuggestion } from '@/lib/repeat-suggester'
-import { motion } from 'framer-motion'
-import { ChevronDown, ChevronUp, Clock, Undo2 } from 'lucide-react'
-import SparkleIcon from './SparkleIcon'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ChevronDown, Clock, Plus } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,16 +27,16 @@ const SNOOZE_OPTIONS = [
 
 const formatInterval = (days: number) => {
   if (!Number.isFinite(days) || days <= 0) return 'כל כמה ימים'
-  if (days < 1.5) return 'בערך פעם ביום'
-  if (days < 14) return `בערך כל ${Math.max(1, Math.round(days))} ימים`
-  if (days < 60) return `בערך כל ${Math.max(1, Math.round(days / 7))} שבועות`
-  if (days < 365) return `בערך כל ${Math.max(1, Math.round(days / 30))} חודשים`
-  return `בערך כל ${Math.max(1, Math.round(days / 365))} שנים`
+  if (days < 1.5) return 'פעם ביום'
+  if (days < 14) return `כל ${Math.max(1, Math.round(days))} ימים`
+  if (days < 60) return `כל ${Math.max(1, Math.round(days / 7))} שבועות`
+  if (days < 365) return `כל ${Math.max(1, Math.round(days / 30))} חודשים`
+  return `כל ${Math.max(1, Math.round(days / 365))} שנים`
 }
 
 const formatAgo = (days: number) => {
   if (!Number.isFinite(days) || days <= 0.75) return 'היום'
-  if (days < 2) return 'לפני יום'
+  if (days < 2) return 'אתמול'
   if (days < 28) return `לפני ${Math.max(1, Math.round(days))} ימים`
   if (days < 84) return `לפני ${Math.max(1, Math.round(days / 7))} שבועות`
   if (days < 730) return `לפני ${Math.max(1, Math.round(days / 30))} חודשים`
@@ -49,20 +48,12 @@ export default function RepeatSuggestions({
   onUncheck,
   onSnooze,
 }: RepeatSuggestionsProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  // Default to collapsed (closed) state
+  const [isCollapsed, setIsCollapsed] = useState(true)
 
-  const collapsedLabel = useMemo(() => {
-    if (suggestions.length === 0) {
-      return 'אין כרגע הצעות להוספה מהירה'
-    }
-    if (suggestions.length === 1) {
-      return 'יש הצעה אחת להוספה מהירה'
-    }
-    if (suggestions.length <= 4) {
-      return `${suggestions.length} הצעות מוכנות להוספה`
-    }
-    return 'כמה פריטים קבועים מוכנים לחזרה לרשימה'
-  }, [suggestions.length])
+  const previewItems = useMemo(() => {
+    return suggestions.slice(0, 3).map(s => s.item.name)
+  }, [suggestions])
 
   if (suggestions.length === 0) {
     return null
@@ -70,90 +61,132 @@ export default function RepeatSuggestions({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
       dir="rtl"
-      className="bg-white/90 border border-[#FFB74D]/40 shadow-sm rounded-2xl p-4 space-y-4"
+      className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm"
     >
+      {/* Collapsed Header - Always visible */}
       <button
         type="button"
         onClick={() => setIsCollapsed(value => !value)}
-        className="flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1 text-right text-[#FF9800] transition-colors hover:bg-[#FFF0DA]"
+        className="flex w-full items-center gap-3 p-3 text-right transition-colors hover:bg-neutral-50"
       >
-        <div className="flex items-center gap-2 text-[#FF9800]">
-          <SparkleIcon />
-          <h2 className="text-base font-semibold text-black/80">הוספה מהירה</h2>
+        {/* Icon with count badge */}
+        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-amber-500">
+            <path
+              d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21.02L12 17.77L6.82 21.02L8 14.14L3 9.27L9.91 8.26L12 2Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span className="absolute -left-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+            {suggestions.length}
+          </span>
         </div>
-        <span className="flex items-center gap-1 text-xs text-black/60">
-          {isCollapsed ? collapsedLabel : 'הצעות חכמות לפריטים שחוזרים'}
-          {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-        </span>
+
+        {/* Text content */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-neutral-800">קניות חוזרות</span>
+          </div>
+          {isCollapsed && previewItems.length > 0 && (
+            <p className="truncate text-xs text-neutral-500">
+              {previewItems.join('، ')}
+              {suggestions.length > 3 && ` ועוד ${suggestions.length - 3}...`}
+            </p>
+          )}
+        </div>
+
+        {/* Expand/collapse chevron */}
+        <motion.div
+          animate={{ rotate: isCollapsed ? 0 : 180 }}
+          transition={{ duration: 0.2 }}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400"
+        >
+          <ChevronDown className="h-5 w-5" />
+        </motion.div>
       </button>
 
-      {isCollapsed ? (
-        <p className="px-2 text-xs text-black/60">לחיצה תפתח את רשימת ההצעות להוספה מהירה.</p>
-      ) : (
-        <>
-          <div className="space-y-3">
-            {suggestions.map(suggestion => (
-              <motion.div
-                key={`${suggestion.categoryId}-${suggestion.item.id}`}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="flex flex-col gap-3 rounded-xl border border-[#FFB74D]/30 bg-[#FFF8EF] p-3 text-right sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm font-semibold text-black/80">
-                    <span className="max-w-[220px] truncate sm:max-w-[260px]">{suggestion.item.name}</span>
-                    <span className="text-xs font-normal text-black/50">
-                      {suggestion.categoryEmoji} {suggestion.categoryName}
-                    </span>
-                  </div>
-                  <p className="text-xs text-black/60">
-                    {`בדרך כלל ${formatInterval(suggestion.expectedGapDays)}; נקנה ${formatAgo(suggestion.daysSinceLastPurchase)}.`}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 self-stretch sm:self-auto sm:flex-row-reverse">
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => onUncheck(suggestion.categoryId, suggestion.item.id)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-[#FFB74D] px-3 py-1 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#FFA43A]"
+      {/* Expanded Content */}
+      <AnimatePresence initial={false}>
+        {!isCollapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <div className="border-t border-neutral-100 p-3">
+              <div className="space-y-2">
+                {suggestions.map((suggestion, index) => (
+                  <motion.div
+                    key={`${suggestion.categoryId}-${suggestion.item.id}`}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.15, delay: index * 0.03 }}
+                    className="group flex items-center gap-3 rounded-xl bg-neutral-50 p-3 transition-colors hover:bg-neutral-100"
                   >
-                    <Undo2 className="h-4 w-4" />
-                    החזר לרשימה
-                  </motion.button>
+                    {/* Category emoji */}
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-lg shadow-sm">
+                      {suggestion.categoryEmoji}
+                    </div>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="inline-flex items-center gap-1 rounded-lg border border-[#FFB74D]/40 bg-white px-3 py-1 text-xs font-medium text-[#FF9800] transition-colors hover:bg-[#FFE5C2]">
-                        <Clock className="h-4 w-4" />
-                        השהה
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      {SNOOZE_OPTIONS.map(option => (
-                        <DropdownMenuItem
-                          key={option.days}
-                          onSelect={() => onSnooze(suggestion.categoryId, suggestion.item.id, option.days)}
-                        >
-                          {`השהה ל-${option.label}`}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                    {/* Item info */}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-neutral-800">
+                        {suggestion.item.name}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        {formatInterval(suggestion.expectedGapDays)} · {formatAgo(suggestion.daysSinceLastPurchase)}
+                      </p>
+                    </div>
 
-          <p className="text-right text-[11px] text-black/40">
-            ההצעות מבוססות על הרגלי הקנייה האישיים שלך ונשמרות מקומית בלבד.
-          </p>
-        </>
-      )}
+                    {/* Actions */}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-white hover:text-neutral-600"
+                            aria-label="השהה פריט"
+                          >
+                            <Clock className="h-4 w-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {SNOOZE_OPTIONS.map(option => (
+                            <DropdownMenuItem
+                              key={option.days}
+                              onSelect={() => onSnooze(suggestion.categoryId, suggestion.item.id, option.days)}
+                            >
+                              {`השהה ל-${option.label}`}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => onUncheck(suggestion.categoryId, suggestion.item.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm transition-colors hover:bg-amber-600"
+                        aria-label="הוסף לרשימה"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <p className="mt-3 text-center text-[11px] text-neutral-400">
+                מבוסס על היסטוריית הקניות שלך
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

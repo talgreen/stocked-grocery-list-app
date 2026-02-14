@@ -155,7 +155,8 @@ export function computeRepeatSuggestions(
     })
   })
 
-  suggestions.sort((a, b) => b.score - a.score)
+  // Sort by last purchase time ascending (oldest purchases first)
+  suggestions.sort((a, b) => b.daysSinceLastPurchase - a.daysSinceLastPurchase)
 
   return suggestions.slice(0, 15)
 }
