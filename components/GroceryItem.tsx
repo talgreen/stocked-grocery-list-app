@@ -1,8 +1,19 @@
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
-import { CheckSquare, Edit, Square, Trash2 } from 'lucide-react'
+import { Archive, CheckSquare, Edit, Square, Trash2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { memo, useRef, useState } from 'react'
 import { Item } from '../types/item'
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24
+const RARE_ITEM_AGE_DAYS = 45
+
+function isRareItem(item: Item): boolean {
+  if (!item.purchased) return false
+  if ((item.purchaseCount ?? 0) > 1) return false
+  if (!item.lastPurchaseAt) return false
+  const daysSince = (Date.now() - new Date(item.lastPurchaseAt).getTime()) / MS_PER_DAY
+  return daysSince > RARE_ITEM_AGE_DAYS
+}
 
 // Lazy load PhotoModal as it's rarely used
 const PhotoModal = dynamic(() => import('./PhotoModal'))
@@ -22,6 +33,7 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
 
   const x = useMotionValue(0)
   const itemRef = useRef<HTMLLIElement>(null)
+  const isRare = isRareItem(item)
 
   const handleDelete = () => {
     if (isDeleting) {
@@ -80,8 +92,8 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
           duration: 0.15,
           ease: 'easeOut'
         }}
-        className={`list-none px-4 py-2 relative touch-pan-x bg-white will-change-transform ${
-          item.purchased ? 'opacity-50' : ''
+        className={`list-none px-4 py-2 relative touch-pan-x will-change-transform ${
+          isRare ? 'bg-black/[0.03] opacity-40' : item.purchased ? 'bg-white opacity-50' : 'bg-white'
         }`}
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -129,6 +141,9 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
               <span className="text-xs text-black/40 truncate">
                 ({item.comment})
               </span>
+            )}
+            {isRare && (
+              <Archive className="h-3 w-3 text-black/25 flex-shrink-0" />
             )}
           </div>
 
