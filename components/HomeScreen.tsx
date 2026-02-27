@@ -332,6 +332,30 @@ export default function HomeScreen() {
     }
   }
 
+  const handleIgnoreItem = async (categoryId: number, itemId: number) => {
+    const updatedCategories = categories.map(category => {
+      if (category.id !== categoryId) return category
+
+      return {
+        ...category,
+        items: category.items.map(item =>
+          item.id === itemId ? { ...item, neverSuggest: true } : item
+        ),
+      }
+    })
+
+    setCategories(updatedCategories)
+
+    if (listId) {
+      try {
+        await updateList(listId, updatedCategories)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        setCategories(categories)
+      }
+    }
+  }
+
   const handleDeleteItem = async (categoryId: number, itemId: number) => {
     const updatedCategories = categories.map(category =>
       category.id === categoryId
@@ -762,6 +786,7 @@ export default function HomeScreen() {
               suggestions={repeatSuggestions}
               onUncheck={handleToggleItem}
               onSnooze={handleSnoozeItem}
+              onIgnore={handleIgnoreItem}
             />
           </div>
         )}

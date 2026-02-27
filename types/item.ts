@@ -11,5 +11,6 @@ export interface Item {
   decayedCount?: number
   purchaseCount?: number
   snoozeUntil?: string | null
+  neverSuggest?: boolean
 }
 
