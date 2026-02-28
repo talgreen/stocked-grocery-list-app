@@ -4,12 +4,11 @@ import { useMemo, useState } from 'react'
 
 import { type RepeatSuggestion } from '@/lib/repeat-suggester'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Ban, ChevronDown, Clock, Plus } from 'lucide-react'
+import { ChevronDown, Clock, Plus } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 
@@ -17,7 +16,6 @@ interface RepeatSuggestionsProps {
   suggestions: RepeatSuggestion[]
   onUncheck: (categoryId: number, itemId: number) => void
   onSnooze: (categoryId: number, itemId: number, days: number) => void
-  onIgnore: (categoryId: number, itemId: number) => void
 }
 
 const SNOOZE_OPTIONS = [
@@ -49,7 +47,6 @@ export default function RepeatSuggestions({
   suggestions,
   onUncheck,
   onSnooze,
-  onIgnore,
 }: RepeatSuggestionsProps) {
   // Default to collapsed (closed) state
   const [isCollapsed, setIsCollapsed] = useState(true)
@@ -166,14 +163,6 @@ export default function RepeatSuggestions({
                               {`השהה ל-${option.label}`}
                             </DropdownMenuItem>
                           ))}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onSelect={() => onIgnore(suggestion.categoryId, suggestion.item.id)}
-                            className="text-red-500 focus:text-red-600"
-                          >
-                            <Ban className="ml-2 h-4 w-4" />
-                            אל תציע שוב
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
 

@@ -99,8 +99,7 @@ export async function updateList(listId: string, categories: Category[]) {
           typeof item.purchaseCount === 'number' && Number.isFinite(item.purchaseCount)
             ? item.purchaseCount
             : 0,
-        snoozeUntil: item.snoozeUntil || null,
-        neverSuggest: item.neverSuggest === true ? true : undefined,
+        snoozeUntil: item.snoozeUntil || null
       }))
     }))
 
