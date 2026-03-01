@@ -97,7 +97,6 @@ export function computeRepeatSuggestions(
   categories.forEach(category => {
     category.items.forEach(item => {
       if (!item.purchased) return
-      if (item.neverSuggest) return
 
       const purchaseCount = item.purchaseCount ?? 0
       if (purchaseCount < 2) return
