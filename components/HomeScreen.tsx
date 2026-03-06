@@ -26,6 +26,8 @@ const EditItemModal = dynamic(() => import('./EditItemModal'), {
   loading: () => <div className="text-center py-8">טוען...</div>
 })
 
+const ListCompleteCelebration = dynamic(() => import('./ListCompleteCelebration'))
+
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 
 // Normalize category name for comparison - strips leading emojis and whitespace
@@ -45,6 +47,8 @@ export default function HomeScreen() {
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
   const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
   const [pendingAddCount, setPendingAddCount] = useState(0)
+  const [showCelebration, setShowCelebration] = useState(false)
+  const prevUncheckedRef = useRef<number | null>(null)
   const { activeTab } = useTabView()
 
   // Filter items based on search query
@@ -586,6 +590,21 @@ export default function HomeScreen() {
       total + category.items.length, 0
     )
 
+  // Detect transition to 100% complete and show celebration
+  useEffect(() => {
+    if (isLoading || totalItems === 0) {
+      prevUncheckedRef.current = uncheckedItems
+      return
+    }
+
+    const prev = prevUncheckedRef.current
+    // Only trigger when transitioning from >0 unchecked to 0 unchecked
+    if (prev !== null && prev > 0 && uncheckedItems === 0) {
+      setShowCelebration(true)
+    }
+    prevUncheckedRef.current = uncheckedItems
+  }, [uncheckedItems, totalItems, isLoading])
+
   useEffect(() => {
     setIsLoading(true)
 
@@ -885,6 +904,17 @@ export default function HomeScreen() {
               <Plus className="h-6 w-6" />
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* List Complete Celebration */}
+      <AnimatePresence>
+        {showCelebration && (
+          <ListCompleteCelebration
+            categories={categories}
+            totalItems={totalItems}
+            onDismiss={() => setShowCelebration(false)}
+          />
         )}
       </AnimatePresence>
     </div>
