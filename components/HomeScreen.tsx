@@ -7,7 +7,7 @@ import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus, Sparkles } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -78,6 +78,9 @@ export default function HomeScreen() {
 
   const searchResults = getSearchResults()
   const isSearchMode = searchQuery.trim().length > 0
+  const hasExactMatch = searchResults.some(
+    ({ item }) => item.name.trim().toLowerCase() === searchQuery.trim().toLowerCase()
+  )
 
   // Group search results by category
   const groupedSearchResults = searchResults.reduce((acc, { item, category, categoryId }) => {
@@ -686,6 +689,28 @@ export default function HomeScreen() {
         {/* Search Results */}
         {isSearchMode && (
           <div className="space-y-4 mb-6">
+            {searchResults.length > 0 && !hasExactMatch && (
+              <motion.button
+                onClick={handleQuickAddItem}
+                disabled={pendingAddCount > 0}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full group relative overflow-hidden bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white font-semibold py-3 px-5 rounded-2xl shadow-md shadow-orange-200/40 hover:shadow-lg hover:shadow-orange-200/50 transition-shadow duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                <span className="relative flex items-center justify-center gap-2 text-sm">
+                  <Sparkles className="w-4 h-4" />
+                  <span>הוסף &ldquo;{searchQuery}&rdquo;</span>
+                </span>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="absolute top-1.5 left-1.5 bg-white/20 backdrop-blur-sm rounded-full px-1.5 py-0.5 text-[9px] font-medium"
+                >
+                  AI
+                </motion.div>
+              </motion.button>
+            )}
             {searchResults.length > 0 ? (
               Object.values(groupedSearchResults).map(({ category, items }) => (
                 <div key={category.id} className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm">
