@@ -78,6 +78,9 @@ export default function HomeScreen() {
 
   const searchResults = getSearchResults()
   const isSearchMode = searchQuery.trim().length > 0
+  const hasExactMatch = searchResults.some(
+    ({ item }) => item.name.toLowerCase() === searchQuery.trim().toLowerCase()
+  )
 
   // Group search results by category
   const groupedSearchResults = searchResults.reduce((acc, { item, category, categoryId }) => {
@@ -687,7 +690,20 @@ export default function HomeScreen() {
         {isSearchMode && (
           <div className="space-y-4 mb-6">
             {searchResults.length > 0 ? (
-              Object.values(groupedSearchResults).map(({ category, items }) => (
+              <>
+                {!hasExactMatch && (
+                  <EmptySearchState
+                    searchQuery={searchQuery}
+                    onQuickAdd={handleQuickAddItem}
+                    onOpenAddForm={() => {
+                      setSearchQuery('')
+                      setIsAddFormOpen(true)
+                    }}
+                    isLoading={pendingAddCount > 0}
+                    compact
+                  />
+                )}
+                {Object.values(groupedSearchResults).map(({ category, items }) => (
                 <div key={category.id} className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm">
                   <div className="p-3 bg-gray-50 border-b border-gray-100">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -741,7 +757,8 @@ export default function HomeScreen() {
                     ))}
                   </div>
                 </div>
-              ))
+              ))}
+              </>
             ) : (
               <EmptySearchState
                 searchQuery={searchQuery}
