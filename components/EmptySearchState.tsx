@@ -157,33 +157,16 @@ export function EmptySearchState({
           </motion.div>
         </div>
 
-        {/* Text Content */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-center space-y-3 mb-6"
-        >
-          <h3 className="text-xl font-bold text-gray-800">
-            לא מצאנו את &ldquo;{searchQuery}&rdquo;
-          </h3>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            נראה שהפריט הזה עדיין לא ברשימה.
-            <br />
-            <span className="text-[#FFB74D] font-medium">הוסף אותו בלחיצה אחת!</span>
-          </p>
-        </motion.div>
-
         {/* Quick Add Button */}
         <motion.button
           onClick={onQuickAdd}
           disabled={isLoading}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.2 }}
           whileHover={{ scale: 1.02, y: -2 }}
           whileTap={{ scale: 0.98 }}
-          className="w-full group relative overflow-hidden bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white font-semibold py-4 px-6 rounded-2xl shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-200/60 transition-shadow duration-300 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#FFB74D]/30"
+          className="w-full group relative overflow-hidden bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white font-semibold py-4 px-6 rounded-2xl shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-200/60 transition-shadow duration-300 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#FFB74D]/30 mb-4"
         >
           {/* Shimmer effect */}
           <motion.div
@@ -229,34 +212,49 @@ export function EmptySearchState({
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-center text-xs text-gray-400 mt-3"
+          transition={{ delay: 0.3 }}
+          className="text-center text-xs text-gray-400 mb-6"
         >
           לחץ <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-500 font-mono text-[10px]">Enter</kbd> להוספה מהירה
         </motion.p>
-
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200/60"></div>
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="px-3 bg-gradient-to-br from-white via-white to-orange-50/50 text-gray-400">או</span>
-          </div>
-        </div>
 
         {/* Secondary Action */}
         <motion.button
           onClick={onOpenAddForm}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.35 }}
           whileHover={{ x: -4 }}
-          className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-[#FFB74D] text-sm font-medium py-2 transition-colors duration-200"
+          className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-[#FFB74D] text-sm font-medium py-2 mb-6 transition-colors duration-200"
         >
           <span>הוסף עם פרטים נוספים</span>
           <ArrowRight className="w-4 h-4 rotate-180" />
         </motion.button>
+
+        {/* Divider */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200/60"></div>
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="px-3 bg-gradient-to-br from-white via-white to-orange-50/50 text-gray-400">🔍</span>
+          </div>
+        </div>
+
+        {/* Text Content */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-center space-y-3"
+        >
+          <h3 className="text-xl font-bold text-gray-800">
+            לא מצאנו את &ldquo;{searchQuery}&rdquo;
+          </h3>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            נראה שהפריט הזה עדיין לא ברשימה.
+          </p>
+        </motion.div>
       </div>
     </motion.div>
   )
