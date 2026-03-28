@@ -254,7 +254,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                 <button
                   onClick={handleAddIngredient}
                   disabled={!newIngredientName.trim()}
-                  className="w-full py-2 border border-[#FFB74D]/30 text-[#FFB74D] rounded-xl text-sm font-medium hover:bg-[#FFB74D]/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 bg-[#FFB74D]/10 border border-[#FFB74D]/50 text-[#E6901E] rounded-xl text-sm font-semibold hover:bg-[#FFB74D]/20 disabled:opacity-30 disabled:hover:bg-[#FFB74D]/10 transition-colors flex items-center justify-center gap-1.5"
                 >
                   <Plus className="h-4 w-4" />
                   הוסף מרכיב
@@ -265,7 +265,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
               <button
                 onClick={handleSaveRecipe}
                 disabled={!newRecipeName.trim() || pendingIngredients.length === 0}
-                className="w-full bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-orange-200/40 disabled:opacity-40 transition-opacity text-sm"
+                className="w-full bg-[#F59E0B] text-white font-bold py-3 px-4 rounded-xl shadow-md disabled:bg-[#F59E0B]/40 transition-colors text-sm"
               >
                 שמור מתכון
               </button>
