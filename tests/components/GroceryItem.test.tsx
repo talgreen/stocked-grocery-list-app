@@ -2,7 +2,12 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import GroceryItem from '@/components/GroceryItem'
+import { SettingsProvider } from '@/contexts/SettingsContext'
 import { Item } from '@/types/item'
+
+const renderWithProvider = (component: React.ReactElement) => {
+  return render(<SettingsProvider>{component}</SettingsProvider>)
+}
 
 const mockItem: Item = {
   id: 1,
@@ -25,7 +30,7 @@ describe('GroceryItem', () => {
     const onDelete = vi.fn()
     const onEdit = vi.fn()
 
-    render(
+    renderWithProvider(
       <GroceryItem
         item={mockItem}
         categoryId={1}
@@ -43,7 +48,7 @@ describe('GroceryItem', () => {
     const onDelete = vi.fn()
     const onEdit = vi.fn()
 
-    render(
+    renderWithProvider(
       <GroceryItem
         item={mockItem}
         categoryId={1}
@@ -62,7 +67,7 @@ describe('GroceryItem', () => {
     const onDelete = vi.fn()
     const onEdit = vi.fn()
 
-    render(
+    renderWithProvider(
       <GroceryItem
         item={mockItem}
         categoryId={1}
@@ -85,7 +90,7 @@ describe('GroceryItem', () => {
     const onDelete = vi.fn()
     const onEdit = vi.fn()
 
-    render(
+    renderWithProvider(
       <GroceryItem
         item={purchasedItem}
         categoryId={1}
@@ -105,7 +110,7 @@ describe('GroceryItem', () => {
     const onDelete = vi.fn()
     const onEdit = vi.fn()
 
-    render(
+    renderWithProvider(
       <GroceryItem
         item={mockItem}
         categoryId={1}

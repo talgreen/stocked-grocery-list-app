@@ -1,5 +1,6 @@
+import { useSettings } from '@/contexts/SettingsContext'
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
-import { Archive, CheckSquare, Edit, Square, Trash2 } from 'lucide-react'
+import { Archive, CheckSquare, Edit, Square, Star, Trash2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { memo, useRef, useState } from 'react'
 import { Item } from '../types/item'
@@ -26,14 +27,18 @@ interface GroceryItemProps {
   onEdit: (item: Item, categoryId: number) => void
 }
 
+const MOST_PURCHASED_THRESHOLD = 3
+
 const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDelete, onEdit }: GroceryItemProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const { flags } = useSettings()
 
   const x = useMotionValue(0)
   const itemRef = useRef<HTMLLIElement>(null)
   const isRare = isRareItem(item)
+  const isMostPurchased = flags.enableMostPurchased && (item.purchaseCount ?? 0) >= MOST_PURCHASED_THRESHOLD
 
   const handleDelete = () => {
     if (isDeleting) {
@@ -141,6 +146,9 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
               <span className="text-xs text-black/40 truncate">
                 ({item.comment})
               </span>
+            )}
+            {isMostPurchased && !isRare && (
+              <Star className="h-3 w-3 text-[#FFB74D]/40 fill-[#FFB74D]/40 flex-shrink-0" />
             )}
             {isRare && (
               <Archive className="h-3 w-3 text-black/25 flex-shrink-0" />

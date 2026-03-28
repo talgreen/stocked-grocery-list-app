@@ -1,5 +1,6 @@
 'use client'
 
+import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
 import { subscribeToList, updateList } from '@/lib/db'
 import { OpenRouter } from '@/lib/openrouter'
@@ -16,6 +17,9 @@ import CategoryList from './CategoryList'
 import CompactHeader from './CompactHeader'
 import EmptySearchState from './EmptySearchState'
 import RepeatSuggestions from './RepeatSuggestions'
+
+const SettingsPanel = dynamic(() => import('./SettingsPanel'))
+const RecipesTab = dynamic(() => import('./RecipesTab'))
 
 // Lazy load modal components to reduce initial bundle size
 const AddItemForm = dynamic(() => import('./AddItemForm'), {
@@ -45,7 +49,9 @@ export default function HomeScreen() {
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
   const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
   const [pendingAddCount, setPendingAddCount] = useState(0)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const { activeTab } = useTabView()
+  const { flags } = useSettings()
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -564,6 +570,36 @@ export default function HomeScreen() {
     }
   };
 
+  // Handle adding multiple ingredients from a recipe
+  const handleAddRecipeIngredients = async (ingredients: Array<{ name: string; comment: string }>) => {
+    setPendingAddCount(prev => prev + ingredients.length)
+
+    for (const ing of ingredients) {
+      try {
+        const result = await OpenRouter.categorize(`${ing.name}${ing.comment ? ` - ${ing.comment}` : ''}`)
+        const category = result.category?.trim() || 'אחר'
+        const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category))
+        const emoji = matchedCategory?.emoji || '📦'
+
+        await handleAddItemWithCategory(
+          { name: ing.name, comment: ing.comment },
+          category,
+          emoji
+        )
+      } catch (error) {
+        console.error('Error adding ingredient:', error)
+        // Fallback: add to "other" category
+        await handleAddItemWithCategory(
+          { name: ing.name, comment: ing.comment },
+          'אחר',
+          '📦'
+        )
+      } finally {
+        setPendingAddCount(prev => prev - 1)
+      }
+    }
+  }
+
   // Handle opening edit modal
   const handleEditItem = (item: Item, categoryId: number) => {
     setEditingItem(item);
@@ -682,12 +718,45 @@ export default function HomeScreen() {
         totalItems={totalItems}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSettingsOpen(false)}
+              className="fixed inset-0 bg-black/50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="fixed inset-x-4 top-[12vh] z-50 max-w-md mx-auto"
+            >
+              <SettingsPanel onClose={() => setIsSettingsOpen(false)} />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24 text-right relative">
         <div className="h-4" aria-hidden="true" />
-        
+
+        {/* Recipes Tab */}
+        {activeTab === 'recipes' && flags.enableRecipes && (
+          <RecipesTab
+            listId={listId}
+            categories={categories}
+            onAddIngredients={handleAddRecipeIngredients}
+          />
+        )}
+
         {/* Search Results */}
-        {isSearchMode && (
+        {activeTab !== 'recipes' && isSearchMode && (
           <div className="space-y-4 mb-6">
             {searchResults.length > 0 && !hasExactMatch && (
               <motion.button
@@ -781,7 +850,7 @@ export default function HomeScreen() {
           </div>
         )}
 
-        {!isSearchMode && repeatSuggestions.length > 0 && (
+        {activeTab !== 'recipes' && !isSearchMode && repeatSuggestions.length > 0 && (
           <div className="mb-6">
             <RepeatSuggestions
               suggestions={repeatSuggestions}
@@ -791,8 +860,8 @@ export default function HomeScreen() {
           </div>
         )}
 
-        {/* Category List - Only show when not in search mode */}
-        {!isSearchMode && (
+        {/* Category List - Only show when not in search mode and not on recipes tab */}
+        {activeTab !== 'recipes' && !isSearchMode && (
           <CategoryList
             categories={categories.filter(category => category.items.length > 0)}
             onToggleItem={handleToggleItem}
