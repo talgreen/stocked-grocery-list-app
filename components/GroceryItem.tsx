@@ -27,7 +27,7 @@ interface GroceryItemProps {
   onEdit: (item: Item, categoryId: number) => void
 }
 
-const MOST_PURCHASED_THRESHOLD = 3
+const MOST_PURCHASED_THRESHOLD = 2
 
 const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDelete, onEdit }: GroceryItemProps) {
   const [isDeleting, setIsDeleting] = useState(false)
@@ -148,7 +148,10 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
               </span>
             )}
             {isMostPurchased && !isRare && (
-              <Star className="h-3 w-3 text-[#FFB74D]/40 fill-[#FFB74D]/40 flex-shrink-0" />
+              <span className="flex items-center gap-0.5 flex-shrink-0">
+                <Star className="h-3 w-3 text-[#FFB74D] fill-[#FFB74D]" />
+                <span className="text-[10px] text-[#FFB74D] font-medium">{item.purchaseCount}</span>
+              </span>
             )}
             {isRare && (
               <Archive className="h-3 w-3 text-black/25 flex-shrink-0" />
