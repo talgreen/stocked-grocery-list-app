@@ -1,18 +1,21 @@
 'use client'
 
 import { Category } from '@/types/categories'
+import { Item } from '@/types/item'
 import { Recipe, RecipeIngredient } from '@/types/recipe'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Check,
+  CheckSquare,
   ChefHat,
   ChevronDown,
   Plus,
   ShoppingCart,
+  Square,
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 const RECIPES_STORAGE_KEY = 'stocked-recipes'
@@ -29,6 +32,35 @@ function loadRecipes(listId: string): Recipe[] {
 
 function saveRecipes(listId: string, recipes: Recipe[]) {
   localStorage.setItem(`${RECIPES_STORAGE_KEY}-${listId}`, JSON.stringify(recipes))
+}
+
+interface IngredientStatus {
+  inList: boolean
+  purchased: boolean
+  categoryEmoji?: string
+  categoryName?: string
+  item?: Item
+}
+
+function findIngredientInList(
+  ingredientName: string,
+  categories: Category[]
+): IngredientStatus {
+  const normalized = ingredientName.trim().toLowerCase()
+  for (const cat of categories) {
+    for (const item of cat.items) {
+      if (item.name.trim().toLowerCase() === normalized) {
+        return {
+          inList: true,
+          purchased: item.purchased,
+          categoryEmoji: cat.emoji,
+          categoryName: cat.name,
+          item,
+        }
+      }
+    }
+  }
+  return { inList: false, purchased: false }
 }
 
 interface RecipesTabProps {
@@ -53,6 +85,24 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
   const persist = (updated: Recipe[]) => {
     setRecipes(updated)
     saveRecipes(listId, updated)
+  }
+
+  // Build a lookup map for all ingredients across all recipes
+  const ingredientStatusMap = useMemo(() => {
+    const map = new Map<string, IngredientStatus>()
+    for (const recipe of recipes) {
+      for (const ing of recipe.ingredients) {
+        const key = ing.name.trim().toLowerCase()
+        if (!map.has(key)) {
+          map.set(key, findIngredientInList(ing.name, categories))
+        }
+      }
+    }
+    return map
+  }, [recipes, categories])
+
+  const getIngredientStatus = (name: string): IngredientStatus => {
+    return ingredientStatusMap.get(name.trim().toLowerCase()) || { inList: false, purchased: false }
   }
 
   const handleAddIngredient = () => {
@@ -102,43 +152,35 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
     toast.success('המתכון נמחק')
   }
 
-  const handleAddToList = (recipe: Recipe) => {
-    // Check which ingredients are already in the list
-    const existingItems = new Set<string>()
-    categories.forEach(cat =>
-      cat.items.forEach(item => existingItems.add(item.name.trim().toLowerCase()))
-    )
+  const handleAddSingleIngredient = (ing: RecipeIngredient) => {
+    const status = getIngredientStatus(ing.name)
+    if (status.inList) {
+      toast.info(`"${ing.name}" כבר ברשימה`)
+      return
+    }
+    onAddIngredients([{ name: ing.name, comment: ing.comment || '' }])
+    toast.success(`"${ing.name}" נוסף לרשימה`)
+  }
 
-    const newIngredients = recipe.ingredients.filter(
-      ing => !existingItems.has(ing.name.trim().toLowerCase())
-    )
+  const handleAddAllToList = (recipe: Recipe) => {
+    const missing = recipe.ingredients.filter(ing => {
+      const status = getIngredientStatus(ing.name)
+      return !status.inList
+    })
 
-    if (newIngredients.length === 0) {
+    if (missing.length === 0) {
       toast.info('כל המרכיבים כבר ברשימה')
       return
     }
 
     onAddIngredients(
-      newIngredients.map(ing => ({
+      missing.map(ing => ({
         name: ing.name,
         comment: ing.comment || '',
       }))
     )
 
-    // Mark ingredients as added
-    const updated = recipes.map(r => {
-      if (r.id !== recipe.id) return r
-      return {
-        ...r,
-        ingredients: r.ingredients.map(ing => ({
-          ...ing,
-          addedToList: true,
-        })),
-      }
-    })
-    persist(updated)
-
-    toast.success(`${newIngredients.length} מרכיבים נוספו לרשימה`)
+    toast.success(`${missing.length} מרכיבים נוספו לרשימה`)
   }
 
   const toggleRecipe = (recipeId: number) => {
@@ -147,6 +189,19 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
         ? prev.filter(id => id !== recipeId)
         : [...prev, recipeId]
     )
+  }
+
+  const getRecipeProgress = (recipe: Recipe) => {
+    let inList = 0
+    let purchased = 0
+    for (const ing of recipe.ingredients) {
+      const status = getIngredientStatus(ing.name)
+      if (status.inList) {
+        inList++
+        if (status.purchased) purchased++
+      }
+    }
+    return { inList, purchased, total: recipe.ingredients.length }
   }
 
   return (
@@ -278,6 +333,10 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
       {recipes.length > 0 ? (
         recipes.map(recipe => {
           const isExpanded = expandedRecipes.includes(recipe.id)
+          const progress = getRecipeProgress(recipe)
+          const allInList = progress.inList === progress.total
+          const missingCount = progress.total - progress.inList
+
           return (
             <motion.div
               key={recipe.id}
@@ -289,11 +348,21 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                 onClick={() => toggleRecipe(recipe.id)}
                 className="w-full p-4 flex justify-between items-center hover:bg-black/5 transition-colors duration-200"
               >
-                <div className="flex items-center gap-3">
-                  <ChefHat className="h-5 w-5 text-[#FFB74D]" />
-                  <h3 className="text-sm font-semibold text-black/80">{recipe.name}</h3>
-                  <span className="text-xs text-black/40">
-                    ({recipe.ingredients.length} מרכיבים)
+                <div className="flex items-center gap-3 min-w-0">
+                  <ChefHat className="h-5 w-5 text-[#FFB74D] flex-shrink-0" />
+                  <h3 className="text-sm font-semibold text-black/80 truncate">{recipe.name}</h3>
+                  {/* Progress indicator */}
+                  <span className={`text-xs flex-shrink-0 ${
+                    progress.purchased === progress.total && progress.total > 0
+                      ? 'text-green-500'
+                      : allInList
+                        ? 'text-[#FFB74D]'
+                        : 'text-black/40'
+                  }`}>
+                    {progress.purchased}/{progress.total}
+                    {progress.purchased === progress.total && progress.total > 0 && (
+                      <Check className="inline h-3 w-3 mr-0.5" />
+                    )}
                   </span>
                 </div>
                 <motion.div
@@ -315,40 +384,87 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                   >
                     <div className="border-t border-black/5">
                       <ul className="divide-y divide-black/5">
-                        {recipe.ingredients.map(ing => (
-                          <li
-                            key={ing.id}
-                            className="px-4 py-2 flex items-center gap-3"
-                          >
-                            {ing.addedToList ? (
-                              <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            ) : (
-                              <div className="h-4 w-4 border border-gray-300 rounded flex-shrink-0" />
-                            )}
-                            <span className="text-sm text-black/70 flex-1 truncate">
-                              {ing.name}
-                            </span>
-                            {ing.comment && (
-                              <span className="text-xs text-black/40 truncate">
-                                {ing.comment}
-                              </span>
-                            )}
-                          </li>
-                        ))}
+                        {recipe.ingredients.map(ing => {
+                          const status = getIngredientStatus(ing.name)
+                          return (
+                            <li
+                              key={ing.id}
+                              className={`px-4 py-2.5 flex items-center gap-3 ${
+                                status.purchased ? 'bg-black/[0.02]' : ''
+                              }`}
+                            >
+                              {/* Status icon */}
+                              {status.inList ? (
+                                status.purchased ? (
+                                  <CheckSquare className="h-4.5 w-4.5 text-[#FFB74D] flex-shrink-0" />
+                                ) : (
+                                  <Square className="h-4.5 w-4.5 text-black/25 flex-shrink-0" />
+                                )
+                              ) : (
+                                <div className="h-4 w-4 border-2 border-dashed border-gray-300 rounded flex-shrink-0" />
+                              )}
+
+                              {/* Ingredient name and info */}
+                              <div className="flex-1 min-w-0 flex items-center gap-2">
+                                <span className={`text-sm truncate ${
+                                  status.purchased
+                                    ? 'line-through text-black/35'
+                                    : status.inList
+                                      ? 'text-black/70'
+                                      : 'text-black/50'
+                                }`}>
+                                  {ing.name}
+                                </span>
+                                {ing.comment && (
+                                  <span className="text-xs text-black/35 truncate flex-shrink-0">
+                                    {ing.comment}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Category badge or add button */}
+                              {status.inList ? (
+                                <span className="text-xs bg-gray-100 text-black/50 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1">
+                                  <span>{status.categoryEmoji}</span>
+                                  <span className="hidden sm:inline">{status.categoryName}</span>
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleAddSingleIngredient(ing)
+                                  }}
+                                  className="text-[#FFB74D] hover:bg-[#FFB74D]/10 p-1 rounded-lg flex-shrink-0 transition-colors"
+                                  title="הוסף לרשימה"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              )}
+                            </li>
+                          )
+                        })}
                       </ul>
 
                       {/* Action buttons */}
                       <div className="p-3 flex gap-2 border-t border-black/5">
                         <button
-                          onClick={() => handleAddToList(recipe)}
-                          className="flex-1 flex items-center justify-center gap-2 bg-[#FFB74D]/10 hover:bg-[#FFB74D]/20 text-[#FFB74D] font-medium py-2 px-3 rounded-xl text-sm transition-colors"
+                          onClick={() => handleAddAllToList(recipe)}
+                          disabled={allInList}
+                          className={`flex-1 flex items-center justify-center gap-2 font-medium py-2 px-3 rounded-xl text-sm transition-colors ${
+                            allInList
+                              ? 'bg-gray-100 text-black/30 cursor-default'
+                              : 'bg-[#FFB74D]/10 hover:bg-[#FFB74D]/20 text-[#E6901E]'
+                          }`}
                         >
                           <ShoppingCart className="h-4 w-4" />
-                          הוסף לרשימה
+                          {allInList
+                            ? 'הכל ברשימה'
+                            : `הוסף ${missingCount} חסרים לרשימה`
+                          }
                         </button>
                         <button
                           onClick={() => handleDeleteRecipe(recipe.id)}
-                          className="flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-500 py-2 px-3 rounded-xl text-sm transition-colors"
+                          className="flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 py-2 px-3 rounded-xl text-sm transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
