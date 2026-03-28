@@ -27,13 +27,14 @@ function FeatureToggle({ icon, title, description, enabled, onToggle }: FeatureT
           <h3 className="text-sm font-semibold text-black/80">{title}</h3>
           <button
             onClick={() => onToggle(!enabled)}
+            dir="ltr"
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 flex-shrink-0 ${
               enabled ? 'bg-[#FFB74D]' : 'bg-gray-300'
             }`}
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                enabled ? 'translate-x-1.5' : 'translate-x-6'
+                enabled ? 'translate-x-[22px]' : 'translate-x-1'
               }`}
             />
           </button>

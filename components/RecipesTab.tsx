@@ -228,33 +228,36 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
               )}
 
               {/* Add ingredient inputs */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newIngredientName}
-                  onChange={e => setNewIngredientName(e.target.value)}
-                  placeholder="שם מרכיב..."
-                  className="flex-[2] bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D]"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') handleAddIngredient()
-                  }}
-                />
-                <input
-                  type="text"
-                  value={newIngredientComment}
-                  onChange={e => setNewIngredientComment(e.target.value)}
-                  placeholder="כמות..."
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D]"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') handleAddIngredient()
-                  }}
-                />
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newIngredientName}
+                    onChange={e => setNewIngredientName(e.target.value)}
+                    placeholder="שם מרכיב..."
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D]"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleAddIngredient()
+                    }}
+                  />
+                  <input
+                    type="text"
+                    value={newIngredientComment}
+                    onChange={e => setNewIngredientComment(e.target.value)}
+                    placeholder="כמות..."
+                    className="w-24 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50 focus:border-[#FFB74D]"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleAddIngredient()
+                    }}
+                  />
+                </div>
                 <button
                   onClick={handleAddIngredient}
                   disabled={!newIngredientName.trim()}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm text-black/60 disabled:opacity-40 transition-colors"
+                  className="w-full py-2 border border-[#FFB74D]/30 text-[#FFB74D] rounded-xl text-sm font-medium hover:bg-[#FFB74D]/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center gap-1.5"
                 >
                   <Plus className="h-4 w-4" />
+                  הוסף מרכיב
                 </button>
               </div>
 
@@ -262,7 +265,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
               <button
                 onClick={handleSaveRecipe}
                 disabled={!newRecipeName.trim() || pendingIngredients.length === 0}
-                className="w-full bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white font-semibold py-2.5 px-4 rounded-xl shadow-sm disabled:opacity-50 transition-opacity text-sm"
+                className="w-full bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-orange-200/40 disabled:opacity-40 transition-opacity text-sm"
               >
                 שמור מתכון
               </button>
