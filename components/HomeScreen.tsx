@@ -587,6 +587,7 @@ export default function HomeScreen() {
           category,
           emoji
         )
+        toast.success(`"${ing.name}" נוסף לקטגוריה ${emoji} ${category}`)
       } catch (error) {
         console.error('Error adding ingredient:', error)
         // Fallback: add to "other" category
@@ -595,6 +596,7 @@ export default function HomeScreen() {
           'אחר',
           '📦'
         )
+        toast.success(`"${ing.name}" נוסף לקטגוריה 📦 אחר`)
       } finally {
         setPendingAddCount(prev => prev - 1)
       }
@@ -967,7 +969,7 @@ export default function HomeScreen() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {!isAddFormOpen && (
+        {!isAddFormOpen && activeTab !== 'recipes' && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}

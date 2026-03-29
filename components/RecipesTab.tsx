@@ -484,7 +484,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
                       {/* Inline add ingredient - matches category inline add pattern */}
                       <div className="px-4 py-2 border-t border-black/5">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="flex-shrink-0 text-black/20">
+                          <div className="flex-shrink-0 text-black/20 mt-0.5">
                             <Square className="h-5 w-5" />
                           </div>
                           <input
@@ -531,16 +531,16 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
                         </button>
                         <button
                           onClick={() => handleDeleteRecipe(recipe.id)}
-                          className={`flex items-center justify-center py-2 px-3 rounded-xl text-sm transition-colors ${
+                          className={`flex items-center justify-center rounded-lg transition-colors ${
                             deletingRecipeId === recipe.id
-                              ? 'bg-red-500 text-white'
-                              : 'bg-red-50 hover:bg-red-100 text-red-500'
+                              ? 'bg-red-500 text-white px-2.5 py-1.5'
+                              : 'text-black/20 hover:text-red-400 p-1.5'
                           }`}
                         >
                           {deletingRecipeId === recipe.id ? (
                             <span className="text-xs font-medium whitespace-nowrap">למחוק?</span>
                           ) : (
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           )}
                         </button>
                       </div>
