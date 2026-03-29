@@ -20,12 +20,6 @@ function isRareItem(item: Item): boolean {
   return daysSince > RARE_ITEM_AGE_DAYS
 }
 
-const MOST_PURCHASED_THRESHOLD = 2
-
-function isMostPurchased(item: Item): boolean {
-  return (item.purchaseCount ?? 0) >= MOST_PURCHASED_THRESHOLD
-}
-
 function sortItemsWithRareLast(items: Item[], sortByMostPurchased: boolean): Item[] {
   return [...items].sort((a, b) => {
     const aRare = isRareItem(a)

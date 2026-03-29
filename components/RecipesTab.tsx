@@ -77,8 +77,6 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
   const [newIngredientComment, setNewIngredientComment] = useState('')
   const [pendingIngredients, setPendingIngredients] = useState<RecipeIngredient[]>([])
   const [expandedRecipes, setExpandedRecipes] = useState<number[]>([])
-  // Per-recipe inline ingredient input state
-  const [inlineInputs, setInlineInputs] = useState<Record<number, { name: string; comment: string }>>({})
 
   useEffect(() => {
     setRecipes(loadRecipes(listId))
@@ -149,41 +147,12 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
     toast.success(`המתכון "${recipe.name}" נוסף`)
   }
 
-  const handleAddIngredientToRecipe = (recipeId: number) => {
-    const input = inlineInputs[recipeId]
-    if (!input?.name.trim()) return
-
-    const newIng: RecipeIngredient = {
-      id: Date.now(),
-      name: input.name.trim(),
-      comment: input.comment.trim() || undefined,
-    }
-
-    const updated = recipes.map(r => {
-      if (r.id !== recipeId) return r
-      return { ...r, ingredients: [...r.ingredients, newIng] }
-    })
-    persist(updated)
-    setInlineInputs(prev => ({ ...prev, [recipeId]: { name: '', comment: '' } }))
-  }
-
   const handleRemoveIngredientFromRecipe = (recipeId: number, ingredientId: number) => {
     const updated = recipes.map(r => {
       if (r.id !== recipeId) return r
       return { ...r, ingredients: r.ingredients.filter(ing => ing.id !== ingredientId) }
     })
     persist(updated)
-  }
-
-  const getInlineInput = (recipeId: number) => {
-    return inlineInputs[recipeId] || { name: '', comment: '' }
-  }
-
-  const setInlineInput = (recipeId: number, field: 'name' | 'comment', value: string) => {
-    setInlineInputs(prev => ({
-      ...prev,
-      [recipeId]: { ...getInlineInput(recipeId), [field]: value },
-    }))
   }
 
   const handleDeleteRecipe = (recipeId: number) => {
@@ -497,35 +466,34 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                       </ul>
 
                       {/* Inline add ingredient */}
-                      <div className="px-4 py-2 border-t border-black/5 flex items-center gap-2">
-                        <div className="h-4 w-4 flex-shrink-0" />
-                        <input
-                          type="text"
-                          value={getInlineInput(recipe.id).name}
-                          onChange={e => setInlineInput(recipe.id, 'name', e.target.value)}
-                          placeholder="מרכיב חדש..."
-                          className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/70 placeholder:text-black/30 p-0 min-w-0"
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') handleAddIngredientToRecipe(recipe.id)
-                          }}
-                        />
-                        <input
-                          type="text"
-                          value={getInlineInput(recipe.id).comment}
-                          onChange={e => setInlineInput(recipe.id, 'comment', e.target.value)}
-                          placeholder="כמות..."
-                          className="w-16 bg-transparent border-none outline-none text-right text-xs text-black/50 placeholder:text-black/25 p-0"
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') handleAddIngredientToRecipe(recipe.id)
-                          }}
-                        />
-                        <button
-                          onClick={() => handleAddIngredientToRecipe(recipe.id)}
-                          disabled={!getInlineInput(recipe.id).name.trim()}
-                          className="text-[#FFB74D] disabled:text-black/15 p-1 rounded-lg flex-shrink-0 transition-colors"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
+                      <div className="px-4 py-2 border-t border-black/5">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex-shrink-0 text-black/20 mt-0.5">
+                            <Plus className="h-4 w-4" />
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="הוסף מרכיב..."
+                            className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/70 placeholder:text-black/30 focus:ring-0 p-0 min-w-0"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                const val = e.currentTarget.value.trim()
+                                const updated = recipes.map(r => {
+                                  if (r.id !== recipe.id) return r
+                                  return {
+                                    ...r,
+                                    ingredients: [...r.ingredients, {
+                                      id: Date.now(),
+                                      name: val,
+                                    }],
+                                  }
+                                })
+                                persist(updated)
+                                e.currentTarget.value = ''
+                              }
+                            }}
+                          />
+                        </div>
                       </div>
 
                       {/* Action buttons */}
