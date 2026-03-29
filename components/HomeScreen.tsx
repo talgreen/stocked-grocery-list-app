@@ -575,31 +575,55 @@ export default function HomeScreen() {
   const handleAddRecipeIngredients = async (ingredients: Array<{ name: string; comment: string }>) => {
     setPendingAddCount(prev => prev + ingredients.length)
 
-    for (const ing of ingredients) {
-      try {
-        const result = await OpenRouter.categorize(`${ing.name}${ing.comment ? ` - ${ing.comment}` : ''}`)
-        const category = result.category?.trim() || 'אחר'
+    let addedCount = 0
+
+    try {
+      // Batch categorize all ingredients in a single API call
+      const batchResults = await OpenRouter.categorizeBatch(
+        ingredients.map(ing => ({ name: ing.name, comment: ing.comment || undefined }))
+      )
+
+      for (let i = 0; i < ingredients.length; i++) {
+        const ing = ingredients[i]
+        const category = batchResults[i]?.category || 'אחר'
         const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category))
         const emoji = matchedCategory?.emoji || '📦'
 
-        await handleAddItemWithCategory(
-          { name: ing.name, comment: ing.comment },
-          category,
-          emoji
-        )
-        toast.success(`"${ing.name}" נוסף לקטגוריה ${emoji} ${category}`)
-      } catch (error) {
-        console.error('Error adding ingredient:', error)
-        // Fallback: add to "other" category
-        await handleAddItemWithCategory(
-          { name: ing.name, comment: ing.comment },
-          'אחר',
-          '📦'
-        )
-        toast.success(`"${ing.name}" נוסף לקטגוריה 📦 אחר`)
-      } finally {
-        setPendingAddCount(prev => prev - 1)
+        try {
+          await handleAddItemWithCategory(
+            { name: ing.name, comment: ing.comment },
+            category,
+            emoji
+          )
+          addedCount++
+        } catch (error) {
+          console.error('Error adding ingredient:', ing.name, error)
+        } finally {
+          setPendingAddCount(prev => prev - 1)
+        }
       }
+    } catch (error) {
+      console.error('Batch categorization failed, falling back to sequential:', error)
+
+      // Fallback: add all to "אחר" category
+      for (const ing of ingredients) {
+        try {
+          await handleAddItemWithCategory(
+            { name: ing.name, comment: ing.comment },
+            'אחר',
+            '📦'
+          )
+          addedCount++
+        } catch (addError) {
+          console.error('Error adding ingredient:', ing.name, addError)
+        } finally {
+          setPendingAddCount(prev => prev - 1)
+        }
+      }
+    }
+
+    if (addedCount > 0) {
+      toast.success(`נוספו ${addedCount} מצרכים לרשימה`)
     }
   }
 
