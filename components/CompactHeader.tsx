@@ -112,7 +112,7 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
           </div>
 
           {/* Progress ring */}
-          <div className="flex-1 min-w-0 flex justify-start">
+          <div className="flex-shrink-0">
             <CircularProgress percentage={progressPercentage} />
           </div>
 
