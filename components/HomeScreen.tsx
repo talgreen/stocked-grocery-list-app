@@ -499,7 +499,7 @@ export default function HomeScreen() {
   }, [categories, pendingScrollItemId])
 
   // Handle updating an existing item
-  const handleUpdateItem = async (itemId: number, name: string, comment: string, newCategoryId: number) => {
+  const handleUpdateItem = async (itemId: number, name: string, comment: string, newCategoryId: number, purchaseCount?: number) => {
     try {
       // Find the item and its current category
       let itemToUpdate: Item | null = null;
@@ -523,7 +523,8 @@ export default function HomeScreen() {
       const updatedItem = {
         ...itemToUpdate,
         name,
-        comment
+        comment,
+        ...(purchaseCount !== undefined ? { purchaseCount } : {}),
       };
 
       let updatedCategories;

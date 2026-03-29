@@ -77,6 +77,8 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
   const [newIngredientComment, setNewIngredientComment] = useState('')
   const [pendingIngredients, setPendingIngredients] = useState<RecipeIngredient[]>([])
   const [expandedRecipes, setExpandedRecipes] = useState<number[]>([])
+  // Per-recipe inline ingredient input state
+  const [inlineInputs, setInlineInputs] = useState<Record<number, { name: string; comment: string }>>({})
 
   useEffect(() => {
     setRecipes(loadRecipes(listId))
@@ -145,6 +147,43 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
     setPendingIngredients([])
     setIsAddingRecipe(false)
     toast.success(`המתכון "${recipe.name}" נוסף`)
+  }
+
+  const handleAddIngredientToRecipe = (recipeId: number) => {
+    const input = inlineInputs[recipeId]
+    if (!input?.name.trim()) return
+
+    const newIng: RecipeIngredient = {
+      id: Date.now(),
+      name: input.name.trim(),
+      comment: input.comment.trim() || undefined,
+    }
+
+    const updated = recipes.map(r => {
+      if (r.id !== recipeId) return r
+      return { ...r, ingredients: [...r.ingredients, newIng] }
+    })
+    persist(updated)
+    setInlineInputs(prev => ({ ...prev, [recipeId]: { name: '', comment: '' } }))
+  }
+
+  const handleRemoveIngredientFromRecipe = (recipeId: number, ingredientId: number) => {
+    const updated = recipes.map(r => {
+      if (r.id !== recipeId) return r
+      return { ...r, ingredients: r.ingredients.filter(ing => ing.id !== ingredientId) }
+    })
+    persist(updated)
+  }
+
+  const getInlineInput = (recipeId: number) => {
+    return inlineInputs[recipeId] || { name: '', comment: '' }
+  }
+
+  const setInlineInput = (recipeId: number, field: 'name' | 'comment', value: string) => {
+    setInlineInputs(prev => ({
+      ...prev,
+      [recipeId]: { ...getInlineInput(recipeId), [field]: value },
+    }))
   }
 
   const handleDeleteRecipe = (recipeId: number) => {
@@ -389,7 +428,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                           return (
                             <li
                               key={ing.id}
-                              className={`px-4 py-2.5 flex items-center gap-3 ${
+                              className={`px-4 py-2.5 flex items-center gap-2 ${
                                 status.purchased ? 'bg-black/[0.02]' : ''
                               }`}
                             >
@@ -422,7 +461,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                                 )}
                               </div>
 
-                              {/* Category badge or add button */}
+                              {/* Category badge or add-to-list button */}
                               {status.inList ? (
                                 <span className="text-xs bg-gray-100 text-black/50 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1">
                                   <span>{status.categoryEmoji}</span>
@@ -437,13 +476,57 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                                   className="text-[#FFB74D] hover:bg-[#FFB74D]/10 p-1 rounded-lg flex-shrink-0 transition-colors"
                                   title="הוסף לרשימה"
                                 >
-                                  <Plus className="h-4 w-4" />
+                                  <ShoppingCart className="h-3.5 w-3.5" />
                                 </button>
                               )}
+
+                              {/* Remove from recipe */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleRemoveIngredientFromRecipe(recipe.id, ing.id)
+                                }}
+                                className="text-black/20 hover:text-red-500 p-1 rounded-lg flex-shrink-0 transition-colors"
+                                title="הסר מהמתכון"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
                             </li>
                           )
                         })}
                       </ul>
+
+                      {/* Inline add ingredient */}
+                      <div className="px-4 py-2 border-t border-black/5 flex items-center gap-2">
+                        <div className="h-4 w-4 flex-shrink-0" />
+                        <input
+                          type="text"
+                          value={getInlineInput(recipe.id).name}
+                          onChange={e => setInlineInput(recipe.id, 'name', e.target.value)}
+                          placeholder="מרכיב חדש..."
+                          className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/70 placeholder:text-black/30 p-0 min-w-0"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleAddIngredientToRecipe(recipe.id)
+                          }}
+                        />
+                        <input
+                          type="text"
+                          value={getInlineInput(recipe.id).comment}
+                          onChange={e => setInlineInput(recipe.id, 'comment', e.target.value)}
+                          placeholder="כמות..."
+                          className="w-16 bg-transparent border-none outline-none text-right text-xs text-black/50 placeholder:text-black/25 p-0"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleAddIngredientToRecipe(recipe.id)
+                          }}
+                        />
+                        <button
+                          onClick={() => handleAddIngredientToRecipe(recipe.id)}
+                          disabled={!getInlineInput(recipe.id).name.trim()}
+                          className="text-[#FFB74D] disabled:text-black/15 p-1 rounded-lg flex-shrink-0 transition-colors"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
 
                       {/* Action buttons */}
                       <div className="p-3 flex gap-2 border-t border-black/5">
