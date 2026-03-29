@@ -87,19 +87,6 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
     setRecipes(loadRecipes(listId))
   }, [listId])
 
-  // Clear adding state when all ingredients land in the list
-  useEffect(() => {
-    if (addingRecipeId === null) return
-    const recipe = recipes.find(r => r.id === addingRecipeId)
-    if (!recipe) { setAddingRecipeId(null); return }
-    const allInList = recipe.ingredients.every(ing => {
-      const key = ing.name.trim().toLowerCase()
-      const status = ingredientStatusMap.get(key)
-      return status?.inList
-    })
-    if (allInList) setAddingRecipeId(null)
-  }, [addingRecipeId, recipes, ingredientStatusMap])
-
   const persist = (updated: Recipe[]) => {
     setRecipes(updated)
     saveRecipes(listId, updated)
@@ -118,6 +105,19 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
     }
     return map
   }, [recipes, categories])
+
+  // Clear adding state when all ingredients land in the list
+  useEffect(() => {
+    if (addingRecipeId === null) return
+    const recipe = recipes.find(r => r.id === addingRecipeId)
+    if (!recipe) { setAddingRecipeId(null); return }
+    const allInList = recipe.ingredients.every(ing => {
+      const key = ing.name.trim().toLowerCase()
+      const status = ingredientStatusMap.get(key)
+      return status?.inList
+    })
+    if (allInList) setAddingRecipeId(null)
+  }, [addingRecipeId, recipes, ingredientStatusMap])
 
   const getIngredientStatus = (name: string): IngredientStatus => {
     return ingredientStatusMap.get(name.trim().toLowerCase()) || { inList: false, purchased: false }
