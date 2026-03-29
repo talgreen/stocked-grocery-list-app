@@ -105,9 +105,11 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
         className={`list-none px-4 py-2 relative touch-pan-x will-change-transform ${
           isRare ? 'bg-black/[0.03] opacity-40' : item.purchased ? 'bg-white opacity-50' : 'bg-white'
         }`}
-        style={purchaseOpacity > 0 && !isRare && !item.purchased ? {
-          borderRight: `3px solid rgba(255, 183, 77, ${purchaseOpacity})`,
-        } : undefined}
+        style={{
+          borderRight: purchaseOpacity > 0 && !isRare && !item.purchased
+            ? `3px solid rgba(255, 183, 77, ${purchaseOpacity})`
+            : '3px solid transparent',
+        }}
       >
         <div className="flex items-center gap-3 min-w-0">
           <motion.button
