@@ -753,6 +753,7 @@ export default function HomeScreen() {
             listId={listId}
             categories={categories}
             onAddIngredients={handleAddRecipeIngredients}
+            onToggleItem={handleToggleItem}
           />
         )}
 

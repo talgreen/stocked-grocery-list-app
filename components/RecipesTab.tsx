@@ -37,6 +37,7 @@ function saveRecipes(listId: string, recipes: Recipe[]) {
 interface IngredientStatus {
   inList: boolean
   purchased: boolean
+  categoryId?: number
   categoryEmoji?: string
   categoryName?: string
   item?: Item
@@ -53,6 +54,7 @@ function findIngredientInList(
         return {
           inList: true,
           purchased: item.purchased,
+          categoryId: cat.id,
           categoryEmoji: cat.emoji,
           categoryName: cat.name,
           item,
@@ -67,9 +69,10 @@ interface RecipesTabProps {
   listId: string
   categories: Category[]
   onAddIngredients: (ingredients: Array<{ name: string; comment: string }>) => void
+  onToggleItem: (categoryId: number, itemId: number) => void
 }
 
-export default function RecipesTab({ listId, categories, onAddIngredients }: RecipesTabProps) {
+export default function RecipesTab({ listId, categories, onAddIngredients, onToggleItem }: RecipesTabProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [isAddingRecipe, setIsAddingRecipe] = useState(false)
   const [newRecipeName, setNewRecipeName] = useState('')
@@ -77,6 +80,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
   const [newIngredientComment, setNewIngredientComment] = useState('')
   const [pendingIngredients, setPendingIngredients] = useState<RecipeIngredient[]>([])
   const [expandedRecipes, setExpandedRecipes] = useState<number[]>([])
+  const [deletingRecipeId, setDeletingRecipeId] = useState<number | null>(null)
 
   useEffect(() => {
     setRecipes(loadRecipes(listId))
@@ -156,8 +160,14 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
   }
 
   const handleDeleteRecipe = (recipeId: number) => {
-    persist(recipes.filter(r => r.id !== recipeId))
-    toast.success('המתכון נמחק')
+    if (deletingRecipeId === recipeId) {
+      persist(recipes.filter(r => r.id !== recipeId))
+      setDeletingRecipeId(null)
+      toast.success('המתכון נמחק')
+    } else {
+      setDeletingRecipeId(recipeId)
+      setTimeout(() => setDeletingRecipeId(prev => prev === recipeId ? null : prev), 3000)
+    }
   }
 
   const handleAddSingleIngredient = (ing: RecipeIngredient) => {
@@ -167,7 +177,6 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
       return
     }
     onAddIngredients([{ name: ing.name, comment: ing.comment || '' }])
-    toast.success(`"${ing.name}" נוסף לרשימה`)
   }
 
   const handleAddAllToList = (recipe: Recipe) => {
@@ -187,8 +196,13 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
         comment: ing.comment || '',
       }))
     )
+  }
 
-    toast.success(`${missing.length} מרכיבים נוספו לרשימה`)
+  const handleToggleIngredient = (ing: RecipeIngredient) => {
+    const status = getIngredientStatus(ing.name)
+    if (status.inList && status.categoryId !== undefined && status.item) {
+      onToggleItem(status.categoryId, status.item.id)
+    }
   }
 
   const toggleRecipe = (recipeId: number) => {
@@ -344,12 +358,13 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
           const progress = getRecipeProgress(recipe)
           const allInList = progress.inList === progress.total
           const missingCount = progress.total - progress.inList
+          const allDone = progress.purchased === progress.total && progress.total > 0
 
           return (
             <motion.div
               key={recipe.id}
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ opacity: allDone ? 0.7 : 1, y: 0 }}
               className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm"
             >
               <button
@@ -359,16 +374,11 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                 <div className="flex items-center gap-3 min-w-0">
                   <ChefHat className="h-5 w-5 text-[#FFB74D] flex-shrink-0" />
                   <h3 className="text-sm font-semibold text-black/80 truncate">{recipe.name}</h3>
-                  {/* Progress indicator */}
                   <span className={`text-xs flex-shrink-0 ${
-                    progress.purchased === progress.total && progress.total > 0
-                      ? 'text-green-500'
-                      : allInList
-                        ? 'text-[#FFB74D]'
-                        : 'text-black/40'
+                    allDone ? 'text-[#FFB74D]' : 'text-black/40'
                   }`}>
                     {progress.purchased}/{progress.total}
-                    {progress.purchased === progress.total && progress.total > 0 && (
+                    {allDone && (
                       <Check className="inline h-3 w-3 mr-0.5" />
                     )}
                   </span>
@@ -397,19 +407,26 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                           return (
                             <li
                               key={ing.id}
-                              className={`px-4 py-2.5 flex items-center gap-2 ${
+                              className={`px-4 py-2 flex items-center gap-3 ${
                                 status.purchased ? 'bg-black/[0.02]' : ''
                               }`}
                             >
-                              {/* Status icon */}
+                              {/* Tappable status icon for check/uncheck */}
                               {status.inList ? (
-                                status.purchased ? (
-                                  <CheckSquare className="h-4.5 w-4.5 text-[#FFB74D] flex-shrink-0" />
-                                ) : (
-                                  <Square className="h-4.5 w-4.5 text-black/25 flex-shrink-0" />
-                                )
+                                <button
+                                  onClick={() => handleToggleIngredient(ing)}
+                                  className={`flex-shrink-0 transition-colors duration-150 ${
+                                    status.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'
+                                  }`}
+                                >
+                                  {status.purchased ? (
+                                    <CheckSquare className="h-5 w-5" />
+                                  ) : (
+                                    <Square className="h-5 w-5" />
+                                  )}
+                                </button>
                               ) : (
-                                <div className="h-4 w-4 border-2 border-dashed border-gray-300 rounded flex-shrink-0" />
+                                <div className="h-5 w-5 border-2 border-dashed border-gray-300 rounded flex-shrink-0" />
                               )}
 
                               {/* Ingredient name and info */}
@@ -434,7 +451,6 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                               {status.inList ? (
                                 <span className="text-xs bg-gray-100 text-black/50 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1">
                                   <span>{status.categoryEmoji}</span>
-                                  <span className="hidden sm:inline">{status.categoryName}</span>
                                 </span>
                               ) : (
                                 <button
@@ -445,7 +461,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                                   className="text-[#FFB74D] hover:bg-[#FFB74D]/10 p-1 rounded-lg flex-shrink-0 transition-colors"
                                   title="הוסף לרשימה"
                                 >
-                                  <ShoppingCart className="h-3.5 w-3.5" />
+                                  <ShoppingCart className="h-4 w-4" />
                                 </button>
                               )}
 
@@ -465,16 +481,16 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                         })}
                       </ul>
 
-                      {/* Inline add ingredient */}
+                      {/* Inline add ingredient - matches category inline add pattern */}
                       <div className="px-4 py-2 border-t border-black/5">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="flex-shrink-0 text-black/20 mt-0.5">
-                            <Plus className="h-4 w-4" />
+                          <div className="flex-shrink-0 text-black/20">
+                            <Square className="h-5 w-5" />
                           </div>
                           <input
                             type="text"
                             placeholder="הוסף מרכיב..."
-                            className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/70 placeholder:text-black/30 focus:ring-0 p-0 min-w-0"
+                            className="flex-1 bg-transparent border-none outline-none text-right text-sm text-black/80 placeholder:text-black/40 focus:ring-0 p-0 min-w-0"
                             onKeyDown={e => {
                               if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                                 const val = e.currentTarget.value.trim()
@@ -515,9 +531,17 @@ export default function RecipesTab({ listId, categories, onAddIngredients }: Rec
                         </button>
                         <button
                           onClick={() => handleDeleteRecipe(recipe.id)}
-                          className="flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 py-2 px-3 rounded-xl text-sm transition-colors"
+                          className={`flex items-center justify-center py-2 px-3 rounded-xl text-sm transition-colors ${
+                            deletingRecipeId === recipe.id
+                              ? 'bg-red-500 text-white'
+                              : 'bg-red-50 hover:bg-red-100 text-red-500'
+                          }`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {deletingRecipeId === recipe.id ? (
+                            <span className="text-xs font-medium whitespace-nowrap">למחוק?</span>
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </div>
