@@ -1,7 +1,8 @@
 'use client'
 
+import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
-import { Share2, ShoppingCart, Pill, Check, Search, X } from 'lucide-react'
+import { ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Search, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -11,6 +12,7 @@ interface CompactHeaderProps {
   totalItems: number
   searchQuery: string
   onSearchChange: (query: string) => void
+  onOpenSettings: () => void
 }
 
 function CircularProgress({ percentage }: { percentage: number }) {
@@ -63,10 +65,11 @@ function CircularProgress({ percentage }: { percentage: number }) {
   )
 }
 
-export default function CompactHeader({ uncheckedItems, totalItems, searchQuery, onSearchChange }: CompactHeaderProps) {
+export default function CompactHeader({ uncheckedItems, totalItems, searchQuery, onSearchChange, onOpenSettings }: CompactHeaderProps) {
   const params = useParams()
   const listId = params?.listId as string
   const { activeTab, setActiveTab } = useTabView()
+  const { flags } = useSettings()
 
   const completedItems = totalItems - uncheckedItems
   const progressPercentage = totalItems > 0
@@ -92,15 +95,6 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
     }
   }
 
-  const getProgressMessage = () => {
-    if (totalItems === 0) return 'הרשימה ריקה'
-    if (progressPercentage === 100) return 'כל הכבוד! סיימת הכל'
-    if (progressPercentage >= 75) return 'כמעט שם!'
-    if (progressPercentage >= 50) return 'יותר מחצי הדרך'
-    if (uncheckedItems === 1) return 'נשאר פריט אחד'
-    return `נשארו ${uncheckedItems} פריטים`
-  }
-
   return (
     <div className="bg-white border-b border-black/5 shadow-sm sticky top-0 pt-safe z-30">
       {/* Main header row */}
@@ -117,19 +111,9 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
             />
           </div>
 
-          {/* Progress ring and message */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Progress ring */}
+          <div className="flex-shrink-0">
             <CircularProgress percentage={progressPercentage} />
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-gray-700 truncate">
-                {getProgressMessage()}
-              </span>
-              {totalItems > 0 && (
-                <span className="text-xs text-gray-400">
-                  {completedItems}/{totalItems}
-                </span>
-              )}
-            </div>
           </div>
 
           {/* Tab Pills */}
@@ -156,16 +140,38 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
               <Pill className="w-4 h-4" />
               <span className="hidden sm:inline">בית מרקחת</span>
             </button>
+            {flags.enableRecipes && (
+              <button
+                onClick={() => setActiveTab('recipes')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'recipes'
+                    ? 'bg-[#FFB74D] text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <ChefHat className="w-4 h-4" />
+                <span className="hidden sm:inline">מתכונים</span>
+              </button>
+            )}
           </div>
 
-          {/* Share button */}
-          <button
-            onClick={handleShare}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-            title="שיתוף"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
+          {/* Settings & Share buttons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onOpenSettings}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+              title="הגדרות"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleShare}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+              title="שיתוף"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 

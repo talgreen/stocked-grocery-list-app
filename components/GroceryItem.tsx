@@ -1,3 +1,4 @@
+import { useSettings } from '@/contexts/SettingsContext'
 import { AnimatePresence, motion, useMotionValue } from 'framer-motion'
 import { Archive, CheckSquare, Edit, Square, Trash2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
@@ -26,14 +27,23 @@ interface GroceryItemProps {
   onEdit: (item: Item, categoryId: number) => void
 }
 
+// Returns an opacity value 0-1 based on relative purchase frequency
+function getMostPurchasedOpacity(purchaseCount: number): number {
+  if (purchaseCount < 2) return 0
+  // Logarithmic scale: 2→0.15, 5→0.3, 10→0.4, 50→0.55, 100→0.6
+  return Math.min(0.6, 0.1 + Math.log2(purchaseCount) * 0.08)
+}
+
 const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDelete, onEdit }: GroceryItemProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const { flags } = useSettings()
 
   const x = useMotionValue(0)
   const itemRef = useRef<HTMLLIElement>(null)
   const isRare = isRareItem(item)
+  const purchaseOpacity = flags.enableMostPurchased ? getMostPurchasedOpacity(item.purchaseCount ?? 0) : 0
 
   const handleDelete = () => {
     if (isDeleting) {
@@ -95,6 +105,11 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
         className={`list-none px-4 py-2 relative touch-pan-x will-change-transform ${
           isRare ? 'bg-black/[0.03] opacity-40' : item.purchased ? 'bg-white opacity-50' : 'bg-white'
         }`}
+        style={{
+          borderRight: purchaseOpacity > 0 && !isRare && !item.purchased
+            ? `3px solid rgba(255, 183, 77, ${purchaseOpacity})`
+            : '3px solid transparent',
+        }}
       >
         <div className="flex items-center gap-3 min-w-0">
           <motion.button

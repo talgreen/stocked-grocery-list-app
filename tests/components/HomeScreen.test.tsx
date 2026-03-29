@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import HomeScreen from '@/components/HomeScreen'
+import { SettingsProvider } from '@/contexts/SettingsContext'
 import { TabViewProvider } from '@/contexts/TabViewContext'
 
 const renderWithProvider = (component: React.ReactElement) => {
-  return render(<TabViewProvider>{component}</TabViewProvider>)
+  return render(<SettingsProvider><TabViewProvider>{component}</TabViewProvider></SettingsProvider>)
 }
 
 describe('HomeScreen', () => {
