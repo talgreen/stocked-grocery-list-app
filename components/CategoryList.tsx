@@ -176,9 +176,10 @@ const CategoryList = memo(function CategoryList({
               ))}
             </ul>
               {!isSearchMode && sortedCategories.length > 0 && (
-                <motion.div 
+                <motion.div
                   initial={false}
                   className="px-4 py-2 relative touch-pan-x bg-white border-t border-black/5"
+                  style={flags.enableMostPurchased ? { borderRight: '3px solid transparent' } : undefined}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex-shrink-0 text-black/20 mt-0.5">
@@ -317,9 +318,10 @@ const CategoryList = memo(function CategoryList({
                         ))}
                       </ul>
                       {!isSearchMode && (
-                        <motion.div 
+                        <motion.div
                           initial={false}
                           className="px-4 py-2 relative touch-pan-x bg-white border-t border-black/5"
+                          style={flags.enableMostPurchased ? { borderRight: '3px solid transparent' } : undefined}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex-shrink-0 text-black/20 mt-0.5">

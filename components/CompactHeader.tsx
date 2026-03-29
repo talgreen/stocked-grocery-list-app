@@ -95,15 +95,6 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
     }
   }
 
-  const getProgressMessage = () => {
-    if (totalItems === 0) return 'הרשימה ריקה'
-    if (progressPercentage === 100) return 'כל הכבוד! סיימת הכל'
-    if (progressPercentage >= 75) return 'כמעט שם!'
-    if (progressPercentage >= 50) return 'יותר מחצי הדרך'
-    if (uncheckedItems === 1) return 'נשאר פריט אחד'
-    return `נשארו ${uncheckedItems} פריטים`
-  }
-
   return (
     <div className="bg-white border-b border-black/5 shadow-sm sticky top-0 pt-safe z-30">
       {/* Main header row */}
@@ -120,19 +111,9 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
             />
           </div>
 
-          {/* Progress ring and message */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Progress ring */}
+          <div className="flex-1 min-w-0 flex justify-start">
             <CircularProgress percentage={progressPercentage} />
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-gray-700 truncate">
-                {getProgressMessage()}
-              </span>
-              {totalItems > 0 && (
-                <span className="text-xs text-gray-400">
-                  {completedItems}/{totalItems}
-                </span>
-              )}
-            </div>
           </div>
 
           {/* Tab Pills */}

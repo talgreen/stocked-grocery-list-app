@@ -81,10 +81,24 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
   const [pendingIngredients, setPendingIngredients] = useState<RecipeIngredient[]>([])
   const [expandedRecipes, setExpandedRecipes] = useState<number[]>([])
   const [deletingRecipeId, setDeletingRecipeId] = useState<number | null>(null)
+  const [addingRecipeId, setAddingRecipeId] = useState<number | null>(null)
 
   useEffect(() => {
     setRecipes(loadRecipes(listId))
   }, [listId])
+
+  // Clear adding state when all ingredients land in the list
+  useEffect(() => {
+    if (addingRecipeId === null) return
+    const recipe = recipes.find(r => r.id === addingRecipeId)
+    if (!recipe) { setAddingRecipeId(null); return }
+    const allInList = recipe.ingredients.every(ing => {
+      const key = ing.name.trim().toLowerCase()
+      const status = ingredientStatusMap.get(key)
+      return status?.inList
+    })
+    if (allInList) setAddingRecipeId(null)
+  }, [addingRecipeId, recipes, ingredientStatusMap])
 
   const persist = (updated: Recipe[]) => {
     setRecipes(updated)
@@ -190,6 +204,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
       return
     }
 
+    setAddingRecipeId(recipe.id)
     onAddIngredients(
       missing.map(ing => ({
         name: ing.name,
@@ -516,17 +531,19 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
                       <div className="p-3 flex gap-2 border-t border-black/5">
                         <button
                           onClick={() => handleAddAllToList(recipe)}
-                          disabled={allInList}
+                          disabled={allInList || addingRecipeId === recipe.id}
                           className={`flex-1 flex items-center justify-center gap-2 font-medium py-2 px-3 rounded-xl text-sm transition-colors ${
-                            allInList
+                            allInList || addingRecipeId === recipe.id
                               ? 'bg-gray-100 text-black/30 cursor-default'
                               : 'bg-[#FFB74D]/10 hover:bg-[#FFB74D]/20 text-[#E6901E]'
                           }`}
                         >
                           <ShoppingCart className="h-4 w-4" />
-                          {allInList
-                            ? 'הכל ברשימה'
-                            : `הוסף ${missingCount} חסרים לרשימה`
+                          {addingRecipeId === recipe.id
+                            ? 'מוסיף...'
+                            : allInList
+                              ? 'הכל ברשימה'
+                              : `הוסף ${missingCount} חוסרים לרשימה`
                           }
                         </button>
                         <button
