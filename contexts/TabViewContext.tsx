@@ -2,7 +2,7 @@
 
 import { createContext, ReactNode, useContext, useState } from 'react'
 
-export type TabView = 'grocery' | 'pharmacy'
+export type TabView = 'grocery' | 'pharmacy' | 'recipes'
 
 interface TabViewContextType {
   activeTab: TabView

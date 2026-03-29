@@ -1,10 +1,11 @@
 'use client'
 
+import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
 import type { Item } from '@/types/item'
 import { motion } from 'framer-motion'
-import { Pencil, Save, Sparkles, X } from 'lucide-react'
+import { Minus, Pencil, Plus, Save, Sparkles, Star, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import ItemFormFields from './ItemFormFields'
 
@@ -12,7 +13,7 @@ interface EditItemModalProps {
   item: Item
   currentCategoryId: number
   categories: Category[]
-  onSave: (itemId: number, name: string, comment: string, categoryId: number) => void
+  onSave: (itemId: number, name: string, comment: string, categoryId: number, purchaseCount?: number) => void
   onClose: () => void
 }
 
@@ -20,8 +21,10 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
   const [name, setName] = useState(item.name)
   const [comment, setComment] = useState(item.comment || '')
   const [categoryId, setCategoryId] = useState(currentCategoryId.toString())
+  const [purchaseCount, setPurchaseCount] = useState(item.purchaseCount ?? 0)
   const inputRef = useRef<HTMLInputElement>(null)
   const { activeTab } = useTabView()
+  const { flags } = useSettings()
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -34,7 +37,14 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
     e.preventDefault()
     if (!name.trim() || !categoryId) return
 
-    onSave(item.id, name.trim(), comment.trim(), parseInt(categoryId))
+    const countChanged = purchaseCount !== (item.purchaseCount ?? 0)
+    onSave(
+      item.id,
+      name.trim(),
+      comment.trim(),
+      parseInt(categoryId),
+      countChanged ? purchaseCount : undefined
+    )
     onClose()
   }
 
@@ -95,6 +105,33 @@ export default function EditItemModal({ item, currentCategoryId, categories, onS
           showCategorySelector={activeTab !== 'pharmacy'}
           showSmartOption={false}
         />
+
+        {/* Purchase count editor - only when most-purchased feature is on */}
+        {flags.enableMostPurchased && (
+          <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+            <div className="flex items-center gap-1.5 text-sm text-black/60">
+              <Star className="h-3.5 w-3.5 text-[#FFB74D] fill-[#FFB74D]" />
+              <span>מספר קניות</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPurchaseCount(prev => Math.max(0, prev - 1))}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-200 hover:bg-gray-300 text-black/60 transition-colors"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-sm font-semibold text-black/70 w-6 text-center">{purchaseCount}</span>
+              <button
+                type="button"
+                onClick={() => setPurchaseCount(prev => prev + 1)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-200 hover:bg-gray-300 text-black/60 transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-1">

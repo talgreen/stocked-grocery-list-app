@@ -1,5 +1,6 @@
 'use client'
 
+import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
 import { Item } from '@/types/item'
@@ -19,7 +20,7 @@ function isRareItem(item: Item): boolean {
   return daysSince > RARE_ITEM_AGE_DAYS
 }
 
-function sortItemsWithRareLast(items: Item[]): Item[] {
+function sortItemsWithRareLast(items: Item[], sortByMostPurchased: boolean): Item[] {
   return [...items].sort((a, b) => {
     const aRare = isRareItem(a)
     const bRare = isRareItem(b)
@@ -27,6 +28,10 @@ function sortItemsWithRareLast(items: Item[]): Item[] {
     if (aRare !== bRare) return aRare ? 1 : -1
     // Then sort by purchased status (unpurchased first)
     if (a.purchased !== b.purchased) return a.purchased ? 1 : -1
+    // When feature is enabled, sort most purchased items first (among same purchased status)
+    if (sortByMostPurchased && a.purchased === b.purchased) {
+      return (b.purchaseCount ?? 0) - (a.purchaseCount ?? 0)
+    }
     return 0
   })
 }
@@ -84,6 +89,7 @@ const CategoryList = memo(function CategoryList({
   const categoryRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
   const previousStates = useRef<{ [key: number]: number }>({})
   const { activeTab } = useTabView()
+  const { flags } = useSettings()
 
   // Preload confetti after component mounts so it's ready when needed
   const [confetti, setConfetti] = useState<any>(null)
@@ -158,7 +164,7 @@ const CategoryList = memo(function CategoryList({
             className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm"
           >
             <ul className="divide-y divide-black/5 list-none">
-              {sortItemsWithRareLast(pharmacyCategory.items).map((item) => (
+              {sortItemsWithRareLast(pharmacyCategory.items, flags.enableMostPurchased).map((item) => (
                 <GroceryItem
                   key={item.id}
                   item={item}
@@ -170,9 +176,10 @@ const CategoryList = memo(function CategoryList({
               ))}
             </ul>
               {!isSearchMode && sortedCategories.length > 0 && (
-                <motion.div 
+                <motion.div
                   initial={false}
                   className="px-4 py-2 relative touch-pan-x bg-white border-t border-black/5"
+                  style={flags.enableMostPurchased ? { borderRight: '3px solid transparent' } : undefined}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex-shrink-0 text-black/20 mt-0.5">
@@ -299,7 +306,7 @@ const CategoryList = memo(function CategoryList({
                       className="overflow-hidden"
                     >
                       <ul className="divide-y divide-black/5 list-none">
-                        {sortItemsWithRareLast(category.items).map((item) => (
+                        {sortItemsWithRareLast(category.items, flags.enableMostPurchased).map((item) => (
                           <GroceryItem
                             key={item.id}
                             item={item}
@@ -311,9 +318,10 @@ const CategoryList = memo(function CategoryList({
                         ))}
                       </ul>
                       {!isSearchMode && (
-                        <motion.div 
+                        <motion.div
                           initial={false}
                           className="px-4 py-2 relative touch-pan-x bg-white border-t border-black/5"
+                          style={flags.enableMostPurchased ? { borderRight: '3px solid transparent' } : undefined}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex-shrink-0 text-black/20 mt-0.5">

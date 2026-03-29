@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import HomeScreen from '@/components/HomeScreen'
+import { SettingsProvider } from '@/contexts/SettingsContext'
 import { TabViewProvider } from '@/contexts/TabViewContext'
 import { subscribeToList, updateList } from '@/lib/db'
 import { Category } from '@/types/categories'
@@ -67,7 +68,7 @@ const mockCategories: Category[] = [
 ]
 
 const renderWithProvider = (component: React.ReactElement) => {
-  return render(<TabViewProvider>{component}</TabViewProvider>)
+  return render(<SettingsProvider><TabViewProvider>{component}</TabViewProvider></SettingsProvider>)
 }
 
 describe('HomeScreen - Detailed Tests', () => {

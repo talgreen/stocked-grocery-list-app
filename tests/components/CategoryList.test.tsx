@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import CategoryList from '@/components/CategoryList'
 import { Category } from '@/types/categories'
+import { SettingsProvider } from '@/contexts/SettingsContext'
 import { TabViewProvider } from '@/contexts/TabViewContext'
 
 const mockCategories: Category[] = [
@@ -43,7 +44,7 @@ const mockCategories: Category[] = [
 ]
 
 const renderWithProvider = (component: React.ReactElement) => {
-  return render(<TabViewProvider>{component}</TabViewProvider>)
+  return render(<SettingsProvider><TabViewProvider>{component}</TabViewProvider></SettingsProvider>)
 }
 
 describe('CategoryList', () => {

@@ -1,12 +1,15 @@
 'use client'
 
 import HomeScreen from '@/components/HomeScreen'
+import { SettingsProvider } from '@/contexts/SettingsContext'
 import { TabViewProvider } from '@/contexts/TabViewContext'
 
 export default function SharedListPage() {
   return (
-    <TabViewProvider>
-      <HomeScreen />
-    </TabViewProvider>
+    <SettingsProvider>
+      <TabViewProvider>
+        <HomeScreen />
+      </TabViewProvider>
+    </SettingsProvider>
   )
 } 
