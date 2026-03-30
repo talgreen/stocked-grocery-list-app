@@ -39,6 +39,11 @@ vi.mock('@/lib/openrouter', () => ({
     categorize: vi.fn(() => Promise.resolve({
       category: 'מוצרי חלב',
       emoji: '🥛'
-    }))
+    })),
+    categorizeBatch: vi.fn((items: Array<{ name: string; comment?: string }>) =>
+      Promise.resolve(
+        items.map(item => ({ name: item.name, category: 'מוצרי חלב' }))
+      )
+    ),
   }
 }))
