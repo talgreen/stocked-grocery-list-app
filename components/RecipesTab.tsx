@@ -15,7 +15,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 const RECIPES_STORAGE_KEY = 'stocked-recipes'
@@ -82,6 +82,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
   const [expandedRecipes, setExpandedRecipes] = useState<number[]>([])
   const [deletingRecipeId, setDeletingRecipeId] = useState<number | null>(null)
   const [addingRecipeId, setAddingRecipeId] = useState<number | null>(null)
+  const ingredientNameRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setRecipes(loadRecipes(listId))
@@ -135,6 +136,8 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
     ])
     setNewIngredientName('')
     setNewIngredientComment('')
+    // Auto-focus the ingredient name input for the next entry
+    setTimeout(() => ingredientNameRef.current?.focus(), 0)
   }
 
   const handleRemovePendingIngredient = (id: number) => {
@@ -323,6 +326,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <input
+                    ref={ingredientNameRef}
                     type="text"
                     value={newIngredientName}
                     onChange={e => setNewIngredientName(e.target.value)}

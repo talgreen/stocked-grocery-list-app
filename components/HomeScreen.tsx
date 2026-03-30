@@ -575,30 +575,95 @@ export default function HomeScreen() {
   const handleAddRecipeIngredients = async (ingredients: Array<{ name: string; comment: string }>) => {
     setPendingAddCount(prev => prev + ingredients.length)
 
-    for (const ing of ingredients) {
-      try {
-        const result = await OpenRouter.categorize(`${ing.name}${ing.comment ? ` - ${ing.comment}` : ''}`)
-        const category = result.category?.trim() || 'אחר'
-        const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category))
-        const emoji = matchedCategory?.emoji || '📦'
+    let categorizedItems: Array<{ name: string; comment: string; category: string }>
 
-        await handleAddItemWithCategory(
-          { name: ing.name, comment: ing.comment },
-          category,
-          emoji
-        )
-        toast.success(`"${ing.name}" נוסף לקטגוריה ${emoji} ${category}`)
-      } catch (error) {
-        console.error('Error adding ingredient:', error)
-        // Fallback: add to "other" category
-        await handleAddItemWithCategory(
-          { name: ing.name, comment: ing.comment },
-          'אחר',
-          '📦'
-        )
-        toast.success(`"${ing.name}" נוסף לקטגוריה 📦 אחר`)
-      } finally {
+    try {
+      // Batch categorize all ingredients in a single API call
+      const batchResults = await OpenRouter.categorizeBatch(
+        ingredients.map(ing => ({ name: ing.name, comment: ing.comment || undefined }))
+      )
+
+      categorizedItems = ingredients.map((ing, i) => ({
+        name: ing.name,
+        comment: ing.comment,
+        category: batchResults[i]?.category || 'אחר',
+      }))
+    } catch (error) {
+      console.error('Batch categorization failed, falling back to אחר:', error)
+
+      categorizedItems = ingredients.map(ing => ({
+        name: ing.name,
+        comment: ing.comment,
+        category: 'אחר',
+      }))
+    }
+
+    // Build all items into categories in a single pass to avoid stale state
+    let updatedCategories = [...categories]
+    let addedCount = 0
+    const expandIds: number[] = []
+
+    for (const item of categorizedItems) {
+      // Skip duplicates
+      if (checkDuplicateItem(item.name, item.comment)) {
         setPendingAddCount(prev => prev - 1)
+        continue
+      }
+
+      const normalizedInput = normalizeCategory(item.category)
+      let existingCategory = updatedCategories.find(c => normalizeCategory(c.name) === normalizedInput)
+
+      if (!existingCategory) {
+        const maxId = Math.max(...updatedCategories.map(cat => cat.id), 0)
+        existingCategory = {
+          id: maxId + 1,
+          emoji: '📦',
+          name: item.category,
+          items: [],
+        }
+        updatedCategories.push(existingCategory)
+      }
+
+      const newItem: Item = {
+        id: Date.now() + addedCount,
+        name: item.name,
+        comment: item.comment || '',
+        purchased: false,
+        photo: null,
+        lastPurchaseAt: null,
+        expectedGapDays: null,
+        gapVariance: null,
+        decayedCount: 0,
+        purchaseCount: 0,
+        snoozeUntil: null,
+      }
+
+      const categoryId = existingCategory.id
+      updatedCategories = updatedCategories.map(cat => {
+        if (cat.id === categoryId) {
+          return {
+            ...cat,
+            items: [...cat.items.filter(i => !i.purchased), newItem, ...cat.items.filter(i => i.purchased)],
+          }
+        }
+        return cat
+      })
+
+      expandIds.push(categoryId)
+      addedCount++
+      setPendingAddCount(prev => prev - 1)
+    }
+
+    if (addedCount > 0) {
+      try {
+        setCategories(updatedCategories)
+        setExpandedCategories(prev => [...new Set([...prev, ...expandIds])])
+        await updateList(listId, updatedCategories)
+        toast.success(`נוספו ${addedCount} מצרכים לרשימה`)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        setCategories(categories)
+        toast.error('שגיאה בהוספת מצרכים')
       }
     }
   }
