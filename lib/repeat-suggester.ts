@@ -7,6 +7,7 @@ const DEFAULT_EXPECTED_GAP_DAYS = 7
 const MIN_SCORE_THRESHOLD = 0.25
 const MIN_REAL_PURCHASE_GAP_DAYS = 0.5
 const MIN_DUE_SCORE_TO_SUGGEST = 0.45
+const MIN_PURCHASE_COUNT_TO_SUGGEST = 3
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
@@ -99,7 +100,7 @@ export function computeRepeatSuggestions(
       if (!item.purchased) return
 
       const purchaseCount = item.purchaseCount ?? 0
-      if (purchaseCount < 2) return
+      if (purchaseCount < MIN_PURCHASE_COUNT_TO_SUGGEST) return
 
       if (!item.lastPurchaseAt) return
 
@@ -164,4 +165,5 @@ export function computeRepeatSuggestions(
 export const REPEAT_SUGGESTER_CONSTANTS = {
   DEFAULT_EXPECTED_GAP_DAYS,
   MIN_SCORE_THRESHOLD,
+  MIN_PURCHASE_COUNT_TO_SUGGEST,
 }
