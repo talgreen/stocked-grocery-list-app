@@ -8,6 +8,11 @@ interface BatchResult {
   category: string
 }
 
+interface ParsedRecipe {
+  name: string
+  ingredients: Array<{ name: string; comment?: string }>
+}
+
 export class OpenRouter {
   static async categorize(itemName: string) {
     try {
@@ -58,6 +63,28 @@ export class OpenRouter {
       return data.results
     } catch (error) {
       console.error('OpenRouter batch client error:', error)
+      throw error
+    }
+  }
+
+  static async parseRecipeImage(imageDataUrl: string): Promise<ParsedRecipe> {
+    try {
+      const response = await fetch('/api/parse-recipe-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: imageDataUrl })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to parse recipe from image')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('OpenRouter recipe image client error:', error)
       throw error
     }
   }
