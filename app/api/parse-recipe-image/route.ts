@@ -21,7 +21,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing image data' }, { status: 400 })
     }
 
-    console.log('Recipe image parse request, image length:', image.length)
+    // Ensure the image is a valid data URI
+    let imageUrl = image
+    if (!imageUrl.startsWith('data:')) {
+      imageUrl = `data:image/jpeg;base64,${imageUrl}`
+    }
+
+    console.log('Recipe image parse request, image length:', imageUrl.length, 'prefix:', imageUrl.substring(0, 30))
 
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
@@ -30,25 +36,20 @@ export async function POST(request: Request) {
     const completion = await openai.chat.completions.create({
       messages: [
         {
-          role: 'system',
-          content: RECIPE_IMAGE_SYSTEM_PROMPT
-        },
-        {
           role: 'user',
           content: [
             {
-              type: 'image_url',
-              image_url: { url: image }
+              type: 'text',
+              text: `${RECIPE_IMAGE_SYSTEM_PROMPT}\n\nחלץ את המתכון מהתמונה`
             },
             {
-              type: 'text',
-              text: 'חלץ את המתכון מהתמונה'
+              type: 'image_url',
+              image_url: { url: imageUrl, detail: 'high' }
             }
           ]
         }
       ],
-      model: VISION_MODEL,
-      response_format: { type: 'json_object' }
+      model: VISION_MODEL
     })
 
     if (!completion.choices[0]?.message?.content) {
