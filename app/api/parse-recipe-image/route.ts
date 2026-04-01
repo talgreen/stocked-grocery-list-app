@@ -2,17 +2,26 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { RECIPE_IMAGE_SYSTEM_PROMPT } from './prompt'
 
-const VISION_MODEL = 'gpt-4o-mini'
+const VISION_MODEL = 'gpt-5-nano'
 
 export const maxDuration = 30
 
 export async function POST(request: Request) {
   try {
-    const { image } = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid request body - image may be too large' }, { status: 413 })
+    }
+
+    const { image } = body
 
     if (!image || typeof image !== 'string') {
       return NextResponse.json({ error: 'Missing image data' }, { status: 400 })
     }
+
+    console.log('Recipe image parse request, image length:', image.length)
 
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY

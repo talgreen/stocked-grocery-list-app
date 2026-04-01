@@ -253,17 +253,13 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
     return new Promise((resolve) => {
       const img = new Image()
       img.onload = () => {
-        if (img.width <= maxDim && img.height <= maxDim) {
-          resolve(dataUrl)
-          return
-        }
-        const scale = Math.min(maxDim / img.width, maxDim / img.height)
+        const scale = Math.min(1, maxDim / img.width, maxDim / img.height)
         const canvas = document.createElement('canvas')
         canvas.width = img.width * scale
         canvas.height = img.height * scale
         const ctx = canvas.getContext('2d')!
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', 0.8))
+        resolve(canvas.toDataURL('image/jpeg', 0.7))
       }
       img.src = dataUrl
     })
@@ -279,7 +275,7 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
         reader.readAsDataURL(file)
       })
 
-      const resized = await resizeImage(dataUrl, 2048)
+      const resized = await resizeImage(dataUrl, 1536)
       const result = await OpenRouter.parseRecipeImage(resized)
 
       setNewRecipeName(result.name)
