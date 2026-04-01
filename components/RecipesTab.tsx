@@ -5,10 +5,12 @@ import { Item } from '@/types/item'
 import { Recipe, RecipeIngredient } from '@/types/recipe'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+  Camera,
   Check,
   CheckSquare,
   ChefHat,
   ChevronDown,
+  Loader2,
   Plus,
   ShoppingCart,
   Square,
@@ -17,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { OpenRouter } from '@/lib/openrouter'
 
 const RECIPES_STORAGE_KEY = 'stocked-recipes'
 
@@ -83,6 +86,8 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
   const [deletingRecipeId, setDeletingRecipeId] = useState<number | null>(null)
   const [addingRecipeId, setAddingRecipeId] = useState<number | null>(null)
   const ingredientNameRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isParsingImage, setIsParsingImage] = useState(false)
 
   useEffect(() => {
     setRecipes(loadRecipes(listId))
@@ -244,20 +249,105 @@ export default function RecipesTab({ listId, categories, onAddIngredients, onTog
     return { inList, purchased, total: recipe.ingredients.length }
   }
 
+  const resizeImage = (dataUrl: string, maxDim: number): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        if (img.width <= maxDim && img.height <= maxDim) {
+          resolve(dataUrl)
+          return
+        }
+        const scale = Math.min(maxDim / img.width, maxDim / img.height)
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width * scale
+        canvas.height = img.height * scale
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.8))
+      }
+      img.src = dataUrl
+    })
+  }
+
+  const handleImageUpload = async (file: File) => {
+    setIsParsingImage(true)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      const resized = await resizeImage(dataUrl, 2048)
+      const result = await OpenRouter.parseRecipeImage(resized)
+
+      setNewRecipeName(result.name)
+      setPendingIngredients(
+        result.ingredients.map((ing, i) => ({
+          id: Date.now() + i,
+          name: ing.name,
+          comment: ing.comment || undefined,
+        }))
+      )
+      setIsAddingRecipe(true)
+      toast.success(`זוהה מתכון "${result.name}" עם ${result.ingredients.length} מרכיבים`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'שגיאה בזיהוי המתכון'
+      toast.error(message)
+    } finally {
+      setIsParsingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   return (
     <div className="space-y-4">
-      {/* Add Recipe Button */}
+      {/* Add Recipe Buttons */}
       {!isAddingRecipe && (
-        <motion.button
-          onClick={() => setIsAddingRecipe(true)}
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full bg-white rounded-2xl border border-dashed border-[#FFB74D]/40 p-4 flex items-center justify-center gap-2 text-[#FFB74D] hover:bg-[#FFB74D]/5 transition-colors"
+          className="flex gap-2"
         >
-          <Plus className="h-5 w-5" />
-          <span className="text-sm font-medium">מתכון חדש</span>
-        </motion.button>
+          <button
+            onClick={() => setIsAddingRecipe(true)}
+            className="flex-1 bg-white rounded-2xl border border-dashed border-[#FFB74D]/40 p-4 flex items-center justify-center gap-2 text-[#FFB74D] hover:bg-[#FFB74D]/5 transition-colors"
+          >
+            <Plus className="h-5 w-5" />
+            <span className="text-sm font-medium">מתכון חדש</span>
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isParsingImage}
+            className="flex-1 bg-white rounded-2xl border border-dashed border-[#FFB74D]/40 p-4 flex items-center justify-center gap-2 text-[#FFB74D] hover:bg-[#FFB74D]/5 transition-colors disabled:opacity-50"
+          >
+            {isParsingImage ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm font-medium">מזהה מתכון...</span>
+              </>
+            ) : (
+              <>
+                <Camera className="h-5 w-5" />
+                <span className="text-sm font-medium">מתכון מתמונה</span>
+              </>
+            )}
+          </button>
+        </motion.div>
       )}
+
+      {/* Hidden file input for image upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={e => {
+          const file = e.target.files?.[0]
+          if (file) handleImageUpload(file)
+        }}
+      />
 
       {/* Add Recipe Form */}
       <AnimatePresence>
