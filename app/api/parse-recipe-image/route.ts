@@ -47,7 +47,8 @@ export async function POST(request: Request) {
           ]
         }
       ],
-      model: VISION_MODEL
+      model: VISION_MODEL,
+      response_format: { type: 'json_object' }
     })
 
     if (!completion.choices[0]?.message?.content) {
@@ -56,7 +57,19 @@ export async function POST(request: Request) {
     }
 
     const content = completion.choices[0].message.content
-    const cleanContent = content.replace(/```json\n|\n```/g, '').trim()
+    console.log('LLM raw response:', content)
+
+    // Strip markdown fences and extract JSON object
+    let cleanContent = content
+      .replace(/```(?:json|JSON)?\s*/g, '')
+      .replace(/```/g, '')
+      .trim()
+
+    // If there's extra text around the JSON, extract the JSON object
+    const jsonMatch = cleanContent.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      cleanContent = jsonMatch[0]
+    }
 
     try {
       const parsed = JSON.parse(cleanContent)
