@@ -5,11 +5,13 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useState 
 interface FeatureFlags {
   enableRecipes: boolean
   enableMostPurchased: boolean
+  enablePurposeLists: boolean
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
   enableRecipes: false,
   enableMostPurchased: false,
+  enablePurposeLists: false,
 }
 
 interface SettingsContextType {

@@ -16,7 +16,7 @@ describe('Database Operations', () => {
 
       const unsubscribe = subscribeToList('test-list', onData, onError)
 
-      expect(onData).toHaveBeenCalledWith({ categories: [] })
+      expect(onData).toHaveBeenCalledWith({ categories: [], purposeLists: [] })
       expect(onError).not.toHaveBeenCalled()
 
       unsubscribe()
@@ -60,6 +60,21 @@ describe('Database Operations', () => {
       await updateList('test-list', categories)
 
       expect(updateList).toHaveBeenCalledTimes(2)
+    })
+
+    it('accepts purpose lists as a third argument', async () => {
+      const purposeLists = [
+        {
+          id: 'trip-1',
+          name: 'טיול לאיטליה',
+          emoji: '🧳',
+          categories: [],
+          createdAt: new Date().toISOString(),
+        },
+      ]
+
+      await expect(updateList('test-list', [], purposeLists)).resolves.toBeUndefined()
+      expect(updateList).toHaveBeenCalledWith('test-list', [], purposeLists)
     })
   })
 })

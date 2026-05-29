@@ -1,14 +1,15 @@
 'use client'
 
 import { useSettings } from '@/contexts/SettingsContext'
-import { useTabView } from '@/contexts/TabViewContext'
+import { TabView, useTabView } from '@/contexts/TabViewContext'
 import { subscribeToList, updateList } from '@/lib/db'
 import { OpenRouter } from '@/lib/openrouter'
 import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-suggester'
 import { Category, initialCategories } from '@/types/categories'
 import { Item } from '@/types/item'
+import { PurposeList } from '@/types/purpose-list'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, Plus, Sparkles } from 'lucide-react'
+import { Loader2, Pencil, Plus, Sparkles } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -20,6 +21,9 @@ import RepeatSuggestions from './RepeatSuggestions'
 
 const SettingsPanel = dynamic(() => import('./SettingsPanel'))
 const RecipesTab = dynamic(() => import('./RecipesTab'))
+const NameEmojiModal = dynamic(() => import('./NameEmojiModal'))
+
+const PURPOSE_CATEGORY_PALETTE = ['📦', '👕', '👟', '🧴', '📄', '🔌', '🍴', '💊', '🎮', '📚', '🧸', '🏷️']
 
 // Lazy load modal components to reduce initial bundle size
 const AddItemForm = dynamic(() => import('./AddItemForm'), {
@@ -38,6 +42,7 @@ const normalizeCategory = (name: string): string =>
 
 export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>(initialCategories)
+  const [purposeLists, setPurposeLists] = useState<PurposeList[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -50,8 +55,47 @@ export default function HomeScreen() {
   const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
   const [pendingAddCount, setPendingAddCount] = useState(0)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const { activeTab } = useTabView()
+  // Purpose list modal: 'create' for a new list, or an existing list for edit/delete
+  const [purposeModal, setPurposeModal] = useState<{ mode: 'create' } | { mode: 'edit'; list: PurposeList } | null>(null)
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
+  const { activeTab, setActiveTab, activePurposeListId, selectPurposeList } = useTabView()
   const { flags } = useSettings()
+
+  // When a purpose list tab is active, all reads/writes target that list's
+  // categories instead of the main grocery/pharmacy categories.
+  const activePurposeList = useMemo(
+    () => (activeTab === 'purpose' ? purposeLists.find(p => p.id === activePurposeListId) ?? null : null),
+    [activeTab, activePurposeListId, purposeLists]
+  )
+  const isPurposeMode = activePurposeList !== null
+  const currentCategories = isPurposeMode ? activePurposeList!.categories : categories
+
+  // Single commit point: routes the updated categories to either the main list
+  // or the active purpose list, persists the whole document, and reverts on error.
+  const commitCategories = async (nextCategories: Category[]) => {
+    if (isPurposeMode && activePurposeList) {
+      const previous = purposeLists
+      const nextPurposeLists = purposeLists.map(p =>
+        p.id === activePurposeList.id ? { ...p, categories: nextCategories } : p
+      )
+      setPurposeLists(nextPurposeLists)
+      try {
+        await updateList(listId, categories, nextPurposeLists)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        setPurposeLists(previous)
+      }
+    } else {
+      const previous = categories
+      setCategories(nextCategories)
+      try {
+        await updateList(listId, nextCategories, purposeLists)
+      } catch (error) {
+        console.error('Error updating list:', error)
+        setCategories(previous)
+      }
+    }
+  }
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -63,15 +107,15 @@ export default function HomeScreen() {
       categoryId: number
     }> = []
     
-    categories.forEach(category => {
-      // Filter categories based on active tab
+    currentCategories.forEach(category => {
+      // Filter categories based on active tab (no-op in purpose mode)
       if (activeTab === 'grocery' && category.name === 'בית מרקחת') {
         return // Skip pharmacy category when in grocery mode
       }
       if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') {
         return // Skip non-pharmacy categories when in pharmacy mode
       }
-      
+
       category.items.forEach(item => {
         if (item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
           results.push({ item, category, categoryId: category.id })
@@ -101,6 +145,9 @@ export default function HomeScreen() {
   }, {} as Record<number, { category: Category; items: Item[] }>)
 
   const repeatSuggestions = useMemo(() => {
+    // Repeat suggestions are grocery/pharmacy-only (EWMA purchase prediction).
+    if (isPurposeMode) return []
+
     const relevantCategories = categories.filter(category => {
       if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
       if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
@@ -108,7 +155,7 @@ export default function HomeScreen() {
     })
 
     return computeRepeatSuggestions(relevantCategories)
-  }, [categories, activeTab])
+  }, [categories, activeTab, isPurposeMode])
 
   // Helper function to highlight matching text
   const highlightText = (text: string, query: string) => {
@@ -153,11 +200,11 @@ export default function HomeScreen() {
     };
 
     // Find existing category first
-    let updatedCategories = [...categories];
+    let updatedCategories = [...currentCategories];
     let categoryId: number;
 
     const normalizedInput = normalizeCategory(categoryName);
-    const existingCategory = categories.find(c =>
+    const existingCategory = currentCategories.find(c =>
       normalizeCategory(c.name) === normalizedInput
     );
 
@@ -166,7 +213,7 @@ export default function HomeScreen() {
       categoryId = existingCategory.id;
     } else {
       // Create new category only if it doesn't exist
-      const maxId = Math.max(...categories.map(cat => cat.id), 0);
+      const maxId = Math.max(...currentCategories.map(cat => cat.id), 0);
       const newCategory = {
         id: maxId + 1,
         emoji: emoji,
@@ -189,17 +236,11 @@ export default function HomeScreen() {
       return category;
     });
 
-    try {
-      setCategories(updatedCategories);
-      setExpandedCategories((prev) => (
-        prev.includes(categoryId) ? prev : [...prev, categoryId]
-      ))
-      setPendingScrollItemId(newItem.id)
-      await updateList(listId, updatedCategories);
-    } catch (error) {
-      console.error('Error updating list:', error);
-      setCategories(categories);
-    }
+    setExpandedCategories((prev) => (
+      prev.includes(categoryId) ? prev : [...prev, categoryId]
+    ))
+    setPendingScrollItemId(newItem.id)
+    await commitCategories(updatedCategories);
   };
 
   // Handle adding item with background categorization (closes form immediately)
@@ -207,7 +248,7 @@ export default function HomeScreen() {
     itemName: string,
     itemComment: string,
     categorySelection: string,
-    currentActiveTab: 'grocery' | 'pharmacy'
+    currentActiveTab: TabView
   ) => {
     // Check for duplicates first
     if (checkDuplicateItem(itemName, itemComment)) {
@@ -227,7 +268,13 @@ export default function HomeScreen() {
       let category: string;
       let emoji: string;
 
-      if (currentActiveTab === 'pharmacy') {
+      if (isPurposeMode) {
+        // Purpose lists use manual category selection only (no AI categorization)
+        const selectedCategory = currentCategories.find(c => c.id.toString() === categorySelection);
+        if (!selectedCategory) throw new Error('Category not found');
+        category = selectedCategory.name;
+        emoji = selectedCategory.emoji;
+      } else if (currentActiveTab === 'pharmacy') {
         // For pharmacy mode, always use pharmacy category without smart categorization
         category = 'בית מרקחת';
         emoji = '💊';
@@ -269,7 +316,7 @@ export default function HomeScreen() {
     }
 
     const now = new Date()
-    const updatedCategories = categories.map(category => {
+    const updatedCategories = currentCategories.map(category => {
       if (category.id !== categoryId) return category
 
       const updatedItems = category.items
@@ -286,7 +333,8 @@ export default function HomeScreen() {
             }
           }
 
-          return updateItemPurchaseStats(item, now)
+          // Purpose items don't track purchase stats (no repeat suggestions)
+          return isPurposeMode ? { ...item, purchased: true } : updateItemPurchaseStats(item, now)
         })
         .sort((a, b) => (a.purchased === b.purchased ? 0 : a.purchased ? 1 : -1))
 
@@ -296,16 +344,7 @@ export default function HomeScreen() {
       }
     })
 
-    setCategories(updatedCategories)
-
-    if (listId) {
-      try {
-        await updateList(listId, updatedCategories)
-      } catch (error) {
-        console.error('Error updating list:', error)
-        setCategories(categories)
-      }
-    }
+    await commitCategories(updatedCategories)
   }
 
   const handleSnoozeItem = async (categoryId: number, itemId: number, days: number) => {
@@ -313,7 +352,7 @@ export default function HomeScreen() {
 
     const snoozeUntil = new Date(Date.now() + days * MS_PER_DAY).toISOString()
 
-    const updatedCategories = categories.map(category => {
+    const updatedCategories = currentCategories.map(category => {
       if (category.id !== categoryId) return category
 
       return {
@@ -329,39 +368,21 @@ export default function HomeScreen() {
       }
     })
 
-    setCategories(updatedCategories)
-
-    if (listId) {
-      try {
-        await updateList(listId, updatedCategories)
-      } catch (error) {
-        console.error('Error updating list:', error)
-        setCategories(categories)
-      }
-    }
+    await commitCategories(updatedCategories)
   }
 
   const handleDeleteItem = async (categoryId: number, itemId: number) => {
-    const updatedCategories = categories.map(category =>
+    const updatedCategories = currentCategories.map(category =>
       category.id === categoryId
         ? { ...category, items: category.items.filter(item => item.id !== itemId) }
         : category
     )
 
-    setCategories(updatedCategories)
-    
-    if (listId) {
-      try {
-        await updateList(listId, updatedCategories)
-      } catch (error) {
-        console.error('Error updating list:', error)
-        setCategories(categories)
-      }
-    }
+    await commitCategories(updatedCategories)
   }
 
   const handleAddItem = async (categoryId: number, name: string) => {
-    const category = categories.find(c => c.id === categoryId);
+    const category = currentCategories.find(c => c.id === categoryId);
     if (!category) return;
 
     const newItem: Item = {
@@ -378,7 +399,7 @@ export default function HomeScreen() {
       snoozeUntil: null,
     };
 
-    const updatedCategories = categories.map(c => {
+    const updatedCategories = currentCategories.map(c => {
       if (c.id === categoryId) {
         return {
           ...c,
@@ -388,36 +409,27 @@ export default function HomeScreen() {
       return c;
     });
 
-    setCategories(updatedCategories);
     setExpandedCategories((prev) => (
       prev.includes(categoryId) ? prev : [...prev, categoryId]
     ))
     setPendingScrollItemId(newItem.id)
-    
-    if (listId) {
-      try {
-        await updateList(listId, updatedCategories);
-      } catch (error) {
-        console.error('Error updating list:', error);
-        setCategories(categories); // Revert on error
-      }
-    }
+    await commitCategories(updatedCategories);
   };
 
   // Check if an item with the same name and description already exists in the current tab
   const checkDuplicateItem = (name: string, comment: string = '') => {
     const trimmedName = name.trim().toLowerCase();
     const trimmedComment = comment.trim().toLowerCase();
-    
-    for (const category of categories) {
-      // Only check categories relevant to the current tab
+
+    for (const category of currentCategories) {
+      // Only check categories relevant to the current tab (no-op in purpose mode)
       if (activeTab === 'grocery' && category.name === 'בית מרקחת') {
         continue; // Skip pharmacy category when in grocery mode
       }
       if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') {
         continue; // Skip non-pharmacy categories when in pharmacy mode
       }
-      
+
       for (const item of category.items) {
         if (item.name.trim().toLowerCase() === trimmedName && 
             (item.comment || '').trim().toLowerCase() === trimmedComment) {
@@ -431,6 +443,8 @@ export default function HomeScreen() {
   // Handle Quick Add from search results
   const handleQuickAddItem = async () => {
     if (!searchQuery.trim()) return;
+    // AI quick-add is grocery/pharmacy-only; purpose lists add items manually.
+    if (isPurposeMode) return;
 
     const itemName = searchQuery.trim();
 
@@ -505,7 +519,7 @@ export default function HomeScreen() {
       let itemToUpdate: Item | null = null;
       let sourceCategory: number | null = null;
 
-      for (const category of categories) {
+      for (const category of currentCategories) {
         const foundItem = category.items.find(item => item.id === itemId);
         if (foundItem) {
           itemToUpdate = foundItem;
@@ -531,11 +545,11 @@ export default function HomeScreen() {
 
       if (sourceCategory === newCategoryId) {
         // Same category - just update the item
-        updatedCategories = categories.map(category => {
+        updatedCategories = currentCategories.map(category => {
           if (category.id === sourceCategory) {
             return {
               ...category,
-              items: category.items.map(item => 
+              items: category.items.map(item =>
                 item.id === itemId ? updatedItem : item
               )
             };
@@ -544,7 +558,7 @@ export default function HomeScreen() {
         });
       } else {
         // Different category - move the item
-        updatedCategories = categories.map(category => {
+        updatedCategories = currentCategories.map(category => {
           if (category.id === sourceCategory) {
             // Remove from source category
             return {
@@ -562,8 +576,7 @@ export default function HomeScreen() {
         });
       }
 
-      setCategories(updatedCategories);
-      await updateList(listId, updatedCategories);
+      await commitCategories(updatedCategories);
       toast.success('הפריט עודכן בהצלחה');
     } catch (error) {
       console.error('Error updating item:', error);
@@ -658,7 +671,7 @@ export default function HomeScreen() {
       try {
         setCategories(updatedCategories)
         setExpandedCategories(prev => [...new Set([...prev, ...expandIds])])
-        await updateList(listId, updatedCategories)
+        await updateList(listId, updatedCategories, purposeLists)
         toast.success(`נוספו ${addedCount} מצרכים לרשימה`)
       } catch (error) {
         console.error('Error updating list:', error)
@@ -674,24 +687,20 @@ export default function HomeScreen() {
     setEditingItemCategoryId(categoryId);
   };
 
-  const uncheckedItems = categories
-    .filter(category => {
-      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
-      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
-      return true
-    })
-    .reduce((total, category) => 
-      total + category.items.filter(item => !item.purchased).length, 0
-    )
-  const totalItems = categories
-    .filter(category => {
-      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
-      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
-      return true
-    })
-    .reduce((total, category) => 
-      total + category.items.length, 0
-    )
+  // The categories that contribute to the progress ring for the active tab.
+  const visibleCategories = isPurposeMode
+    ? currentCategories
+    : categories.filter(category => {
+        if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
+        if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
+        return true
+      })
+  const uncheckedItems = visibleCategories.reduce(
+    (total, category) => total + category.items.filter(item => !item.purchased).length, 0
+  )
+  const totalItems = visibleCategories.reduce(
+    (total, category) => total + category.items.length, 0
+  )
 
   useEffect(() => {
     setIsLoading(true)
@@ -700,6 +709,7 @@ export default function HomeScreen() {
       listId,
       data => {
         setCategories(data.categories)
+        setPurposeLists(data.purposeLists ?? [])
         setIsLoading(false)
       },
       error => {
@@ -712,6 +722,71 @@ export default function HomeScreen() {
       unsubscribe()
     }
   }, [listId])
+
+  // If the active purpose list disappears (deleted locally or by another client),
+  // fall back to the grocery tab.
+  useEffect(() => {
+    if (activeTab === 'purpose' && activePurposeListId && !purposeLists.some(p => p.id === activePurposeListId)) {
+      setActiveTab('grocery')
+    }
+  }, [purposeLists, activePurposeListId, activeTab, setActiveTab])
+
+  // Purpose list CRUD
+  const handleCreatePurposeList = async (name: string, emoji: string) => {
+    const newList: PurposeList = {
+      id: crypto.randomUUID(),
+      name,
+      emoji,
+      categories: [],
+      createdAt: new Date().toISOString(),
+    }
+    const next = [...purposeLists, newList]
+    setPurposeModal(null)
+    setPurposeLists(next)
+    selectPurposeList(newList.id)
+    try {
+      await updateList(listId, categories, next)
+    } catch (error) {
+      console.error('Error creating purpose list:', error)
+      setPurposeLists(purposeLists)
+    }
+  }
+
+  const handleUpdatePurposeList = async (id: string, name: string, emoji: string) => {
+    const previous = purposeLists
+    const next = purposeLists.map(p => (p.id === id ? { ...p, name, emoji } : p))
+    setPurposeModal(null)
+    setPurposeLists(next)
+    try {
+      await updateList(listId, categories, next)
+    } catch (error) {
+      console.error('Error updating purpose list:', error)
+      setPurposeLists(previous)
+    }
+  }
+
+  const handleDeletePurposeList = async (id: string) => {
+    const previous = purposeLists
+    const next = purposeLists.filter(p => p.id !== id)
+    setPurposeModal(null)
+    setPurposeLists(next)
+    setActiveTab('grocery')
+    try {
+      await updateList(listId, categories, next)
+    } catch (error) {
+      console.error('Error deleting purpose list:', error)
+      setPurposeLists(previous)
+    }
+  }
+
+  // Add a new (manually named) category to the active purpose list
+  const handleAddPurposeCategory = (name: string, emoji: string) => {
+    const maxId = Math.max(0, ...currentCategories.map(c => c.id))
+    const newCategory: Category = { id: maxId + 1, name, emoji, items: [] }
+    setIsAddCategoryOpen(false)
+    setExpandedCategories(prev => [...prev, newCategory.id])
+    commitCategories([...currentCategories, newCategory])
+  }
 
   useEffect(() => {
     if (isAddFormOpen) {
@@ -787,6 +862,8 @@ export default function HomeScreen() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        purposeLists={purposeLists}
+        onCreatePurposeList={() => setPurposeModal({ mode: 'create' })}
       />
       <AnimatePresence>
         {isSettingsOpen && (
@@ -827,7 +904,7 @@ export default function HomeScreen() {
         {/* Search Results */}
         {activeTab !== 'recipes' && isSearchMode && (
           <div className="space-y-4 mb-6">
-            {searchResults.length > 0 && !hasExactMatch && (
+            {searchResults.length > 0 && !hasExactMatch && !isPurposeMode && (
               <motion.button
                 onClick={handleQuickAddItem}
                 disabled={pendingAddCount > 0}
@@ -905,6 +982,16 @@ export default function HomeScreen() {
                   </div>
                 </div>
               ))
+            ) : isPurposeMode ? (
+              <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-8 text-center">
+                <div className="text-4xl mb-4">🔍</div>
+                <h3 className="text-lg font-semibold text-black/80 mb-2">
+                  לא מצאנו את &ldquo;{searchQuery}&rdquo;
+                </h3>
+                <p className="text-sm text-black/60">
+                  נקו את החיפוש כדי להוסיף פריטים לקטגוריות הרשימה
+                </p>
+              </div>
             ) : (
               <EmptySearchState
                 searchQuery={searchQuery}
@@ -929,10 +1016,27 @@ export default function HomeScreen() {
           </div>
         )}
 
+        {/* Purpose list header with rename/delete */}
+        {isPurposeMode && !isSearchMode && activePurposeList && (
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-2xl">{activePurposeList.emoji}</span>
+              <h2 className="text-lg font-bold text-black/80 truncate">{activePurposeList.name}</h2>
+            </div>
+            <button
+              onClick={() => setPurposeModal({ mode: 'edit', list: activePurposeList })}
+              className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+              title="עריכת רשימה"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Category List - Only show when not in search mode and not on recipes tab */}
         {activeTab !== 'recipes' && !isSearchMode && (
           <CategoryList
-            categories={categories.filter(category => category.items.length > 0)}
+            categories={isPurposeMode ? currentCategories : categories.filter(category => category.items.length > 0)}
             onToggleItem={handleToggleItem}
             onDeleteItem={handleDeleteItem}
             expandedCategories={expandedCategories}
@@ -941,6 +1045,17 @@ export default function HomeScreen() {
             onAddItem={handleAddItem}
             isSearchMode={isSearchMode}
           />
+        )}
+
+        {/* Add category button for purpose lists */}
+        {isPurposeMode && !isSearchMode && (
+          <button
+            onClick={() => setIsAddCategoryOpen(true)}
+            className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-[#FFB74D]/40 text-[#FFB74D] hover:bg-[#FFB74D]/5 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            <span>הוסף קטגוריה</span>
+          </button>
         )}
 
         <AnimatePresence>
@@ -967,7 +1082,7 @@ export default function HomeScreen() {
                   <AddItemForm
                     onAddBackground={handleAddItemBackground}
                     onClose={() => setIsAddFormOpen(false)}
-                    categories={categories}
+                    categories={currentCategories}
                   />
                 </div>
               </motion.div>
@@ -1002,7 +1117,7 @@ export default function HomeScreen() {
                   <EditItemModal
                     item={editingItem}
                     currentCategoryId={editingItemCategoryId}
-                    categories={categories}
+                    categories={currentCategories}
                     onSave={handleUpdateItem}
                     onClose={() => {
                       setEditingItem(null);
@@ -1010,6 +1125,74 @@ export default function HomeScreen() {
                     }}
                   />
                 </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Create / edit purpose list modal */}
+        <AnimatePresence>
+          {purposeModal && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setPurposeModal(null)}
+                className="fixed inset-0 bg-black/50 z-50"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                className="fixed inset-x-4 top-[12vh] z-50 max-w-md mx-auto"
+              >
+                <NameEmojiModal
+                  title={purposeModal.mode === 'create' ? 'רשימה חדשה' : 'עריכת רשימה'}
+                  submitLabel={purposeModal.mode === 'create' ? 'צור רשימה' : 'שמור'}
+                  namePlaceholder="שם הרשימה (לדוגמה: טיול לאיטליה)"
+                  initialName={purposeModal.mode === 'edit' ? purposeModal.list.name : ''}
+                  initialEmoji={purposeModal.mode === 'edit' ? purposeModal.list.emoji : undefined}
+                  onSubmit={(name, emoji) =>
+                    purposeModal.mode === 'create'
+                      ? handleCreatePurposeList(name, emoji)
+                      : handleUpdatePurposeList(purposeModal.list.id, name, emoji)
+                  }
+                  onClose={() => setPurposeModal(null)}
+                  onDelete={purposeModal.mode === 'edit' ? () => handleDeletePurposeList(purposeModal.list.id) : undefined}
+                />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Add category to purpose list modal */}
+        <AnimatePresence>
+          {isAddCategoryOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsAddCategoryOpen(false)}
+                className="fixed inset-0 bg-black/50 z-50"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                className="fixed inset-x-4 top-[12vh] z-50 max-w-md mx-auto"
+              >
+                <NameEmojiModal
+                  title="קטגוריה חדשה"
+                  submitLabel="הוסף קטגוריה"
+                  namePlaceholder="שם הקטגוריה"
+                  emojiPalette={PURPOSE_CATEGORY_PALETTE}
+                  onSubmit={handleAddPurposeCategory}
+                  onClose={() => setIsAddCategoryOpen(false)}
+                />
               </motion.div>
             </>
           )}
@@ -1042,7 +1225,14 @@ export default function HomeScreen() {
             className="fixed bottom-6 right-6 z-30"
           >
             <button
-              onClick={() => setIsAddFormOpen(prev => !prev)}
+              onClick={() => {
+                // A blank purpose list has no categories yet — guide to create one first
+                if (isPurposeMode && currentCategories.length === 0) {
+                  setIsAddCategoryOpen(true)
+                } else {
+                  setIsAddFormOpen(prev => !prev)
+                }
+              }}
               className="bg-[#FFB74D] hover:bg-[#FFA726] text-white p-4 rounded-full hover:shadow-md transition-all duration-200"
             >
               <Plus className="h-6 w-6" />

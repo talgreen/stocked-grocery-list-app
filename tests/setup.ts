@@ -27,10 +27,11 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/db', () => ({
   subscribeToList: vi.fn((listId, onData, onError) => {
     // Return mock data immediately
-    onData({ categories: [] })
+    onData({ categories: [], purposeLists: [] })
     return () => {} // unsubscribe function
   }),
   updateList: vi.fn(() => Promise.resolve()),
+  createNewList: vi.fn((listId: string) => Promise.resolve(listId)),
 }))
 
 // Mock OpenRouter API
