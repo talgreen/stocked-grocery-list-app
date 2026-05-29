@@ -8,7 +8,7 @@ describe('NameEmojiModal', () => {
     vi.clearAllMocks()
   })
 
-  it('submits the typed name and selected emoji', async () => {
+  it('submits the typed name with the default emoji', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()
 
@@ -16,37 +16,16 @@ describe('NameEmojiModal', () => {
       <NameEmojiModal
         title="רשימה חדשה"
         submitLabel="צור רשימה"
-        emojiPalette={['🎉', '🧳']}
+        initialEmoji="🧳"
         onSubmit={onSubmit}
         onClose={vi.fn()}
       />
     )
 
     await user.type(screen.getByPlaceholderText('שם'), 'טיול לאיטליה')
-    await user.click(screen.getByRole('button', { name: '🧳' }))
     await user.click(screen.getByRole('button', { name: 'צור רשימה' }))
 
     expect(onSubmit).toHaveBeenCalledWith('טיול לאיטליה', '🧳')
-  })
-
-  it('defaults the emoji to the first palette entry', async () => {
-    const user = userEvent.setup()
-    const onSubmit = vi.fn()
-
-    render(
-      <NameEmojiModal
-        title="קטגוריה חדשה"
-        submitLabel="הוסף קטגוריה"
-        emojiPalette={['📦', '👕']}
-        onSubmit={onSubmit}
-        onClose={vi.fn()}
-      />
-    )
-
-    await user.type(screen.getByPlaceholderText('שם'), 'ביגוד')
-    await user.click(screen.getByRole('button', { name: 'הוסף קטגוריה' }))
-
-    expect(onSubmit).toHaveBeenCalledWith('ביגוד', '📦')
   })
 
   it('does not submit when the name is empty', async () => {
@@ -64,6 +43,19 @@ describe('NameEmojiModal', () => {
 
     await user.click(screen.getByRole('button', { name: 'צור רשימה' }))
     expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('exposes an emoji picker trigger', () => {
+    render(
+      <NameEmojiModal
+        title="קטגוריה חדשה"
+        submitLabel="הוסף קטגוריה"
+        onSubmit={vi.fn()}
+        onClose={vi.fn()}
+      />
+    )
+
+    expect(screen.getByLabelText("בחירת אימוג'י")).toBeInTheDocument()
   })
 
   it('shows a delete action only in edit mode', () => {

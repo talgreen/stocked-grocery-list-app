@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// Firestore security rules for the Stocked shared grocery list app.
+//
+// IMPORTANT: The "purpose-based lists" feature stores its data in a new
+// top-level `purposeLists` field on each list document. If your existing
+// production rules restrict which keys a write may contain (e.g. a
+// `hasOnly(['categories', 'createdAt', 'updatedAt'])` check), then creating
+// a list document works the first time but every later update that touches
+// `purposeLists` (adding a category, creating a second list, etc.) is
+// rejected with permission-denied. Add `purposeLists` to the allowed keys —
+// as shown below — and redeploy the rules for the feature to persist.
+//
+// Deploy with the Firebase CLI:  firebase deploy --only firestore:rules
+// or paste the contents into Firebase console → Firestore → Rules.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /lists/{listId} {
+      // Shared lists are accessed by URL without authentication.
+      allow read: if true;
+
+      // Only allow the known document shape, now including `purposeLists`.
+      allow write: if request.resource.data.keys().hasOnly(
+        ['categories', 'purposeLists', 'createdAt', 'updatedAt']
+      );
+    }
+  }
+}

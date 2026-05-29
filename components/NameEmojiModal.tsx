@@ -2,7 +2,14 @@
 
 import { motion } from 'framer-motion'
 import { Trash2, X } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
+
+// The full emoji picker (search + all emojis). Loaded on demand, client-only.
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
+  ssr: false,
+  loading: () => <div className="p-4 text-center text-sm text-black/40">טוען אימוג&apos;ים...</div>,
+})
 
 interface NameEmojiModalProps {
   title: string
@@ -10,28 +17,25 @@ interface NameEmojiModalProps {
   namePlaceholder?: string
   initialName?: string
   initialEmoji?: string
-  emojiPalette?: string[]
   onSubmit: (name: string, emoji: string) => void
   onClose: () => void
   // When provided, renders a delete button (edit mode).
   onDelete?: () => void
 }
 
-const DEFAULT_PALETTE = ['🎉', '🧳', '🏖️', '🎂', '🎄', '🏕️', '🎁', '🛠️', '🏠', '🐶', '👶', '📦']
-
 export default function NameEmojiModal({
   title,
   submitLabel,
   namePlaceholder = 'שם',
   initialName = '',
-  initialEmoji,
-  emojiPalette = DEFAULT_PALETTE,
+  initialEmoji = '🎉',
   onSubmit,
   onClose,
   onDelete,
 }: NameEmojiModalProps) {
   const [name, setName] = useState(initialName)
-  const [emoji, setEmoji] = useState(initialEmoji || emojiPalette[0])
+  const [emoji, setEmoji] = useState(initialEmoji)
+  const [showPicker, setShowPicker] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export default function NameEmojiModal({
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    onSubmit(trimmed, emoji.trim() || emojiPalette[0])
+    onSubmit(trimmed, emoji || initialEmoji)
   }
 
   return (
@@ -65,12 +69,19 @@ export default function NameEmojiModal({
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 space-y-4">
-        {/* Name + selected emoji */}
+      <form onSubmit={handleSubmit} className="p-4 space-y-3">
+        {/* Name + emoji trigger */}
         <div className="flex gap-2 items-center">
-          <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-xl">
+          <button
+            type="button"
+            onClick={() => setShowPicker(v => !v)}
+            aria-label="בחירת אימוג'י"
+            className={`flex-shrink-0 w-11 h-11 rounded-xl bg-gray-50 border flex items-center justify-center text-xl transition-colors ${
+              showPicker ? 'border-[#FFB74D] ring-2 ring-[#FFB74D]/40' : 'border-gray-200 hover:bg-gray-100'
+            }`}
+          >
             {emoji}
-          </div>
+          </button>
           <input
             ref={inputRef}
             type="text"
@@ -82,29 +93,23 @@ export default function NameEmojiModal({
           />
         </div>
 
-        {/* Emoji palette */}
-        <div className="flex flex-wrap gap-2">
-          {emojiPalette.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setEmoji(option)}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                emoji === option ? 'bg-[#FFB74D]/20 ring-2 ring-[#FFB74D]' : 'bg-gray-50 hover:bg-gray-100'
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-          <input
-            type="text"
-            value={emoji}
-            onChange={(e) => setEmoji(e.target.value)}
-            aria-label="אימוג'י מותאם"
-            className="w-12 h-9 rounded-lg bg-gray-50 border border-gray-200 text-center text-lg focus:outline-none focus:ring-2 focus:ring-[#FFB74D]/50"
-            maxLength={4}
-          />
-        </div>
+        {/* Full emoji picker (toggled) */}
+        {showPicker && (
+          <div className="flex justify-center" dir="ltr">
+            <EmojiPicker
+              onEmojiClick={(data: { emoji: string }) => {
+                setEmoji(data.emoji)
+                setShowPicker(false)
+                inputRef.current?.focus()
+              }}
+              width="100%"
+              height={320}
+              previewConfig={{ showPreview: false }}
+              searchPlaceHolder="חיפוש"
+              lazyLoadEmojis
+            />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-2 pt-1">

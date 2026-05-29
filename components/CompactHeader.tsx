@@ -120,7 +120,7 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
           </div>
 
           {/* Tab Pills */}
-          <div className="flex bg-gray-100 rounded-full p-1 overflow-x-auto max-w-[55%]">
+          <div className="flex bg-gray-100 rounded-full p-1">
             <button
               onClick={() => setActiveTab('grocery')}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
@@ -156,29 +156,6 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
                 <span className="hidden sm:inline">מתכונים</span>
               </button>
             )}
-            {flags.enablePurposeLists && purposeLists.map((list) => (
-              <button
-                key={list.id}
-                onClick={() => selectPurposeList(list.id)}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'purpose' && activePurposeListId === list.id
-                    ? 'bg-[#FFB74D] text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <span>{list.emoji}</span>
-                <span className="hidden sm:inline max-w-[80px] truncate">{list.name}</span>
-              </button>
-            ))}
-            {flags.enablePurposeLists && (
-              <button
-                onClick={onCreatePurposeList}
-                className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-all duration-200"
-                title="רשימה חדשה"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            )}
           </div>
 
           {/* Settings & Share buttons */}
@@ -200,6 +177,36 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
           </div>
         </div>
       </div>
+
+      {/* Purpose lists - dedicated full-width scrollable row */}
+      {flags.enablePurposeLists && (
+        <div className="max-w-2xl mx-auto px-4 pb-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1">
+            {purposeLists.map((list) => (
+              <button
+                key={list.id}
+                onClick={() => selectPurposeList(list.id)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${
+                  activeTab === 'purpose' && activePurposeListId === list.id
+                    ? 'bg-[#FFB74D] text-white border-[#FFB74D] shadow-sm'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#FFB74D]/50 hover:text-gray-800'
+                }`}
+              >
+                <span>{list.emoji}</span>
+                <span className="max-w-[140px] truncate">{list.name}</span>
+              </button>
+            ))}
+            <button
+              onClick={onCreatePurposeList}
+              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium text-[#FFB74D] border border-dashed border-[#FFB74D]/50 hover:bg-[#FFB74D]/5 transition-all duration-200"
+              title="רשימה חדשה"
+            >
+              <Plus className="w-4 h-4" />
+              <span>רשימה</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search Box */}
       <div className="max-w-2xl mx-auto px-4 pb-3">

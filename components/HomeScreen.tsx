@@ -23,8 +23,6 @@ const SettingsPanel = dynamic(() => import('./SettingsPanel'))
 const RecipesTab = dynamic(() => import('./RecipesTab'))
 const NameEmojiModal = dynamic(() => import('./NameEmojiModal'))
 
-const PURPOSE_CATEGORY_PALETTE = ['📦', '👕', '👟', '🧴', '📄', '🔌', '🍴', '💊', '🎮', '📚', '🧸', '🏷️']
-
 // Lazy load modal components to reduce initial bundle size
 const AddItemForm = dynamic(() => import('./AddItemForm'), {
   loading: () => <div className="text-center py-8">טוען...</div>
@@ -1189,7 +1187,7 @@ export default function HomeScreen() {
                   title="קטגוריה חדשה"
                   submitLabel="הוסף קטגוריה"
                   namePlaceholder="שם הקטגוריה"
-                  emojiPalette={PURPOSE_CATEGORY_PALETTE}
+                  initialEmoji="📦"
                   onSubmit={handleAddPurposeCategory}
                   onClose={() => setIsAddCategoryOpen(false)}
                 />
