@@ -1,6 +1,6 @@
 'use client'
 
-import { useTabView } from '@/contexts/TabViewContext'
+import { TabView, useTabView } from '@/contexts/TabViewContext'
 import { Category } from '@/types/categories'
 import { motion } from 'framer-motion'
 import { Package, Plus, Sparkles, X } from 'lucide-react'
@@ -13,18 +13,20 @@ interface AddItemFormProps {
     itemName: string,
     itemComment: string,
     categorySelection: string,
-    activeTab: 'grocery' | 'pharmacy'
+    activeTab: TabView
   ) => void
   onClose: () => void
   categories: Category[]
 }
 
 export default function AddItemForm({ onAddBackground, onClose, categories }: AddItemFormProps) {
+  const { activeTab } = useTabView()
+  const isPurpose = activeTab === 'purpose'
   const [item, setItem] = useState('')
   const [comment, setComment] = useState('')
-  const [categoryId, setCategoryId] = useState('auto')
+  // Purpose lists have no AI categorization, so default to the first category.
+  const [categoryId, setCategoryId] = useState(() => (isPurpose ? (categories[0]?.id.toString() ?? '') : 'auto'))
   const inputRef = useRef<HTMLInputElement>(null)
-  const { activeTab } = useTabView()
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -67,14 +69,16 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
 
     setItem('')
     setComment('')
-    setCategoryId('auto')
+    setCategoryId(isPurpose ? (categories[0]?.id.toString() ?? '') : 'auto')
     onClose()
     onAddBackground(itemName, itemComment, selectedCategory, activeTab)
   }
 
-  const filteredCategories = categories.filter(cat =>
-    activeTab === 'pharmacy' ? cat.name === 'בית מרקחת' : cat.name !== 'בית מרקחת'
-  )
+  const filteredCategories = isPurpose
+    ? categories
+    : categories.filter(cat =>
+        activeTab === 'pharmacy' ? cat.name === 'בית מרקחת' : cat.name !== 'בית מרקחת'
+      )
 
   return (
     <div className="relative text-right flex flex-col">
@@ -130,7 +134,7 @@ export default function AddItemForm({ onAddBackground, onClose, categories }: Ad
           onCategoryChange={setCategoryId}
           categories={filteredCategories}
           showCategorySelector={activeTab !== 'pharmacy'}
-          showSmartOption={true}
+          showSmartOption={!isPurpose}
         />
 
         {/* Submit Button */}

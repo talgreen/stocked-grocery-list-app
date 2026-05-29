@@ -2,7 +2,7 @@
 
 import { useSettings } from '@/contexts/SettingsContext'
 import { motion } from 'framer-motion'
-import { ChefHat, Star, X } from 'lucide-react'
+import { ChefHat, ListChecks, Star, X } from 'lucide-react'
 
 interface SettingsPanelProps {
   onClose: () => void
@@ -85,6 +85,14 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
           description="סמן פריטים שנקנים הכי הרבה ומיין לפיהם בכל קטגוריה"
           enabled={flags.enableMostPurchased}
           onToggle={(v) => setFlag('enableMostPurchased', v)}
+        />
+
+        <FeatureToggle
+          icon={<ListChecks className="h-5 w-5" />}
+          title="רשימות ייעודיות"
+          description="צרו רשימות לאירוע, חופשה או מטרה מיוחדת לצד רשימת הקניות"
+          enabled={flags.enablePurposeLists}
+          onToggle={(v) => setFlag('enablePurposeLists', v)}
         />
       </div>
     </motion.div>

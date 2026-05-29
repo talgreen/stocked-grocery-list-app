@@ -220,8 +220,10 @@ const CategoryList = memo(function CategoryList({
           </motion.div>
         )
       ) : (
-        // Grocery view - original category-based layout
-        sortedCategories.some(category => category.items.length > 0) ? (
+        // Grocery / purpose view - category-based layout.
+        // Purpose lists show their (possibly empty) categories so items can be added;
+        // grocery only renders categories that already have items.
+        (activeTab === 'purpose' ? sortedCategories.length > 0 : sortedCategories.some(category => category.items.length > 0)) ? (
           sortedCategories.map((category) => {
             const uncheckedCount = category.items.filter(item => !item.purchased).length
             const totalCount = category.items.length
@@ -353,10 +355,12 @@ const CategoryList = memo(function CategoryList({
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm p-8 text-center"
           >
-            <div className="text-4xl mb-4">🛍️</div>
+            <div className="text-4xl mb-4">{activeTab === 'purpose' ? '📝' : '🛍️'}</div>
             <h3 className="text-lg font-semibold text-black/80 mb-2">הרשימה ריקה</h3>
             <p className="text-sm text-black/60">
-              לחצו על הכפתור למטה כדי להוסיף פריטים לרשימה
+              {activeTab === 'purpose'
+                ? 'הוסיפו קטגוריה כדי להתחיל לבנות את הרשימה'
+                : 'לחצו על הכפתור למטה כדי להוסיף פריטים לרשימה'}
             </p>
           </motion.div>
         )

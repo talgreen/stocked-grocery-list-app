@@ -2,7 +2,8 @@
 
 import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
-import { ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Search, X } from 'lucide-react'
+import { PurposeList } from '@/types/purpose-list'
+import { ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Plus, Search, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -13,6 +14,8 @@ interface CompactHeaderProps {
   searchQuery: string
   onSearchChange: (query: string) => void
   onOpenSettings: () => void
+  purposeLists: PurposeList[]
+  onCreatePurposeList: () => void
 }
 
 function CircularProgress({ percentage }: { percentage: number }) {
@@ -65,10 +68,10 @@ function CircularProgress({ percentage }: { percentage: number }) {
   )
 }
 
-export default function CompactHeader({ uncheckedItems, totalItems, searchQuery, onSearchChange, onOpenSettings }: CompactHeaderProps) {
+export default function CompactHeader({ uncheckedItems, totalItems, searchQuery, onSearchChange, onOpenSettings, purposeLists, onCreatePurposeList }: CompactHeaderProps) {
   const params = useParams()
   const listId = params?.listId as string
-  const { activeTab, setActiveTab } = useTabView()
+  const { activeTab, setActiveTab, activePurposeListId, selectPurposeList } = useTabView()
   const { flags } = useSettings()
 
   const completedItems = totalItems - uncheckedItems
@@ -120,7 +123,7 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
           <div className="flex bg-gray-100 rounded-full p-1">
             <button
               onClick={() => setActiveTab('grocery')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
                 activeTab === 'grocery'
                   ? 'bg-[#FFB74D] text-white shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
@@ -131,7 +134,7 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
             </button>
             <button
               onClick={() => setActiveTab('pharmacy')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
                 activeTab === 'pharmacy'
                   ? 'bg-[#FFB74D] text-white shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
@@ -143,7 +146,7 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
             {flags.enableRecipes && (
               <button
                 onClick={() => setActiveTab('recipes')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
                   activeTab === 'recipes'
                     ? 'bg-[#FFB74D] text-white shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
@@ -174,6 +177,36 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
           </div>
         </div>
       </div>
+
+      {/* Purpose lists - dedicated full-width scrollable row */}
+      {flags.enablePurposeLists && (
+        <div className="max-w-2xl mx-auto px-4 pb-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1">
+            {purposeLists.map((list) => (
+              <button
+                key={list.id}
+                onClick={() => selectPurposeList(list.id)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${
+                  activeTab === 'purpose' && activePurposeListId === list.id
+                    ? 'bg-[#FFB74D] text-white border-[#FFB74D] shadow-sm'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#FFB74D]/50 hover:text-gray-800'
+                }`}
+              >
+                <span>{list.emoji}</span>
+                <span className="max-w-[140px] truncate">{list.name}</span>
+              </button>
+            ))}
+            <button
+              onClick={onCreatePurposeList}
+              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium text-[#FFB74D] border border-dashed border-[#FFB74D]/50 hover:bg-[#FFB74D]/5 transition-all duration-200"
+              title="רשימה חדשה"
+            >
+              <Plus className="w-4 h-4" />
+              <span>רשימה</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search Box */}
       <div className="max-w-2xl mx-auto px-4 pb-3">
