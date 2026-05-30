@@ -31,7 +31,34 @@ vi.mock('@/lib/db', () => ({
     return () => {} // unsubscribe function
   }),
   updateList: vi.fn(() => Promise.resolve()),
+  createNewList: vi.fn((listId: string) => Promise.resolve(listId)),
+  getList: vi.fn(() => Promise.resolve({ categories: [] })),
+  claimList: vi.fn(() => Promise.resolve()),
+  ensureUserDoc: vi.fn(() => Promise.resolve()),
 }))
+
+// Mock the auth context so components consuming useAuth get a stable signed-in
+// user without needing an AuthProvider wrapper. The returned object is created
+// once (stable reference) so effects depending on it don't loop. Individual
+// tests can override via vi.mocked(useAuth).mockReturnValue(...).
+vi.mock('@/contexts/AuthContext', () => {
+  const ctx = {
+    user: {
+      uid: 'test-uid',
+      isAnonymous: false,
+      displayName: 'Test User',
+      email: 'test@example.com',
+      photoURL: null,
+    },
+    loading: false,
+    signInWithGoogle: vi.fn(() => Promise.resolve()),
+    signOutUser: vi.fn(() => Promise.resolve()),
+  }
+  return {
+    useAuth: vi.fn(() => ctx),
+    AuthProvider: ({ children }: { children: unknown }) => children,
+  }
+})
 
 // Mock OpenRouter API
 vi.mock('@/lib/openrouter', () => ({

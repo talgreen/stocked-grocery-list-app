@@ -6,6 +6,7 @@ import { ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Search, X } from 
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import UserMenu from './UserMenu'
 
 interface CompactHeaderProps {
   uncheckedItems: number
@@ -155,8 +156,9 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
             )}
           </div>
 
-          {/* Settings & Share buttons */}
+          {/* User, Settings & Share buttons */}
           <div className="flex items-center gap-1">
+            <UserMenu />
             <button
               onClick={onOpenSettings}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"

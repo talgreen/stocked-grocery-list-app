@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/react'
 import type { Metadata, Viewport } from 'next'
 import { Heebo } from 'next/font/google'
 import { Toaster } from 'sonner'
+import { AuthProvider } from '@/contexts/AuthContext'
 import './globals.css'
 
 const heebo = Heebo({ 
@@ -49,9 +50,11 @@ export default function RootLayout({
     <html lang="he" dir="rtl" className="h-full bg-background">
       <body className={`${heebo.variable} font-heebo min-h-full bg-background`}>
         <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] bg-black z-50" />
-        <div className="flex flex-col min-h-full bg-[#FDF6ED]">
-          {children}
-        </div>
+        <AuthProvider>
+          <div className="flex flex-col min-h-full bg-[#FDF6ED]">
+            {children}
+          </div>
+        </AuthProvider>
         <Toaster 
           position="top-center" 
           richColors 

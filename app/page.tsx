@@ -8,7 +8,14 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    const listId = uuidv4()
+    // Resume the last opened list for returning users; otherwise mint a fresh one.
+    let lastList: string | null = null
+    try {
+      lastList = localStorage.getItem('stocked-last-list')
+    } catch {
+      // ignore storage failures (private mode, etc.)
+    }
+    const listId = lastList || uuidv4()
     router.replace(`/share/${listId}`)
   }, [router])
 

@@ -1,8 +1,9 @@
 'use client'
 
+import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
-import { subscribeToList, updateList } from '@/lib/db'
+import { claimList, subscribeToList, updateList } from '@/lib/db'
 import { OpenRouter } from '@/lib/openrouter'
 import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-suggester'
 import { Category, initialCategories } from '@/types/categories'
@@ -44,6 +45,7 @@ export default function HomeScreen() {
   const modalRef = useRef<HTMLDivElement>(null)
   const params = useParams()
   const listId = (params?.listId as string) || 'default'
+  const { user, loading: authLoading } = useAuth()
   const [expandedCategories, setExpandedCategories] = useState<number[]>([])
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [editingItemCategoryId, setEditingItemCategoryId] = useState<number | null>(null)
@@ -195,7 +197,7 @@ export default function HomeScreen() {
         prev.includes(categoryId) ? prev : [...prev, categoryId]
       ))
       setPendingScrollItemId(newItem.id)
-      await updateList(listId, updatedCategories);
+      await updateList(listId, updatedCategories, user?.uid);
     } catch (error) {
       console.error('Error updating list:', error);
       setCategories(categories);
@@ -300,7 +302,7 @@ export default function HomeScreen() {
 
     if (listId) {
       try {
-        await updateList(listId, updatedCategories)
+        await updateList(listId, updatedCategories, user?.uid)
       } catch (error) {
         console.error('Error updating list:', error)
         setCategories(categories)
@@ -333,7 +335,7 @@ export default function HomeScreen() {
 
     if (listId) {
       try {
-        await updateList(listId, updatedCategories)
+        await updateList(listId, updatedCategories, user?.uid)
       } catch (error) {
         console.error('Error updating list:', error)
         setCategories(categories)
@@ -352,7 +354,7 @@ export default function HomeScreen() {
     
     if (listId) {
       try {
-        await updateList(listId, updatedCategories)
+        await updateList(listId, updatedCategories, user?.uid)
       } catch (error) {
         console.error('Error updating list:', error)
         setCategories(categories)
@@ -396,7 +398,7 @@ export default function HomeScreen() {
     
     if (listId) {
       try {
-        await updateList(listId, updatedCategories);
+        await updateList(listId, updatedCategories, user?.uid);
       } catch (error) {
         console.error('Error updating list:', error);
         setCategories(categories); // Revert on error
@@ -563,7 +565,7 @@ export default function HomeScreen() {
       }
 
       setCategories(updatedCategories);
-      await updateList(listId, updatedCategories);
+      await updateList(listId, updatedCategories, user?.uid);
       toast.success('הפריט עודכן בהצלחה');
     } catch (error) {
       console.error('Error updating item:', error);
@@ -658,7 +660,7 @@ export default function HomeScreen() {
       try {
         setCategories(updatedCategories)
         setExpandedCategories(prev => [...new Set([...prev, ...expandIds])])
-        await updateList(listId, updatedCategories)
+        await updateList(listId, updatedCategories, user?.uid)
         toast.success(`נוספו ${addedCount} מצרכים לרשימה`)
       } catch (error) {
         console.error('Error updating list:', error)
@@ -694,7 +696,22 @@ export default function HomeScreen() {
     )
 
   useEffect(() => {
+    // Wait for auth to bootstrap (anonymous or Google) before touching Firestore,
+    // otherwise the security rules (which require request.auth != null) reject us.
+    if (authLoading || !user) return
+
     setIsLoading(true)
+
+    // Associate this list with the current user (claim if ownerless, else join as a
+    // member). Best-effort and idempotent; keeps shared links working.
+    void claimList(listId, user.uid)
+
+    // Remember the last opened list so a returning user resumes it from the landing page.
+    try {
+      localStorage.setItem('stocked-last-list', listId)
+    } catch {
+      // ignore storage failures (private mode, etc.)
+    }
 
     const unsubscribe = subscribeToList(
       listId,
@@ -711,7 +728,7 @@ export default function HomeScreen() {
     return () => {
       unsubscribe()
     }
-  }, [listId])
+  }, [listId, user?.uid, authLoading])
 
   useEffect(() => {
     if (isAddFormOpen) {
