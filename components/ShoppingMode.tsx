@@ -86,9 +86,10 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 28 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 28 }}
+      transition={{ type: 'spring', damping: 30, stiffness: 300 }}
       className="fixed inset-0 z-50 bg-[#FDF6ED] flex flex-col text-right pt-safe"
       dir="rtl"
     >
