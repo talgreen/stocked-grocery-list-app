@@ -79,17 +79,17 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
         })
       })
 
-      const timer = setTimeout(() => setSelectedCategoryId(null), 550)
+      const timer = setTimeout(() => setSelectedCategoryId(null), 400)
       return () => clearTimeout(timer)
     }
   }, [selectedRemaining])
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 28 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 28 }}
-      transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.16, ease: 'easeOut' }}
       className="fixed inset-0 z-50 bg-[#FDF6ED] flex flex-col text-right pt-safe"
       dir="rtl"
     >
@@ -119,7 +119,7 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
               className="h-full bg-[#FFB74D] rounded-full"
               initial={false}
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
             />
           </div>
         </div>
@@ -174,10 +174,10 @@ function CategoryGrid({ categories, onSelect, allDone }: CategoryGridProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
+      initial={{ opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.2 }}
+      exit={{ opacity: 0, x: 12 }}
+      transition={{ duration: 0.12, ease: 'easeOut' }}
     >
       {allDone && (
         <motion.div
@@ -245,10 +245,10 @@ function CategoryDetail({ category, onToggleItem, onBack }: CategoryDetailProps)
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
+      initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.2 }}
+      exit={{ opacity: 0, x: -12 }}
+      transition={{ duration: 0.12, ease: 'easeOut' }}
     >
       {/* Back + title */}
       <button
@@ -272,7 +272,7 @@ function CategoryDetail({ category, onToggleItem, onBack }: CategoryDetailProps)
       </div>
 
       {/* Remaining items */}
-      {remainingItems.length > 0 ? (
+      {remainingItems.length > 0 && (
         <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
           <ul className="divide-y divide-black/5 list-none">
             <AnimatePresence initial={false}>
@@ -286,23 +286,6 @@ function CategoryDetail({ category, onToggleItem, onBack }: CategoryDetailProps)
             </AnimatePresence>
           </ul>
         </div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-2xl border border-black/5 shadow-sm p-8 text-center"
-        >
-          <div className="text-4xl mb-3">✅</div>
-          <h3 className="text-base font-semibold text-black/80 mb-1">סיימת את {category.name}</h3>
-          <p className="text-sm text-black/60 mb-4">כל הפריטים סומנו כנקנו</p>
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-1.5 bg-[#FFB74D] hover:bg-[#FFA726] text-white text-sm font-medium rounded-full px-4 py-2 transition-colors"
-          >
-            <ArrowRight className="w-4 h-4" />
-            חזרה לקטגוריות
-          </button>
-        </motion.div>
       )}
 
       {/* Completed items (collapsible) so mistakes can be undone */}
@@ -323,7 +306,7 @@ function CategoryDetail({ category, onToggleItem, onBack }: CategoryDetailProps)
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.13, ease: 'easeOut' }}
                 className="overflow-hidden"
               >
                 <div className="bg-white/60 rounded-2xl border border-black/5 overflow-hidden mt-2">
@@ -358,7 +341,7 @@ function ShoppingRow({ item, onToggle }: ShoppingRowProps) {
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.13, ease: 'easeOut' }}
       className="list-none"
     >
       <button
