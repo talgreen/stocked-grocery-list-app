@@ -2,7 +2,7 @@
 
 import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
-import { ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Search, X } from 'lucide-react'
+import { ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Search, X, Store } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -13,6 +13,7 @@ interface CompactHeaderProps {
   searchQuery: string
   onSearchChange: (query: string) => void
   onOpenSettings: () => void
+  onEnterShoppingMode: () => void
 }
 
 function CircularProgress({ percentage }: { percentage: number }) {
@@ -65,7 +66,7 @@ function CircularProgress({ percentage }: { percentage: number }) {
   )
 }
 
-export default function CompactHeader({ uncheckedItems, totalItems, searchQuery, onSearchChange, onOpenSettings }: CompactHeaderProps) {
+export default function CompactHeader({ uncheckedItems, totalItems, searchQuery, onSearchChange, onOpenSettings, onEnterShoppingMode }: CompactHeaderProps) {
   const params = useParams()
   const listId = params?.listId as string
   const { activeTab, setActiveTab } = useTabView()
@@ -155,8 +156,18 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
             )}
           </div>
 
-          {/* Settings & Share buttons */}
+          {/* Shopping mode, Settings & Share buttons */}
           <div className="flex items-center gap-1">
+            {activeTab !== 'recipes' && (
+              <button
+                onClick={onEnterShoppingMode}
+                disabled={totalItems === 0}
+                className="p-2 text-[#FFB74D] hover:text-white hover:bg-[#FFB74D] rounded-full transition-all duration-200 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#FFB74D]"
+                title="מצב קנייה"
+              >
+                <Store className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={onOpenSettings}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"

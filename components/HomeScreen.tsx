@@ -20,6 +20,7 @@ import RepeatSuggestions from './RepeatSuggestions'
 
 const SettingsPanel = dynamic(() => import('./SettingsPanel'))
 const RecipesTab = dynamic(() => import('./RecipesTab'))
+const ShoppingMode = dynamic(() => import('./ShoppingMode'))
 
 // Lazy load modal components to reduce initial bundle size
 const AddItemForm = dynamic(() => import('./AddItemForm'), {
@@ -50,6 +51,7 @@ export default function HomeScreen() {
   const [pendingScrollItemId, setPendingScrollItemId] = useState<number | null>(null)
   const [pendingAddCount, setPendingAddCount] = useState(0)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isShoppingMode, setIsShoppingMode] = useState(false)
   const { activeTab } = useTabView()
   const { flags } = useSettings()
 
@@ -787,6 +789,7 @@ export default function HomeScreen() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onEnterShoppingMode={() => setIsShoppingMode(true)}
       />
       <AnimatePresence>
         {isSettingsOpen && (
@@ -1048,6 +1051,16 @@ export default function HomeScreen() {
               <Plus className="h-6 w-6" />
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isShoppingMode && (
+          <ShoppingMode
+            categories={categories}
+            onToggleItem={handleToggleItem}
+            onExit={() => setIsShoppingMode(false)}
+          />
         )}
       </AnimatePresence>
     </div>
