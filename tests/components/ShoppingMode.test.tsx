@@ -188,6 +188,29 @@ describe('ShoppingMode - category detail', () => {
   })
 })
 
+describe('ShoppingMode - single category (e.g. the pharmacy tab)', () => {
+  // When only one category is relevant there's nothing to choose between, so
+  // the grid is skipped and the aisle opens straight onto its items. The
+  // grocery tab excludes the pharmacy category, so a lone grocery category
+  // exercises the same single-category code path here.
+  const singleCategory: Category[] = [
+    { id: 1, name: 'ירקות', emoji: '🥬', items: [makeItem(11, 'מלפפון', false)] },
+  ]
+
+  it('opens the item list directly, skipping the lone-card grid', () => {
+    renderShoppingMode(singleCategory)
+
+    // The item is shown without first having to tap a category card
+    expect(screen.getByText('מלפפון')).toBeInTheDocument()
+  })
+
+  it('hides the back-to-categories button when there is nowhere to go back to', () => {
+    renderShoppingMode(singleCategory)
+
+    expect(screen.queryByText('כל הקטגוריות')).not.toBeInTheDocument()
+  })
+})
+
 describe('ShoppingMode - auto return on completion', () => {
   it('returns to the grid shortly after the last item in a category is checked', async () => {
     const { rerender } = renderShoppingMode(baseCategories)
