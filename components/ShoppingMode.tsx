@@ -53,9 +53,14 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
   const doneItems = totalItems - remainingItems
   const progress = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0
 
-  const selectedCategory = selectedCategoryId
-    ? relevantCategories.find(c => c.id === selectedCategoryId) ?? null
-    : null
+  // With a single relevant category (e.g. the pharmacy tab) there's nothing to
+  // pick between, so skip the grid and drop straight into its item list.
+  const isSingleCategory = relevantCategories.length === 1
+  const activeCategory = isSingleCategory
+    ? relevantCategories[0]
+    : selectedCategoryId
+      ? relevantCategories.find(c => c.id === selectedCategoryId) ?? null
+      : null
 
   const handleBack = useCallback(() => setSelectedCategoryId(null), [])
 
@@ -63,7 +68,7 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
   // category is checked off. Tracked here in the parent (which never
   // remounts) so the transition is detected reliably. A -1 sentinel means
   // no category is open, so opening an already-finished category never fires.
-  const selectedRemaining = selectedCategory ? remainingCount(selectedCategory) : -1
+  const selectedRemaining = activeCategory ? remainingCount(activeCategory) : -1
   const prevRemainingRef = useRef(-1)
   useEffect(() => {
     const prev = prevRemainingRef.current
@@ -79,10 +84,14 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
         })
       })
 
-      const timer = setTimeout(() => setSelectedCategoryId(null), 400)
-      return () => clearTimeout(timer)
+      // Nothing to return to when there's only one category — stay put and let
+      // the completion state show instead of bouncing back to an empty grid.
+      if (!isSingleCategory) {
+        const timer = setTimeout(() => setSelectedCategoryId(null), 400)
+        return () => clearTimeout(timer)
+      }
     }
-  }, [selectedRemaining])
+  }, [selectedRemaining, isSingleCategory])
 
   return (
     <motion.div
@@ -129,12 +138,13 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto p-4 pb-24">
           <AnimatePresence mode="wait">
-            {selectedCategory ? (
+            {activeCategory ? (
               <CategoryDetail
-                key={`detail-${selectedCategory.id}`}
-                category={selectedCategory}
+                key={`detail-${activeCategory.id}`}
+                category={activeCategory}
                 onToggleItem={onToggleItem}
                 onBack={handleBack}
+                showBack={!isSingleCategory}
               />
             ) : (
               <CategoryGrid
@@ -146,6 +156,22 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
             )}
           </AnimatePresence>
         </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function CompletionBanner() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white rounded-2xl p-5 mb-4 flex items-center gap-3 shadow-md shadow-orange-200/50"
+    >
+      <PartyPopper className="w-7 h-7 flex-shrink-0" />
+      <div>
+        <p className="font-bold">כל הכבוד, סיימת!</p>
+        <p className="text-sm text-white/90">כל הפריטים סומנו כנקנו</p>
       </div>
     </motion.div>
   )
@@ -179,19 +205,7 @@ function CategoryGrid({ categories, onSelect, allDone }: CategoryGridProps) {
       exit={{ opacity: 0, x: 12 }}
       transition={{ duration: 0.12, ease: 'easeOut' }}
     >
-      {allDone && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-r from-[#FFB74D] to-[#FFA726] text-white rounded-2xl p-5 mb-4 flex items-center gap-3 shadow-md shadow-orange-200/50"
-        >
-          <PartyPopper className="w-7 h-7 flex-shrink-0" />
-          <div>
-            <p className="font-bold">כל הכבוד, סיימת!</p>
-            <p className="text-sm text-white/90">כל הפריטים סומנו כנקנו</p>
-          </div>
-        </motion.div>
-      )}
+      {allDone && <CompletionBanner />}
 
       <div className="grid grid-cols-2 gap-3">
         {categories.map(category => {
@@ -235,9 +249,10 @@ interface CategoryDetailProps {
   category: Category
   onToggleItem: (categoryId: number, itemId: number) => void
   onBack: () => void
+  showBack: boolean
 }
 
-function CategoryDetail({ category, onToggleItem, onBack }: CategoryDetailProps) {
+function CategoryDetail({ category, onToggleItem, onBack, showBack }: CategoryDetailProps) {
   const remainingItems = category.items.filter(item => !item.purchased)
   const completedItems = category.items.filter(item => item.purchased)
   // Default to revealing completed items only when nothing is left to buy
@@ -250,14 +265,16 @@ function CategoryDetail({ category, onToggleItem, onBack }: CategoryDetailProps)
       exit={{ opacity: 0, x: -12 }}
       transition={{ duration: 0.12, ease: 'easeOut' }}
     >
-      {/* Back + title */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-1.5 text-sm font-medium text-black/60 hover:text-black/80 mb-4"
-      >
-        <ArrowRight className="w-4 h-4" />
-        <span>כל הקטגוריות</span>
-      </button>
+      {/* Back to grid — hidden when this is the only category (nothing to pick) */}
+      {showBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm font-medium text-black/60 hover:text-black/80 mb-4"
+        >
+          <ArrowRight className="w-4 h-4" />
+          <span>כל הקטגוריות</span>
+        </button>
+      )}
 
       <div className="flex items-center gap-3 mb-4">
         <span className="text-3xl">{category.emoji}</span>
@@ -270,6 +287,9 @@ function CategoryDetail({ category, onToggleItem, onBack }: CategoryDetailProps)
           </p>
         </div>
       </div>
+
+      {/* Celebrate a cleared list right here, since there may be no grid to return to */}
+      {remainingItems.length === 0 && <CompletionBanner />}
 
       {/* Remaining items */}
       {remainingItems.length > 0 && (
