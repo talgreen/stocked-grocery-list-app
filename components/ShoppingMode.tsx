@@ -59,6 +59,31 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
 
   const handleBack = useCallback(() => setSelectedCategoryId(null), [])
 
+  // Celebrate and auto-return to the grid when the LAST item of the open
+  // category is checked off. Tracked here in the parent (which never
+  // remounts) so the transition is detected reliably. A -1 sentinel means
+  // no category is open, so opening an already-finished category never fires.
+  const selectedRemaining = selectedCategory ? remainingCount(selectedCategory) : -1
+  const prevRemainingRef = useRef(-1)
+  useEffect(() => {
+    const prev = prevRemainingRef.current
+    prevRemainingRef.current = selectedRemaining
+
+    if (prev > 0 && selectedRemaining === 0) {
+      import('canvas-confetti').then(module => {
+        module.default({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00'],
+        })
+      })
+
+      const timer = setTimeout(() => setSelectedCategoryId(null), 550)
+      return () => clearTimeout(timer)
+    }
+  }, [selectedRemaining])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -216,29 +241,6 @@ function CategoryDetail({ category, onToggleItem, onBack }: CategoryDetailProps)
   const completedItems = category.items.filter(item => item.purchased)
   // Default to revealing completed items only when nothing is left to buy
   const [showCompleted, setShowCompleted] = useState(remainingItems.length === 0)
-
-  // Celebrate and auto-return to the grid when the LAST item is checked off
-  // while viewing the category (but not when opening an already-finished one).
-  const prevRemainingRef = useRef(remainingItems.length)
-  useEffect(() => {
-    const prev = prevRemainingRef.current
-    const curr = remainingItems.length
-    prevRemainingRef.current = curr
-
-    if (prev > 0 && curr === 0) {
-      import('canvas-confetti').then(module => {
-        module.default({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00'],
-        })
-      })
-
-      const timer = setTimeout(onBack, 1100)
-      return () => clearTimeout(timer)
-    }
-  }, [remainingItems.length, onBack])
 
   return (
     <motion.div
