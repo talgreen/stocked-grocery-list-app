@@ -2,7 +2,7 @@
 
 import { useSettings } from '@/contexts/SettingsContext'
 import { motion } from 'framer-motion'
-import { ChefHat, Star, X } from 'lucide-react'
+import { ChefHat, Star, Store, X } from 'lucide-react'
 
 interface SettingsPanelProps {
   onClose: () => void
@@ -85,6 +85,14 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
           description="סמן פריטים שנקנים הכי הרבה ומיין לפיהם בכל קטגוריה"
           enabled={flags.enableMostPurchased}
           onToggle={(v) => setFlag('enableMostPurchased', v)}
+        />
+
+        <FeatureToggle
+          icon={<Store className="h-5 w-5" />}
+          title="מצב קנייה"
+          description="תצוגה ממוקדת לסופר: היכנס לכל קטגוריה וסמן פריטים בקלות"
+          enabled={flags.enableShoppingMode}
+          onToggle={(v) => setFlag('enableShoppingMode', v)}
         />
       </div>
     </motion.div>

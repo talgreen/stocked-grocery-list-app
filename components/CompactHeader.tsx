@@ -2,7 +2,7 @@
 
 import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
-import { ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Search, X } from 'lucide-react'
+import { ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Search, X, Store } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -13,6 +13,7 @@ interface CompactHeaderProps {
   searchQuery: string
   onSearchChange: (query: string) => void
   onOpenSettings: () => void
+  onEnterShoppingMode: () => void
 }
 
 function CircularProgress({ percentage }: { percentage: number }) {
@@ -65,7 +66,7 @@ function CircularProgress({ percentage }: { percentage: number }) {
   )
 }
 
-export default function CompactHeader({ uncheckedItems, totalItems, searchQuery, onSearchChange, onOpenSettings }: CompactHeaderProps) {
+export default function CompactHeader({ uncheckedItems, totalItems, searchQuery, onSearchChange, onOpenSettings, onEnterShoppingMode }: CompactHeaderProps) {
   const params = useParams()
   const listId = params?.listId as string
   const { activeTab, setActiveTab } = useTabView()
@@ -111,10 +112,12 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
             />
           </div>
 
-          {/* Progress ring */}
-          <div className="flex-shrink-0">
-            <CircularProgress percentage={progressPercentage} />
-          </div>
+          {/* Progress ring — hidden when Shopping Mode owns the progress view */}
+          {!flags.enableShoppingMode && (
+            <div className="flex-shrink-0">
+              <CircularProgress percentage={progressPercentage} />
+            </div>
+          )}
 
           {/* Tab Pills */}
           <div className="flex bg-gray-100 rounded-full p-1">
@@ -155,8 +158,20 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
             )}
           </div>
 
-          {/* Settings & Share buttons */}
+          {/* Shopping mode, Settings & Share buttons */}
           <div className="flex items-center gap-1">
+            {flags.enableShoppingMode && activeTab !== 'recipes' && (
+              <motion.button
+                onClick={onEnterShoppingMode}
+                disabled={totalItems === 0}
+                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.06 }}
+                className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-[#FFB74D] to-[#FFA726] text-white rounded-full shadow-sm shadow-orange-300/40 hover:shadow-md hover:shadow-orange-300/50 transition-shadow duration-200 disabled:opacity-40 disabled:shadow-none"
+                title="מצב קנייה"
+              >
+                <Store className="w-5 h-5" />
+              </motion.button>
+            )}
             <button
               onClick={onOpenSettings}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
