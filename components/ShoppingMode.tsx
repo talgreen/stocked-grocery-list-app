@@ -5,7 +5,7 @@ import { Category } from '@/types/categories'
 import { Item } from '@/types/item'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, Check, PartyPopper, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 interface ShoppingModeProps {
   categories: Category[]
@@ -57,6 +57,8 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
     ? relevantCategories.find(c => c.id === selectedCategoryId) ?? null
     : null
 
+  const handleBack = useCallback(() => setSelectedCategoryId(null), [])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -106,7 +108,7 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
                 key={`detail-${selectedCategory.id}`}
                 category={selectedCategory}
                 onToggleItem={onToggleItem}
-                onBack={() => setSelectedCategoryId(null)}
+                onBack={handleBack}
               />
             ) : (
               <CategoryGrid
@@ -215,24 +217,28 @@ function CategoryDetail({ category, onToggleItem, onBack }: CategoryDetailProps)
   // Default to revealing completed items only when nothing is left to buy
   const [showCompleted, setShowCompleted] = useState(remainingItems.length === 0)
 
-  // Celebrate when the category gets cleared while viewing it
-  const justFinished = remainingItems.length === 0
+  // Celebrate and auto-return to the grid when the LAST item is checked off
+  // while viewing the category (but not when opening an already-finished one).
+  const prevRemainingRef = useRef(remainingItems.length)
   useEffect(() => {
-    if (!justFinished) return
-    let cancelled = false
-    import('canvas-confetti').then(module => {
-      if (cancelled) return
-      module.default({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00'],
+    const prev = prevRemainingRef.current
+    const curr = remainingItems.length
+    prevRemainingRef.current = curr
+
+    if (prev > 0 && curr === 0) {
+      import('canvas-confetti').then(module => {
+        module.default({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00'],
+        })
       })
-    })
-    return () => {
-      cancelled = true
+
+      const timer = setTimeout(onBack, 1100)
+      return () => clearTimeout(timer)
     }
-  }, [justFinished])
+  }, [remainingItems.length, onBack])
 
   return (
     <motion.div

@@ -1055,7 +1055,7 @@ export default function HomeScreen() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {isShoppingMode && (
+        {isShoppingMode && flags.enableShoppingMode && (
           <ShoppingMode
             categories={categories}
             onToggleItem={handleToggleItem}

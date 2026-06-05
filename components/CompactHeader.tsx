@@ -158,7 +158,7 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
 
           {/* Shopping mode, Settings & Share buttons */}
           <div className="flex items-center gap-1">
-            {activeTab !== 'recipes' && (
+            {flags.enableShoppingMode && activeTab !== 'recipes' && (
               <button
                 onClick={onEnterShoppingMode}
                 disabled={totalItems === 0}
