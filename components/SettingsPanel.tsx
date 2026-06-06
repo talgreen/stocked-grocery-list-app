@@ -58,10 +58,10 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-      className="bg-white rounded-2xl shadow-2xl border border-black/5 overflow-hidden"
+      className="bg-white rounded-2xl shadow-2xl border border-black/5 overflow-hidden flex flex-col max-h-[80vh]"
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-black/5">
+      <div className="flex items-center justify-between p-4 border-b border-black/5 flex-shrink-0">
         <h2 className="text-base font-bold text-black/80">הגדרות</h2>
         <button
           onClick={onClose}
@@ -71,6 +71,8 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
         </button>
       </div>
 
+      {/* Scrollable body */}
+      <div className="overflow-y-auto overscroll-contain">
       {/* Feature Flags */}
       <div className="p-4 space-y-3">
         <p className="text-xs text-black/40 font-medium mb-2">תכונות ניסיוניות</p>
@@ -126,6 +128,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
             </p>
           </div>
         </a>
+      </div>
       </div>
     </motion.div>
   )
