@@ -13,7 +13,7 @@ describe('HomeScreen', () => {
     renderWithProvider(<HomeScreen />)
 
     await waitFor(() => {
-      expect(screen.getByText('Stocked')).toBeInTheDocument()
+      expect(screen.getByAltText('Stocked')).toBeInTheDocument()
     })
   })
 
@@ -23,7 +23,7 @@ describe('HomeScreen', () => {
     // Component should either show loading state or content
     // Since our mock loads instantly, we wait for content
     await waitFor(() => {
-      expect(screen.getByText('Stocked')).toBeInTheDocument()
+      expect(screen.getByAltText('Stocked')).toBeInTheDocument()
     })
   })
 
@@ -62,7 +62,7 @@ describe('HomeScreen', () => {
 
     await waitFor(() => {
       // ShareButton should be present
-      expect(screen.getByText('Stocked')).toBeInTheDocument()
+      expect(screen.getByTitle('שיתוף')).toBeInTheDocument()
     })
   })
 })

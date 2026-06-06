@@ -250,9 +250,16 @@ export default function HomeScreen() {
         category = 'בית מרקחת';
         emoji = '💊';
       } else if (categorySelection === 'auto') {
-        // Smart categorization via API
-        const result = await OpenRouter.categorize(`${itemName}${itemComment ? ` - ${itemComment}` : ''}`);
-        category = result.category?.trim() || 'אחר';
+        // Smart categorization via API. If it fails (API down, no key, rate
+        // limit, …) we must NOT lose the item — fall back to 'אחר' so the add
+        // always succeeds, mirroring the recipe batch-add behaviour.
+        try {
+          const result = await OpenRouter.categorize(`${itemName}${itemComment ? ` - ${itemComment}` : ''}`);
+          category = result.category?.trim() || 'אחר';
+        } catch (error) {
+          console.error('Categorization failed, falling back to אחר:', error);
+          category = 'אחר';
+        }
         // Look up emoji from existing category, fallback to default
         const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category));
         emoji = matchedCategory?.emoji || '📦';
@@ -480,9 +487,15 @@ export default function HomeScreen() {
         category = 'בית מרקחת';
         emoji = '💊';
       } else {
-        // For grocery mode, use smart categorization
-        const result = await OpenRouter.categorize(itemName);
-        category = result.category?.trim() || 'אחר';
+        // For grocery mode, use smart categorization. Fall back to 'אחר' if the
+        // API fails so a quick-add never silently drops the item.
+        try {
+          const result = await OpenRouter.categorize(itemName);
+          category = result.category?.trim() || 'אחר';
+        } catch (error) {
+          console.error('Categorization failed, falling back to אחר:', error);
+          category = 'אחר';
+        }
         // Look up emoji from existing category, fallback to default
         const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category));
         emoji = matchedCategory?.emoji || '📦';

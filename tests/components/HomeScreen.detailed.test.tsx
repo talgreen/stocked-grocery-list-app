@@ -430,7 +430,7 @@ describe('HomeScreen - Detailed Tests', () => {
       renderWithProvider(<HomeScreen />)
 
       await waitFor(() => {
-        expect(screen.getByText('Stocked')).toBeInTheDocument()
+        expect(screen.getByAltText('Stocked')).toBeInTheDocument()
       })
 
       // Find and click the add button (Plus icon)
@@ -573,13 +573,13 @@ describe('HomeScreen - Detailed Tests', () => {
       renderWithProvider(<HomeScreen />)
 
       await waitFor(() => {
-        expect(screen.getByText('Stocked')).toBeInTheDocument()
+        expect(screen.getByAltText('Stocked')).toBeInTheDocument()
       })
 
       // Should show count indicators
       // In grocery tab: 1 unchecked (חלב), 2 total
       await waitFor(() => {
-        const progressArea = screen.getByText('Stocked').closest('div')
+        const progressArea = screen.getByAltText('Stocked').closest('div')
         expect(progressArea).toBeInTheDocument()
       })
     })
@@ -609,7 +609,7 @@ describe('HomeScreen - Detailed Tests', () => {
       renderWithProvider(<HomeScreen />)
 
       await waitFor(() => {
-        expect(screen.getByText('Stocked')).toBeInTheDocument()
+        expect(screen.getByAltText('Stocked')).toBeInTheDocument()
       })
     })
 
@@ -617,8 +617,8 @@ describe('HomeScreen - Detailed Tests', () => {
       renderWithProvider(<HomeScreen />)
 
       await waitFor(() => {
-        const header = screen.getByText('Stocked').closest('header')
-        expect(header).toBeInTheDocument()
+        const shareButton = screen.getByTitle('שיתוף')
+        expect(shareButton).toBeInTheDocument()
       })
     })
 
