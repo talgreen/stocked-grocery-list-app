@@ -173,24 +173,22 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
 
           {/* Shopping mode, Settings & Share buttons */}
           <div className="flex items-center gap-1">
-            {flags.enableShoppingMode && (
-              <motion.button
-                onClick={onEnterShoppingMode}
-                disabled={totalItems === 0}
-                whileTap={{ scale: 0.92 }}
-                whileHover={{ scale: 1.06 }}
-                aria-hidden={!(activeTab === 'grocery' || activeTab === 'pharmacy')}
-                tabIndex={activeTab === 'grocery' || activeTab === 'pharmacy' ? 0 : -1}
-                className={`flex items-center justify-center w-10 h-10 bg-gradient-to-br from-[#FFB74D] to-[#FFA726] text-white rounded-full shadow-sm shadow-orange-300/40 hover:shadow-md hover:shadow-orange-300/50 transition-shadow duration-200 disabled:opacity-40 disabled:shadow-none ${
-                  activeTab === 'grocery' || activeTab === 'pharmacy'
-                    ? ''
-                    : 'invisible pointer-events-none'
-                }`}
-                title="מצב קנייה"
-              >
-                <Store className="w-5 h-5" />
-              </motion.button>
-            )}
+            {flags.enableShoppingMode && (() => {
+              const isShoppingRelevant = activeTab === 'grocery' || activeTab === 'pharmacy'
+              const isDisabled = !isShoppingRelevant || totalItems === 0
+              return (
+                <motion.button
+                  onClick={onEnterShoppingMode}
+                  disabled={isDisabled}
+                  whileTap={isDisabled ? undefined : { scale: 0.92 }}
+                  whileHover={isDisabled ? undefined : { scale: 1.06 }}
+                  className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-[#FFB74D] to-[#FFA726] text-white rounded-full shadow-sm shadow-orange-300/40 hover:shadow-md hover:shadow-orange-300/50 transition-shadow duration-200 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
+                  title="מצב קנייה"
+                >
+                  <Store className="w-5 h-5" />
+                </motion.button>
+              )
+            })()}
             <button
               onClick={onOpenSettings}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
