@@ -110,23 +110,20 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
         />
       </div>
 
-      {/* Demo / sandbox entry */}
-      <div className="border-t border-black/5 p-4">
+      {/* Demo / sandbox section */}
+      <div className="border-t border-black/5 p-4 space-y-3">
+        <p className="text-xs text-black/40 font-medium mb-2">מצב הדגמה</p>
+
+        <p className="text-xs leading-relaxed text-black/50">
+          נסה את כל התכונות עם נתוני דמה עשירים — בלי להשפיע על הרשימה האמיתית שלך. כל שינוי מתאפס בריענון.
+        </p>
+
         <a
           href={`/share/${DEMO_LIST_ID}`}
-          className="flex items-start gap-3 rounded-xl border border-dashed border-[#FFB74D]/50 bg-amber-50/50 p-4 transition-colors hover:bg-amber-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFB74D] px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-orange-300/40 transition-colors hover:bg-[#FFA726]"
         >
-          <div className="mt-0.5 flex-shrink-0 text-[#FFB74D]">
-            <FlaskConical className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-black/80">
-              {inDemo ? 'אתה במצב הדגמה' : 'מצב הדגמה (Demo)'}
-            </h3>
-            <p className="mt-1 text-xs leading-relaxed text-black/50">
-              נסה את כל התכונות עם נתוני דמה עשירים — בלי להשפיע על הרשימה האמיתית שלך. כל שינוי מתאפס בריענון.
-            </p>
-          </div>
+          <FlaskConical className="h-4 w-4" />
+          <span>{inDemo ? 'אתה במצב הדגמה' : 'פתח מצב הדגמה'}</span>
         </a>
       </div>
       </div>
