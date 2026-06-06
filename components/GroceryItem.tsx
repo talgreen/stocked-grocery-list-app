@@ -22,8 +22,10 @@ const PhotoModal = dynamic(() => import('./PhotoModal'))
 interface GroceryItemProps {
   item: Item
   categoryId: number
-  onToggle: () => void
-  onDelete: () => void
+  // These take (categoryId, itemId) rather than being pre-bound closures so the
+  // parent can pass stable callback references and keep React.memo effective.
+  onToggle: (categoryId: number, itemId: number) => void
+  onDelete: (categoryId: number, itemId: number) => void
   onEdit: (item: Item, categoryId: number) => void
 }
 
@@ -47,7 +49,7 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
 
   const handleDelete = () => {
     if (isDeleting) {
-      onDelete()
+      onDelete(categoryId, item.id)
     } else {
       setIsDeleting(true)
       setTimeout(() => setIsDeleting(false), 3000)
@@ -59,9 +61,9 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
     const currentX = x.get()
 
     if (currentX <= -threshold) {
-      onToggle()
+      onToggle(categoryId, item.id)
     } else if (currentX >= threshold) {
-      onDelete()
+      onDelete(categoryId, item.id)
     }
     setIsDragging(false)
   }
@@ -85,11 +87,6 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
       <motion.li
         ref={itemRef}
         data-item-id={item.id}
-        style={{ 
-          x,
-          willChange: 'transform',
-          transform: 'translateZ(0)'
-        }}
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.7}
@@ -106,6 +103,12 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
           isRare ? 'bg-black/[0.03] opacity-40' : item.purchased ? 'bg-white opacity-50' : 'bg-white'
         }`}
         style={{
+          // `x` must stay bound here so framer-motion drives the drag transform
+          // and handleDragEnd can read the live offset via x.get(). (Previously a
+          // second `style` prop clobbered this one, freezing x at 0 and breaking
+          // swipe-to-toggle / swipe-to-delete.)
+          x,
+          willChange: 'transform',
           borderRight: purchaseOpacity > 0 && !isRare && !item.purchased
             ? `3px solid rgba(255, 183, 77, ${purchaseOpacity})`
             : '3px solid transparent',
@@ -115,7 +118,7 @@ const GroceryItem = memo(function GroceryItem({ item, categoryId, onToggle, onDe
           <motion.button
             onClick={(e) => {
               e.stopPropagation()
-              onToggle()
+              onToggle(categoryId, item.id)
             }}
             className={`flex-shrink-0 transition-colors duration-150 mt-0.5 ${
               item.purchased ? 'text-[#FFB74D]' : 'text-black/20 hover:text-[#FFB74D]'

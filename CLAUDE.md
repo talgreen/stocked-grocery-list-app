@@ -22,21 +22,33 @@ A smart, shareable grocery list PWA built with Next.js 14. Features AI-powered i
   ├── page.tsx               # Root redirect to /share/{listId}
   ├── layout.tsx             # Root layout with metadata
   ├── globals.css            # Global styles, CSS variables
-  ├── api/categorize/        # OpenAI categorization endpoint
+  ├── api/categorize/        # OpenAI single-item categorization endpoint
+  ├── api/categorize-batch/  # OpenAI batch categorization endpoint
   └── share/[listId]/        # Dynamic shared list page
 
 /components                   # React components
-  ├── HomeScreen.tsx         # Main app container (870 LOC)
-  ├── CategoryList.tsx       # Categories with items
-  ├── GroceryItem.tsx        # Individual item with swipe
-  ├── AddItemForm.tsx        # Item addition form
-  ├── EditItemModal.tsx      # Item editing modal
+  ├── HomeScreen.tsx         # Main app container (~1080 LOC)
+  ├── CompactHeader.tsx      # Sticky header: logo, progress ring, tabs, search
+  ├── CategoryList.tsx       # Categories with items (memoized)
+  ├── GroceryItem.tsx        # Individual item with swipe (memoized)
+  ├── AddItemForm.tsx        # Item addition form (lazy)
+  ├── AddItemModal.tsx       # Item add modal wrapper
+  ├── ItemFormFields.tsx     # Shared add/edit form fields
+  ├── EditItemModal.tsx      # Item editing modal (lazy)
+  ├── PhotoModal.tsx         # Item photo viewer (lazy)
   ├── RepeatSuggestions.tsx  # Smart repeat suggestions
-  ├── ProgressHeader.tsx     # Progress bar UI
+  ├── EmptySearchState.tsx   # Empty search / quick-add prompt
+  ├── SettingsPanel.tsx      # Feature-flag settings panel (lazy)
+  ├── ShoppingMode.tsx       # Full-screen shopping mode (lazy, flag-gated)
+  ├── RecipesTab.tsx         # Recipes tab (lazy, flag-gated)
+  ├── InsightsTab.tsx        # Insights/stats tab (lazy, flag-gated)
+  ├── ShareButton.tsx        # Share-list control
+  ├── ProgressHeader.tsx     # Legacy progress bar (superseded by CompactHeader)
   └── ui/                    # Shadcn component library
 
 /contexts                     # React Context providers
-  └── TabViewContext.tsx     # Tab state (grocery/pharmacy)
+  ├── TabViewContext.tsx     # Active tab state (grocery/pharmacy/recipes/insights)
+  └── SettingsContext.tsx    # Feature flags (recipes, insights, shopping mode, ...)
 
 /hooks                        # Custom React hooks
   ├── use-mobile.tsx         # Mobile detection
@@ -44,19 +56,23 @@ A smart, shareable grocery list PWA built with Next.js 14. Features AI-powered i
 
 /lib                          # Business logic
   ├── db.ts                  # Firebase Firestore operations
-  ├── openrouter.ts          # OpenAI API client
-  ├── repeat-suggester.ts    # EWMA purchase prediction (162 LOC)
+  ├── openrouter.ts          # OpenAI API client (single + batch)
+  ├── repeat-suggester.ts    # EWMA purchase prediction (~162 LOC)
+  ├── insights.ts            # Aggregations for the Insights tab
+  ├── demo.ts                # Ephemeral demo/sandbox list seeding
   ├── firebase.js            # Firebase config
   └── utils.ts               # Utility functions
 
 /types                        # TypeScript definitions
   ├── item.ts                # Item interface
+  ├── recipe.ts              # Recipe interface
   └── categories.ts          # Category definitions (17 categories)
 
-/tests                        # Test suite (69 tests)
+/tests                        # Test suite (~128 tests)
   ├── setup.ts               # Test config and mocks
   ├── components/            # Component tests
   ├── integration/           # User journey tests
+  ├── utils/                 # Validation tests
   └── lib/                   # Unit tests
 ```
 
@@ -74,30 +90,38 @@ npm run test:coverage # Generate coverage report
 ## Architecture Patterns
 
 ### State Management
-- **TabViewContext**: Tab state (grocery vs pharmacy tabs)
+- **TabViewContext**: Active tab (grocery / pharmacy / recipes / insights)
+- **SettingsContext**: Feature flags, persisted to `localStorage` (all-on in demo lists)
 - **Component State**: UI state in HomeScreen (categories, search, modals)
 - **Firebase Sync**: Real-time data via `subscribeToList()`
-- **Memoization**: `useMemo` for expensive computations, `memo()` for components
+- **Memoization**: `useMemo` for derived data, `memo()` for CategoryList/GroceryItem
 
 ### Component Hierarchy
 ```
 HomeScreen
-├── ProgressHeader
-├── Search Input
-├── Tab Navigation (TabViewProvider)
-├── CategoryList (memoized)
-│   └── GroceryItem (memoized) [many]
-├── RepeatSuggestions
-├── AddItemForm (lazy loaded)
-├── EditItemModal (lazy loaded)
-└── ShareButton
+├── CompactHeader (logo, progress ring, tabs, search)
+├── Tab content (TabViewProvider):
+│   ├── RepeatSuggestions + CategoryList (memoized) → GroceryItem (memoized) [many]
+│   ├── RecipesTab   (lazy, flag-gated)
+│   └── InsightsTab  (lazy, flag-gated)
+├── AddItemForm / EditItemModal (lazy loaded)
+├── SettingsPanel  (lazy)
+└── ShoppingMode   (lazy, flag-gated)
 ```
 
 ### Performance Patterns
-- Dynamic imports for modals (AddItemForm, EditItemModal, PhotoModal)
+- Dynamic imports for modals/tabs (AddItemForm, EditItemModal, PhotoModal,
+  SettingsPanel, RecipesTab, InsightsTab, ShoppingMode)
+- **Stable handlers + memoized children**: mutation handlers are wrapped in
+  `useCallback` and read the latest list via a `categoriesRef` (instead of
+  closing over `categories`), so they keep a stable identity. Combined with the
+  memoized `nonEmptyCategories` array and `(categoryId, itemId)` callbacks on
+  GroceryItem, this lets CategoryList/GroceryItem skip re-renders when unrelated
+  state changes (search text, modals, the "adding…" indicator).
 - Memoized repeat suggestions computation
 - Confetti preloading after mount
 - Client-side search filtering
+- Loading skeleton mirrors `CompactHeader` exactly (no layout shift on data load)
 
 ## Code Conventions
 
@@ -165,12 +189,18 @@ Uses EWMA (Exponential Weighted Moving Average) algorithm:
 - OpenAI GPT integration for Hebrew item categorization
 - 17 predefined categories with emojis
 - Fallback to "other" category on errors
+- Batch endpoint (`app/api/categorize-batch/route.ts`) categorizes many items in
+  one call (used when adding all ingredients from a recipe)
 
 ### Firebase Operations (`lib/db.ts`)
 - `createNewList()`: Create new shopping list
 - `getList(listId)`: Fetch list by ID
-- `updateList(listId, categories)`: Persist changes
+- `updateList(listId, categories)`: Persist changes. Reads the doc first to
+  branch create vs. update — create writes `createdAt` (required by the security
+  rules), update omits it. Do not collapse this into a single createdAt-less
+  merge write: it causes permission-denied on new lists.
 - `subscribeToList(listId, callback)`: Real-time subscription
+- Demo/sandbox lists (see `lib/demo.ts`) are ephemeral and never hit Firebase
 
 ## Important Notes
 
@@ -186,7 +216,7 @@ Uses EWMA (Exponential Weighted Moving Average) algorithm:
 
 ### Environment Variables
 ```
-OPENROUTER_API_KEY    # LLM API key for categorization
+OPENAI_API_KEY        # OpenAI API key used by the categorize routes (gpt-4o-mini)
 NEXT_PUBLIC_APP_URL   # Public app URL
 ```
 

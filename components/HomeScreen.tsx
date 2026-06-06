@@ -12,7 +12,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, Plus, Sparkles } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import CategoryList from './CategoryList'
 import CompactHeader from './CompactHeader'
@@ -56,6 +56,16 @@ export default function HomeScreen() {
   const [isShoppingMode, setIsShoppingMode] = useState(false)
   const { activeTab } = useTabView()
   const { flags } = useSettings()
+
+  // Mirror of `categories` kept in a ref so the mutation handlers below can read
+  // the latest list without listing `categories` as a dependency. That keeps the
+  // handlers stable across renders, which lets the memoized CategoryList /
+  // GroceryItem skip re-rendering when unrelated state (search, modals, the
+  // "adding…" indicator) changes.
+  const categoriesRef = useRef(categories)
+  useEffect(() => {
+    categoriesRef.current = categories
+  }, [categories])
 
   // The grocery/pharmacy list views share the search, suggestions, category
   // list and add-item FAB. The recipes and insights tabs replace all of that.
@@ -240,9 +250,16 @@ export default function HomeScreen() {
         category = 'בית מרקחת';
         emoji = '💊';
       } else if (categorySelection === 'auto') {
-        // Smart categorization via API
-        const result = await OpenRouter.categorize(`${itemName}${itemComment ? ` - ${itemComment}` : ''}`);
-        category = result.category?.trim() || 'אחר';
+        // Smart categorization via API. If it fails (API down, no key, rate
+        // limit, …) we must NOT lose the item — fall back to 'אחר' so the add
+        // always succeeds, mirroring the recipe batch-add behaviour.
+        try {
+          const result = await OpenRouter.categorize(`${itemName}${itemComment ? ` - ${itemComment}` : ''}`);
+          category = result.category?.trim() || 'אחר';
+        } catch (error) {
+          console.error('Categorization failed, falling back to אחר:', error);
+          category = 'אחר';
+        }
         // Look up emoji from existing category, fallback to default
         const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category));
         emoji = matchedCategory?.emoji || '📦';
@@ -270,12 +287,11 @@ export default function HomeScreen() {
     }
   };
 
-  const handleToggleItem = async (categoryId: number, itemId: number) => {
-    // Clear search when toggling an item in search mode
-    if (searchQuery.trim()) {
-      setSearchQuery('')
-    }
+  const handleToggleItem = useCallback(async (categoryId: number, itemId: number) => {
+    // Clear search when toggling an item in search mode (no-op if already empty)
+    setSearchQuery('')
 
+    const categories = categoriesRef.current
     const now = new Date()
     const updatedCategories = categories.map(category => {
       if (category.id !== categoryId) return category
@@ -314,11 +330,12 @@ export default function HomeScreen() {
         setCategories(categories)
       }
     }
-  }
+  }, [listId])
 
-  const handleSnoozeItem = async (categoryId: number, itemId: number, days: number) => {
+  const handleSnoozeItem = useCallback(async (categoryId: number, itemId: number, days: number) => {
     if (days <= 0) return
 
+    const categories = categoriesRef.current
     const snoozeUntil = new Date(Date.now() + days * MS_PER_DAY).toISOString()
 
     const updatedCategories = categories.map(category => {
@@ -347,9 +364,10 @@ export default function HomeScreen() {
         setCategories(categories)
       }
     }
-  }
+  }, [listId])
 
-  const handleDeleteItem = async (categoryId: number, itemId: number) => {
+  const handleDeleteItem = useCallback(async (categoryId: number, itemId: number) => {
+    const categories = categoriesRef.current
     const updatedCategories = categories.map(category =>
       category.id === categoryId
         ? { ...category, items: category.items.filter(item => item.id !== itemId) }
@@ -357,7 +375,7 @@ export default function HomeScreen() {
     )
 
     setCategories(updatedCategories)
-    
+
     if (listId) {
       try {
         await updateList(listId, updatedCategories)
@@ -366,9 +384,10 @@ export default function HomeScreen() {
         setCategories(categories)
       }
     }
-  }
+  }, [listId])
 
-  const handleAddItem = async (categoryId: number, name: string) => {
+  const handleAddItem = useCallback(async (categoryId: number, name: string) => {
+    const categories = categoriesRef.current
     const category = categories.find(c => c.id === categoryId);
     if (!category) return;
 
@@ -410,7 +429,7 @@ export default function HomeScreen() {
         setCategories(categories); // Revert on error
       }
     }
-  };
+  }, [listId]);
 
   // Check if an item with the same name and description already exists in the current tab
   const checkDuplicateItem = (name: string, comment: string = '') => {
@@ -468,9 +487,15 @@ export default function HomeScreen() {
         category = 'בית מרקחת';
         emoji = '💊';
       } else {
-        // For grocery mode, use smart categorization
-        const result = await OpenRouter.categorize(itemName);
-        category = result.category?.trim() || 'אחר';
+        // For grocery mode, use smart categorization. Fall back to 'אחר' if the
+        // API fails so a quick-add never silently drops the item.
+        try {
+          const result = await OpenRouter.categorize(itemName);
+          category = result.category?.trim() || 'אחר';
+        } catch (error) {
+          console.error('Categorization failed, falling back to אחר:', error);
+          category = 'אחר';
+        }
         // Look up emoji from existing category, fallback to default
         const matchedCategory = categories.find(c => normalizeCategory(c.name) === normalizeCategory(category));
         emoji = matchedCategory?.emoji || '📦';
@@ -677,29 +702,34 @@ export default function HomeScreen() {
   }
 
   // Handle opening edit modal
-  const handleEditItem = (item: Item, categoryId: number) => {
+  const handleEditItem = useCallback((item: Item, categoryId: number) => {
     setEditingItem(item);
     setEditingItemCategoryId(categoryId);
-  };
+  }, []);
 
-  const uncheckedItems = categories
-    .filter(category => {
-      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
-      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
-      return true
-    })
-    .reduce((total, category) => 
-      total + category.items.filter(item => !item.purchased).length, 0
-    )
-  const totalItems = categories
-    .filter(category => {
-      if (activeTab === 'grocery') return category.name !== 'בית מרקחת'
-      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
-      return true
-    })
-    .reduce((total, category) => 
-      total + category.items.length, 0
-    )
+  // Item counts for the active tab, computed in a single pass and memoized so
+  // unrelated re-renders don't repeatedly walk every category.
+  const { uncheckedItems, totalItems } = useMemo(() => {
+    let unchecked = 0
+    let total = 0
+    for (const category of categories) {
+      if (activeTab === 'grocery' && category.name === 'בית מרקחת') continue
+      if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') continue
+      for (const item of category.items) {
+        total += 1
+        if (!item.purchased) unchecked += 1
+      }
+    }
+    return { uncheckedItems: unchecked, totalItems: total }
+  }, [categories, activeTab])
+
+  // Non-empty categories handed to CategoryList. Memoized so its referential
+  // identity only changes when `categories` actually changes — letting the
+  // memoized CategoryList bail out of re-renders triggered by other state.
+  const nonEmptyCategories = useMemo(
+    () => categories.filter(category => category.items.length > 0),
+    [categories]
+  )
 
   useEffect(() => {
     // Demo/sandbox list: load ephemeral seeded data and skip Firebase entirely.
@@ -741,39 +771,43 @@ export default function HomeScreen() {
   }, [isAddFormOpen])
 
   if (isLoading) {
+    // The skeleton mirrors CompactHeader's structure exactly (sticky white bar,
+    // logo, progress ring, tab pills, action buttons, and the search box *inside*
+    // the header) plus the main content padding, so there is no layout shift when
+    // the real UI swaps in.
     return (
       <div className="min-h-screen bg-[#FDF6ED]">
-        {/* Header skeleton */}
-        <div className="bg-white border-b border-black/5 shadow-sm">
+        {/* Header skeleton — matches CompactHeader */}
+        <div className="bg-white border-b border-black/5 shadow-sm sticky top-0 pt-safe z-30">
           <div className="max-w-2xl mx-auto px-4 py-3">
-            <div className="flex items-center justify-between gap-4">
-              {/* Progress ring skeleton */}
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-200 animate-pulse rounded-full" />
-                <div className="flex flex-col gap-1">
-                  <div className="h-4 w-24 bg-gray-200 animate-pulse rounded" />
-                  <div className="h-3 w-12 bg-gray-200 animate-pulse rounded" />
-                </div>
-              </div>
-              {/* Tabs skeleton */}
+            <div className="flex items-center justify-between gap-3">
+              {/* Logo */}
+              <div className="flex-shrink-0 w-10 h-10 bg-gray-200 animate-pulse rounded-lg" />
+              {/* Progress ring */}
+              <div className="flex-shrink-0 w-12 h-12 bg-gray-200 animate-pulse rounded-full" />
+              {/* Tab pills */}
               <div className="flex bg-gray-100 rounded-full p-1 gap-1">
                 <div className="h-8 w-16 bg-gray-200 animate-pulse rounded-full" />
                 <div className="h-8 w-16 bg-gray-200 animate-pulse rounded-full" />
               </div>
-              {/* Share button skeleton */}
-              <div className="w-9 h-9 bg-gray-200 animate-pulse rounded-full" />
+              {/* Action buttons */}
+              <div className="flex items-center gap-1">
+                <div className="w-9 h-9 bg-gray-200 animate-pulse rounded-full" />
+                <div className="w-9 h-9 bg-gray-200 animate-pulse rounded-full" />
+              </div>
             </div>
           </div>
+          {/* Search box (lives inside the header) */}
+          <div className="max-w-2xl mx-auto px-4 pb-3">
+            <div className="h-[42px] bg-gray-50 border border-gray-200 animate-pulse rounded-xl" />
+          </div>
         </div>
-        {/* Search skeleton */}
-        <div className="pt-4 px-4 max-w-2xl mx-auto">
-          <div className="h-10 bg-white animate-pulse rounded-xl shadow-sm" />
-        </div>
-        {/* Content skeleton */}
-        <main className="flex-grow max-w-2xl w-full mx-auto p-4 pt-6">
+        {/* Content skeleton — matches the real <main> padding */}
+        <main className="flex-grow flex flex-col max-w-2xl w-full mx-auto p-6 pb-24">
+          <div className="h-4" aria-hidden="true" />
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 shadow-sm">
+              <div key={i} className="bg-white rounded-2xl border border-black/5 p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="h-6 w-6 bg-gray-200 animate-pulse rounded-full" />
                   <div className="h-6 w-32 bg-gray-200 animate-pulse rounded-lg" />
@@ -953,7 +987,7 @@ export default function HomeScreen() {
         {/* Category List - only on the grocery/pharmacy list views, not while searching */}
         {isListTab && !isSearchMode && (
           <CategoryList
-            categories={categories.filter(category => category.items.length > 0)}
+            categories={nonEmptyCategories}
             onToggleItem={handleToggleItem}
             onDeleteItem={handleDeleteItem}
             expandedCategories={expandedCategories}

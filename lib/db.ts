@@ -114,6 +114,12 @@ export async function updateList(listId: string, categories: Category[]) {
 
     const timestamp = new Date().toISOString()
 
+    // NOTE: keep create vs. update distinct. A brand-new list is created via
+    // this function (the first add), and the Firestore security rules require
+    // `createdAt` to be present on create — so it must be written here. Updates
+    // intentionally omit it. (A previous single merge write that dropped
+    // `createdAt` caused permission-denied on create: the optimistic add showed
+    // briefly and then vanished when the write was rejected.)
     if (isNewList) {
       // Create new list with all required fields
       await setDoc(listRef, {
