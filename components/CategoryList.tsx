@@ -169,8 +169,8 @@ const CategoryList = memo(function CategoryList({
                   key={item.id}
                   item={item}
                   categoryId={pharmacyCategory.id}
-                  onToggle={() => onToggleItem(pharmacyCategory.id, item.id)}
-                  onDelete={() => onDeleteItem(pharmacyCategory.id, item.id)}
+                  onToggle={onToggleItem}
+                  onDelete={onDeleteItem}
                   onEdit={onEditItem}
                 />
               ))}
@@ -311,8 +311,8 @@ const CategoryList = memo(function CategoryList({
                             key={item.id}
                             item={item}
                             categoryId={category.id}
-                            onToggle={() => onToggleItem(category.id, item.id)}
-                            onDelete={() => onDeleteItem(category.id, item.id)}
+                            onToggle={onToggleItem}
+                            onDelete={onDeleteItem}
                             onEdit={onEditItem}
                           />
                         ))}

@@ -109,25 +109,22 @@ export async function updateList(listId: string, categories: Category[]) {
     }))
 
     const listRef = doc(db, 'lists', listId)
-    const listSnap = await getDoc(listRef)
-    const isNewList = !listSnap.exists()
-
     const timestamp = new Date().toISOString()
 
-    if (isNewList) {
-      // Create new list with all required fields
-      await setDoc(listRef, {
+    // Merge write: creates the document if it doesn't exist yet and updates it
+    // otherwise, all in a single round-trip. We intentionally avoid a preceding
+    // getDoc() here — it doubled the write latency on every toggle/add. Leaving
+    // `createdAt` out of the payload lets { merge: true } preserve an existing
+    // value rather than clobbering it on every write; a freshly created list
+    // gets its `createdAt` from createNewList().
+    await setDoc(
+      listRef,
+      {
         categories: sanitizedCategories,
-        createdAt: timestamp,
         updatedAt: timestamp
-      })
-    } else {
-      // Update existing list with only allowed fields
-      await setDoc(listRef, {
-        categories: sanitizedCategories,
-        updatedAt: timestamp
-      })
-    }
+      },
+      { merge: true }
+    )
   } catch (error) {
     if (error instanceof FirebaseError) {
       console.error('Firebase error:', error.code, error.message)
