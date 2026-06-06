@@ -217,7 +217,7 @@ Uses EWMA (Exponential Weighted Moving Average) algorithm:
 
 ### Environment Variables
 ```
-OPENROUTER_API_KEY    # LLM API key for categorization
+OPENAI_API_KEY        # OpenAI API key used by the categorize routes (gpt-4o-mini)
 NEXT_PUBLIC_APP_URL   # Public app URL
 ```
 

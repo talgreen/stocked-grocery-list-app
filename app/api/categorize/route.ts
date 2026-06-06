@@ -26,7 +26,7 @@ export async function POST(request: Request) {
           content: `המוצר: ${itemName}`
         }
       ],
-      model: "gpt-5-nano"
+      model: "gpt-4o-mini"
     })
 
     if (!completion.choices[0]?.message?.content) {
