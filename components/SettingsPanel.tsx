@@ -1,8 +1,10 @@
 'use client'
 
 import { useSettings } from '@/contexts/SettingsContext'
+import { DEMO_LIST_ID, isDemoList } from '@/lib/demo'
 import { motion } from 'framer-motion'
-import { ChefHat, Star, Store, X } from 'lucide-react'
+import { BarChart3, ChefHat, FlaskConical, Star, Store, X } from 'lucide-react'
+import { useParams } from 'next/navigation'
 
 interface SettingsPanelProps {
   onClose: () => void
@@ -47,6 +49,8 @@ function FeatureToggle({ icon, title, description, enabled, onToggle }: FeatureT
 
 export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { flags, setFlag } = useSettings()
+  const params = useParams()
+  const inDemo = isDemoList(params?.listId as string | undefined)
 
   return (
     <motion.div
@@ -54,10 +58,10 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-      className="bg-white rounded-2xl shadow-2xl border border-black/5 overflow-hidden"
+      className="bg-white rounded-2xl shadow-2xl border border-black/5 overflow-hidden flex flex-col w-full max-h-full"
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-black/5">
+      <div className="flex items-center justify-between p-4 border-b border-black/5 flex-shrink-0">
         <h2 className="text-base font-bold text-black/80">הגדרות</h2>
         <button
           onClick={onClose}
@@ -67,6 +71,8 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
         </button>
       </div>
 
+      {/* Scrollable body */}
+      <div className="overflow-y-auto overscroll-contain">
       {/* Feature Flags */}
       <div className="p-4 space-y-3">
         <p className="text-xs text-black/40 font-medium mb-2">תכונות ניסיוניות</p>
@@ -94,6 +100,35 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
           enabled={flags.enableShoppingMode}
           onToggle={(v) => setFlag('enableShoppingMode', v)}
         />
+
+        <FeatureToggle
+          icon={<BarChart3 className="h-5 w-5" />}
+          title="תובנות"
+          description="סטטיסטיקות על הרגלי הקנייה: הפריטים הנקנים ביותר, קניות לפי קטגוריה ומצרכים קבועים"
+          enabled={flags.enableInsights}
+          onToggle={(v) => setFlag('enableInsights', v)}
+        />
+      </div>
+
+      {/* Demo / sandbox entry */}
+      <div className="border-t border-black/5 p-4">
+        <a
+          href={`/share/${DEMO_LIST_ID}`}
+          className="flex items-start gap-3 rounded-xl border border-dashed border-[#FFB74D]/50 bg-amber-50/50 p-4 transition-colors hover:bg-amber-50"
+        >
+          <div className="mt-0.5 flex-shrink-0 text-[#FFB74D]">
+            <FlaskConical className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-black/80">
+              {inDemo ? 'אתה במצב הדגמה' : 'מצב הדגמה (Demo)'}
+            </h3>
+            <p className="mt-1 text-xs leading-relaxed text-black/50">
+              נסה את כל התכונות עם נתוני דמה עשירים — בלי להשפיע על הרשימה האמיתית שלך. כל שינוי מתאפס בריענון.
+            </p>
+          </div>
+        </a>
+      </div>
       </div>
     </motion.div>
   )

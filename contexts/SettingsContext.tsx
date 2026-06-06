@@ -1,17 +1,30 @@
 'use client'
 
+import { isDemoList } from '@/lib/demo'
+import { useParams } from 'next/navigation'
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react'
 
 interface FeatureFlags {
   enableRecipes: boolean
   enableMostPurchased: boolean
   enableShoppingMode: boolean
+  enableInsights: boolean
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
   enableRecipes: false,
   enableMostPurchased: false,
   enableShoppingMode: false,
+  enableInsights: false,
+}
+
+// In the demo/sandbox list every experimental feature is on by default so a
+// tester sees everything at once (toggles still work for checking the gating).
+const ALL_FLAGS_ENABLED: FeatureFlags = {
+  enableRecipes: true,
+  enableMostPurchased: true,
+  enableShoppingMode: true,
+  enableInsights: true,
 }
 
 interface SettingsContextType {
@@ -42,19 +55,22 @@ interface SettingsProviderProps {
 }
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
+  const params = useParams()
+  const isDemo = isDemoList(params?.listId as string | undefined)
   const [flags, setFlags] = useState<FeatureFlags>(DEFAULT_FLAGS)
   const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
-    setFlags(loadFlags())
+    setFlags(isDemo ? ALL_FLAGS_ENABLED : loadFlags())
     setIsHydrated(true)
-  }, [])
+  }, [isDemo])
 
   useEffect(() => {
-    if (isHydrated) {
+    // Never persist demo overrides onto the user's real settings.
+    if (isHydrated && !isDemo) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(flags))
     }
-  }, [flags, isHydrated])
+  }, [flags, isHydrated, isDemo])
 
   const setFlag = useCallback((key: keyof FeatureFlags, value: boolean) => {
     setFlags(prev => ({ ...prev, [key]: value }))
