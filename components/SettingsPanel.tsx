@@ -58,7 +58,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-      className="bg-white rounded-2xl shadow-2xl border border-black/5 overflow-hidden flex flex-col max-h-[80vh]"
+      className="bg-white rounded-2xl shadow-2xl border border-black/5 overflow-hidden flex flex-col w-full max-h-full"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-black/5 flex-shrink-0">

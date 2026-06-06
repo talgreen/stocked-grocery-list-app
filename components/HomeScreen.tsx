@@ -819,7 +819,7 @@ export default function HomeScreen() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              className="fixed inset-x-4 top-[12vh] z-50 max-w-md mx-auto"
+              className="fixed inset-x-4 top-[10vh] bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-md items-start"
             >
               <SettingsPanel onClose={() => setIsSettingsOpen(false)} />
             </motion.div>
