@@ -109,22 +109,31 @@ export async function updateList(listId: string, categories: Category[]) {
     }))
 
     const listRef = doc(db, 'lists', listId)
+    const listSnap = await getDoc(listRef)
+    const isNewList = !listSnap.exists()
+
     const timestamp = new Date().toISOString()
 
-    // Merge write: creates the document if it doesn't exist yet and updates it
-    // otherwise, all in a single round-trip. We intentionally avoid a preceding
-    // getDoc() here — it doubled the write latency on every toggle/add. Leaving
-    // `createdAt` out of the payload lets { merge: true } preserve an existing
-    // value rather than clobbering it on every write; a freshly created list
-    // gets its `createdAt` from createNewList().
-    await setDoc(
-      listRef,
-      {
+    // NOTE: keep create vs. update distinct. A brand-new list is created via
+    // this function (the first add), and the Firestore security rules require
+    // `createdAt` to be present on create — so it must be written here. Updates
+    // intentionally omit it. (A previous single merge write that dropped
+    // `createdAt` caused permission-denied on create: the optimistic add showed
+    // briefly and then vanished when the write was rejected.)
+    if (isNewList) {
+      // Create new list with all required fields
+      await setDoc(listRef, {
+        categories: sanitizedCategories,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      })
+    } else {
+      // Update existing list with only allowed fields
+      await setDoc(listRef, {
         categories: sanitizedCategories,
         updatedAt: timestamp
-      },
-      { merge: true }
-    )
+      })
+    }
   } catch (error) {
     if (error instanceof FirebaseError) {
       console.error('Firebase error:', error.code, error.message)

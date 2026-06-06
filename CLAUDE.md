@@ -118,8 +118,6 @@ HomeScreen
   memoized `nonEmptyCategories` array and `(categoryId, itemId)` callbacks on
   GroceryItem, this lets CategoryList/GroceryItem skip re-renders when unrelated
   state changes (search text, modals, the "adding…" indicator).
-- **Single Firestore write per change**: `updateList` does one `setDoc(..., { merge: true })`
-  with no preceding `getDoc`, halving write round-trips on every toggle/add.
 - Memoized repeat suggestions computation
 - Confetti preloading after mount
 - Client-side search filtering
@@ -197,9 +195,10 @@ Uses EWMA (Exponential Weighted Moving Average) algorithm:
 ### Firebase Operations (`lib/db.ts`)
 - `createNewList()`: Create new shopping list
 - `getList(listId)`: Fetch list by ID
-- `updateList(listId, categories)`: Persist changes via a single
-  `setDoc(..., { merge: true })` (no preceding read; creates-or-updates in one
-  round-trip and preserves `createdAt`)
+- `updateList(listId, categories)`: Persist changes. Reads the doc first to
+  branch create vs. update — create writes `createdAt` (required by the security
+  rules), update omits it. Do not collapse this into a single createdAt-less
+  merge write: it causes permission-denied on new lists.
 - `subscribeToList(listId, callback)`: Real-time subscription
 - Demo/sandbox lists (see `lib/demo.ts`) are ephemeral and never hit Firebase
 
