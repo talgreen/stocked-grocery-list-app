@@ -3,6 +3,7 @@
 import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
 import { subscribeToList, updateList } from '@/lib/db'
+import { buildDemoCategories, isDemoList } from '@/lib/demo'
 import { OpenRouter } from '@/lib/openrouter'
 import { computeRepeatSuggestions, updateItemPurchaseStats } from '@/lib/repeat-suggester'
 import { Category, initialCategories } from '@/types/categories'
@@ -21,6 +22,7 @@ import RepeatSuggestions from './RepeatSuggestions'
 const SettingsPanel = dynamic(() => import('./SettingsPanel'))
 const RecipesTab = dynamic(() => import('./RecipesTab'))
 const ShoppingMode = dynamic(() => import('./ShoppingMode'))
+const InsightsTab = dynamic(() => import('./InsightsTab'))
 
 // Lazy load modal components to reduce initial bundle size
 const AddItemForm = dynamic(() => import('./AddItemForm'), {
@@ -54,6 +56,10 @@ export default function HomeScreen() {
   const [isShoppingMode, setIsShoppingMode] = useState(false)
   const { activeTab } = useTabView()
   const { flags } = useSettings()
+
+  // The grocery/pharmacy list views share the search, suggestions, category
+  // list and add-item FAB. The recipes and insights tabs replace all of that.
+  const isListTab = activeTab === 'grocery' || activeTab === 'pharmacy'
 
   // Filter items based on search query
   const getSearchResults = () => {
@@ -696,6 +702,13 @@ export default function HomeScreen() {
     )
 
   useEffect(() => {
+    // Demo/sandbox list: load ephemeral seeded data and skip Firebase entirely.
+    if (isDemoList(listId)) {
+      setCategories(buildDemoCategories())
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
 
     const unsubscribe = subscribeToList(
@@ -827,8 +840,13 @@ export default function HomeScreen() {
           />
         )}
 
+        {/* Insights Tab */}
+        {activeTab === 'insights' && flags.enableInsights && (
+          <InsightsTab categories={categories} />
+        )}
+
         {/* Search Results */}
-        {activeTab !== 'recipes' && isSearchMode && (
+        {isListTab && isSearchMode && (
           <div className="space-y-4 mb-6">
             {searchResults.length > 0 && !hasExactMatch && (
               <motion.button
@@ -922,7 +940,7 @@ export default function HomeScreen() {
           </div>
         )}
 
-        {activeTab !== 'recipes' && !isSearchMode && repeatSuggestions.length > 0 && (
+        {isListTab && !isSearchMode && repeatSuggestions.length > 0 && (
           <div className="mb-6">
             <RepeatSuggestions
               suggestions={repeatSuggestions}
@@ -932,8 +950,8 @@ export default function HomeScreen() {
           </div>
         )}
 
-        {/* Category List - Only show when not in search mode and not on recipes tab */}
-        {activeTab !== 'recipes' && !isSearchMode && (
+        {/* Category List - only on the grocery/pharmacy list views, not while searching */}
+        {isListTab && !isSearchMode && (
           <CategoryList
             categories={categories.filter(category => category.items.length > 0)}
             onToggleItem={handleToggleItem}
@@ -1037,7 +1055,7 @@ export default function HomeScreen() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {!isAddFormOpen && activeTab !== 'recipes' && (
+        {!isAddFormOpen && isListTab && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}

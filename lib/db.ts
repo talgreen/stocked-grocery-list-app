@@ -2,6 +2,7 @@ import { Category, initialCategories } from '@/types/categories'
 import { FirebaseError } from 'firebase/app'
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { toast } from 'sonner'
+import { isDemoList } from './demo'
 import { db } from './firebase'
 
 
@@ -13,6 +14,8 @@ interface ListData {
 }
 
 export async function createNewList(listId: string, categories: Category[]) {
+  // Demo/sandbox lists are ephemeral and never written to Firebase.
+  if (isDemoList(listId)) return listId
   try {
     // Only create if there are items in any category
     const hasItems = categories.some(category => category.items.length > 0)
@@ -66,6 +69,8 @@ export async function getList(listId: string): Promise<ListData | null> {
 }
 
 export async function updateList(listId: string, categories: Category[]) {
+  // Demo/sandbox lists are ephemeral and never written to Firebase.
+  if (isDemoList(listId)) return
   try {
     // Check if the list has any items
     const hasItems = categories.some(category => category.items.length > 0)

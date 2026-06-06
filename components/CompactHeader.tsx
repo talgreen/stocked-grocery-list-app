@@ -2,7 +2,7 @@
 
 import { useSettings } from '@/contexts/SettingsContext'
 import { useTabView } from '@/contexts/TabViewContext'
-import { ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Search, X, Store } from 'lucide-react'
+import { BarChart3, ChefHat, Settings, Share2, ShoppingCart, Pill, Check, Search, X, Store } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -156,11 +156,24 @@ export default function CompactHeader({ uncheckedItems, totalItems, searchQuery,
                 <span className="hidden sm:inline">מתכונים</span>
               </button>
             )}
+            {flags.enableInsights && (
+              <button
+                onClick={() => setActiveTab('insights')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'insights'
+                    ? 'bg-[#FFB74D] text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden sm:inline">תובנות</span>
+              </button>
+            )}
           </div>
 
           {/* Shopping mode, Settings & Share buttons */}
           <div className="flex items-center gap-1">
-            {flags.enableShoppingMode && activeTab !== 'recipes' && (
+            {flags.enableShoppingMode && (activeTab === 'grocery' || activeTab === 'pharmacy') && (
               <motion.button
                 onClick={onEnterShoppingMode}
                 disabled={totalItems === 0}
