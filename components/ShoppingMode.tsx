@@ -323,9 +323,6 @@ function CategoryDetail({ category, sessionKeys, onToggleItem, onBack, showBack 
         </div>
       </div>
 
-      {/* Celebrate a cleared list right here, since there may be no grid to return to */}
-      {remainingItems.length === 0 && <CompletionBanner />}
-
       {/* Remaining items */}
       {remainingItems.length > 0 && (
         <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
