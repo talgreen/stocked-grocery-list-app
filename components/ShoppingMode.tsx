@@ -13,53 +13,75 @@ interface ShoppingModeProps {
   onExit: () => void
 }
 
-function remainingCount(category: Category): number {
-  return category.items.filter(item => !item.purchased).length
+// A stable key for an item within its category (item ids alone aren't
+// guaranteed unique across categories).
+function itemKey(categoryId: number, itemId: number): string {
+  return `${categoryId}:${itemId}`
 }
 
-// Active categories first, fully-completed ones dimmed at the bottom
-function sortForShopping(categories: Category[]): Category[] {
-  return [...categories].sort((a, b) => {
-    const aDone = remainingCount(a) === 0
-    const bDone = remainingCount(b) === 0
-    if (aDone === bDone) return 0
-    return aDone ? 1 : -1
-  })
+// The items of a category that belong to this shopping session — i.e. were
+// still unchecked when shopping mode opened. Items bought beforehand are
+// excluded entirely and never surface in shopping mode.
+function sessionItemsOf(category: Category, sessionKeys: Set<string>): Item[] {
+  return category.items.filter(item => sessionKeys.has(itemKey(category.id, item.id)))
+}
+
+function remainingOf(category: Category, sessionKeys: Set<string>): number {
+  return sessionItemsOf(category, sessionKeys).filter(item => !item.purchased).length
 }
 
 export default function ShoppingMode({ categories, onToggleItem, onExit }: ShoppingModeProps) {
   const { activeTab } = useTabView()
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
 
-  // Only the categories relevant to the current tab that actually have items
-  const relevantCategories = useMemo(() => {
+  // Snapshot the entry state once, when shopping mode opens (the component
+  // mounts fresh each time). Everything below runs against this snapshot:
+  //  - only items unchecked at entry take part (already-bought ones stay hidden)
+  //  - the category list is frozen to those that had something to buy, so a
+  //    category you clear *during* the session stays visible for review
+  //  - the progress counter runs 0..N over exactly these items
+  const sessionKeysRef = useRef<Set<string> | null>(null)
+  if (sessionKeysRef.current === null) {
+    const keys = new Set<string>()
+    for (const category of categories) {
+      for (const item of category.items) {
+        if (!item.purchased) keys.add(itemKey(category.id, item.id))
+      }
+    }
+    sessionKeysRef.current = keys
+  }
+  const sessionKeys = sessionKeysRef.current
+
+  // Categories relevant to the current tab that had at least one item to buy at
+  // entry. Membership is frozen for the session — a category never disappears
+  // just because every item in it got checked off mid-shop.
+  const sessionCategories = useMemo(() => {
     return categories.filter(category => {
-      if (category.items.length === 0) return false
-      if (activeTab === 'pharmacy') return category.name === 'בית מרקחת'
-      return category.name !== 'בית מרקחת'
+      if (activeTab === 'pharmacy' && category.name !== 'בית מרקחת') return false
+      if (activeTab !== 'pharmacy' && category.name === 'בית מרקחת') return false
+      return category.items.some(item => sessionKeys.has(itemKey(category.id, item.id)))
     })
-  }, [categories, activeTab])
+  }, [categories, activeTab, sessionKeys])
 
-  const sortedCategories = useMemo(() => sortForShopping(relevantCategories), [relevantCategories])
-
+  // Fixed at the entry snapshot: total never changes, done counts up from 0.
   const totalItems = useMemo(
-    () => relevantCategories.reduce((sum, c) => sum + c.items.length, 0),
-    [relevantCategories]
+    () => sessionCategories.reduce((sum, c) => sum + sessionItemsOf(c, sessionKeys).length, 0),
+    [sessionCategories, sessionKeys]
   )
   const remainingItems = useMemo(
-    () => relevantCategories.reduce((sum, c) => sum + remainingCount(c), 0),
-    [relevantCategories]
+    () => sessionCategories.reduce((sum, c) => sum + remainingOf(c, sessionKeys), 0),
+    [sessionCategories, sessionKeys]
   )
   const doneItems = totalItems - remainingItems
   const progress = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0
 
-  // With a single relevant category (e.g. the pharmacy tab) there's nothing to
-  // pick between, so skip the grid and drop straight into its item list.
-  const isSingleCategory = relevantCategories.length === 1
+  // With a single category there's nothing to pick between, so skip the grid and
+  // drop straight into its item list.
+  const isSingleCategory = sessionCategories.length === 1
   const activeCategory = isSingleCategory
-    ? relevantCategories[0]
+    ? sessionCategories[0]
     : selectedCategoryId
-      ? relevantCategories.find(c => c.id === selectedCategoryId) ?? null
+      ? sessionCategories.find(c => c.id === selectedCategoryId) ?? null
       : null
 
   const handleBack = useCallback(() => setSelectedCategoryId(null), [])
@@ -68,7 +90,7 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
   // category is checked off. Tracked here in the parent (which never
   // remounts) so the transition is detected reliably. A -1 sentinel means
   // no category is open, so opening an already-finished category never fires.
-  const selectedRemaining = activeCategory ? remainingCount(activeCategory) : -1
+  const selectedRemaining = activeCategory ? remainingOf(activeCategory, sessionKeys) : -1
   const prevRemainingRef = useRef(-1)
   useEffect(() => {
     const prev = prevRemainingRef.current
@@ -108,9 +130,11 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
           <div className="min-w-0">
             <h1 className="text-base font-bold text-black/80">מצב קנייה</h1>
             <p className="text-xs text-black/50">
-              {remainingItems > 0
-                ? `נשארו ${remainingItems} פריטים לקנייה`
-                : 'סיימת את כל הרשימה 🎉'}
+              {totalItems === 0
+                ? '' /* nothing to shop — the body's empty state says it all */
+                : doneItems >= totalItems
+                  ? 'סיימת את כל הרשימה 🎉'
+                  : `נקנו ${doneItems} מתוך ${totalItems}`}
             </p>
           </div>
           <button
@@ -121,7 +145,7 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
             <span>סיום</span>
           </button>
         </div>
-        {/* Overall progress bar */}
+        {/* Overall progress bar — fills 0 → 100% as session items are checked off */}
         <div className="max-w-2xl mx-auto px-4 pb-3">
           <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
             <motion.div
@@ -142,6 +166,7 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
               <CategoryDetail
                 key={`detail-${activeCategory.id}`}
                 category={activeCategory}
+                sessionKeys={sessionKeys}
                 onToggleItem={onToggleItem}
                 onBack={handleBack}
                 showBack={!isSingleCategory}
@@ -149,7 +174,8 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
             ) : (
               <CategoryGrid
                 key="grid"
-                categories={sortedCategories}
+                categories={sessionCategories}
+                sessionKeys={sessionKeys}
                 onSelect={setSelectedCategoryId}
                 allDone={totalItems > 0 && remainingItems === 0}
               />
@@ -179,11 +205,12 @@ function CompletionBanner() {
 
 interface CategoryGridProps {
   categories: Category[]
+  sessionKeys: Set<string>
   onSelect: (categoryId: number) => void
   allDone: boolean
 }
 
-function CategoryGrid({ categories, onSelect, allDone }: CategoryGridProps) {
+function CategoryGrid({ categories, sessionKeys, onSelect, allDone }: CategoryGridProps) {
   if (categories.length === 0) {
     return (
       <motion.div
@@ -209,7 +236,7 @@ function CategoryGrid({ categories, onSelect, allDone }: CategoryGridProps) {
 
       <div className="grid grid-cols-2 gap-3">
         {categories.map(category => {
-          const remaining = remainingCount(category)
+          const remaining = remainingOf(category, sessionKeys)
           const isDone = remaining === 0
           return (
             <motion.button
@@ -219,7 +246,7 @@ function CategoryGrid({ categories, onSelect, allDone }: CategoryGridProps) {
               whileTap={{ scale: 0.97 }}
               className={`relative flex flex-col items-center justify-center gap-2 rounded-2xl border shadow-sm p-5 min-h-[120px] transition-colors ${
                 isDone
-                  ? 'bg-gray-50 border-black/5 opacity-60'
+                  ? 'bg-white border-green-200/70 hover:border-green-300'
                   : 'bg-white border-black/5 hover:border-[#FFB74D]/40'
               }`}
             >
@@ -228,10 +255,12 @@ function CategoryGrid({ categories, onSelect, allDone }: CategoryGridProps) {
                 {category.name}
               </span>
               {isDone ? (
-                <span className="flex items-center gap-1 text-xs font-medium text-green-600">
-                  <Check className="w-3.5 h-3.5" />
-                  הושלם
-                </span>
+                <>
+                  <span className="text-xs font-medium text-green-600">הושלם</span>
+                  <span className="absolute top-2.5 left-2.5 w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white">
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                  </span>
+                </>
               ) : (
                 <span className="absolute top-2.5 left-2.5 min-w-[24px] h-6 px-1.5 flex items-center justify-center rounded-full bg-[#FFB74D] text-white text-xs font-bold">
                   {remaining}
@@ -247,14 +276,18 @@ function CategoryGrid({ categories, onSelect, allDone }: CategoryGridProps) {
 
 interface CategoryDetailProps {
   category: Category
+  sessionKeys: Set<string>
   onToggleItem: (categoryId: number, itemId: number) => void
   onBack: () => void
   showBack: boolean
 }
 
-function CategoryDetail({ category, onToggleItem, onBack, showBack }: CategoryDetailProps) {
-  const remainingItems = category.items.filter(item => !item.purchased)
-  const completedItems = category.items.filter(item => item.purchased)
+function CategoryDetail({ category, sessionKeys, onToggleItem, onBack, showBack }: CategoryDetailProps) {
+  // Only session items (unchecked at entry) appear here; anything bought before
+  // shopping mode opened stays out of view entirely.
+  const sessionItems = sessionItemsOf(category, sessionKeys)
+  const remainingItems = sessionItems.filter(item => !item.purchased)
+  const completedItems = sessionItems.filter(item => item.purchased)
   // Default to revealing completed items only when nothing is left to buy
   const [showCompleted, setShowCompleted] = useState(remainingItems.length === 0)
 
@@ -265,14 +298,16 @@ function CategoryDetail({ category, onToggleItem, onBack, showBack }: CategoryDe
       exit={{ opacity: 0, x: -12 }}
       transition={{ duration: 0.12, ease: 'easeOut' }}
     >
-      {/* Back to grid — hidden when this is the only category (nothing to pick) */}
+      {/* Back to grid — hidden when this is the only category (nothing to pick).
+          Styled as a clear, full-affordance button so it reads as the obvious
+          way out of a category and not an easy-to-miss text link. */}
       {showBack && (
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm font-medium text-black/60 hover:text-black/80 mb-4"
+          className="flex items-center gap-2 mb-4 rounded-full border border-[#FFB74D]/40 bg-white text-[#F57C00] text-sm font-semibold ps-3 pe-4 py-2 shadow-sm hover:bg-[#FFF3E0] active:scale-[0.98] transition-all"
         >
           <ArrowRight className="w-4 h-4" />
-          <span>כל הקטגוריות</span>
+          <span>חזרה לכל הקטגוריות</span>
         </button>
       )}
 
@@ -287,9 +322,6 @@ function CategoryDetail({ category, onToggleItem, onBack, showBack }: CategoryDe
           </p>
         </div>
       </div>
-
-      {/* Celebrate a cleared list right here, since there may be no grid to return to */}
-      {remainingItems.length === 0 && <CompletionBanner />}
 
       {/* Remaining items */}
       {remainingItems.length > 0 && (
@@ -308,7 +340,7 @@ function CategoryDetail({ category, onToggleItem, onBack, showBack }: CategoryDe
         </div>
       )}
 
-      {/* Completed items (collapsible) so mistakes can be undone */}
+      {/* Items bought during this shopping run (collapsible) so mistakes can be undone */}
       {completedItems.length > 0 && (
         <div className="mt-4">
           <button
