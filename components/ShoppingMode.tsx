@@ -17,16 +17,6 @@ function remainingCount(category: Category): number {
   return category.items.filter(item => !item.purchased).length
 }
 
-// Active categories first, fully-completed ones dimmed at the bottom
-function sortForShopping(categories: Category[]): Category[] {
-  return [...categories].sort((a, b) => {
-    const aDone = remainingCount(a) === 0
-    const bDone = remainingCount(b) === 0
-    if (aDone === bDone) return 0
-    return aDone ? 1 : -1
-  })
-}
-
 export default function ShoppingMode({ categories, onToggleItem, onExit }: ShoppingModeProps) {
   const { activeTab } = useTabView()
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
@@ -40,7 +30,12 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
     })
   }, [categories, activeTab])
 
-  const sortedCategories = useMemo(() => sortForShopping(relevantCategories), [relevantCategories])
+  // Categories still holding something to buy — finished ones drop out of the
+  // grid entirely so the shopper only ever sees what's left.
+  const activeCategories = useMemo(
+    () => relevantCategories.filter(category => remainingCount(category) > 0),
+    [relevantCategories]
+  )
 
   const totalItems = useMemo(
     () => relevantCategories.reduce((sum, c) => sum + c.items.length, 0),
@@ -149,7 +144,7 @@ export default function ShoppingMode({ categories, onToggleItem, onExit }: Shopp
             ) : (
               <CategoryGrid
                 key="grid"
-                categories={sortedCategories}
+                categories={activeCategories}
                 onSelect={setSelectedCategoryId}
                 allDone={totalItems > 0 && remainingItems === 0}
               />
@@ -184,6 +179,20 @@ interface CategoryGridProps {
 }
 
 function CategoryGrid({ categories, onSelect, allDone }: CategoryGridProps) {
+  // Everything bought — celebrate instead of showing an empty grid.
+  if (allDone) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 12 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 12 }}
+        transition={{ duration: 0.12, ease: 'easeOut' }}
+      >
+        <CompletionBanner />
+      </motion.div>
+    )
+  }
+
   if (categories.length === 0) {
     return (
       <motion.div
@@ -205,38 +214,24 @@ function CategoryGrid({ categories, onSelect, allDone }: CategoryGridProps) {
       exit={{ opacity: 0, x: 12 }}
       transition={{ duration: 0.12, ease: 'easeOut' }}
     >
-      {allDone && <CompletionBanner />}
-
       <div className="grid grid-cols-2 gap-3">
         {categories.map(category => {
           const remaining = remainingCount(category)
-          const isDone = remaining === 0
           return (
             <motion.button
               key={category.id}
               layout
               onClick={() => onSelect(category.id)}
               whileTap={{ scale: 0.97 }}
-              className={`relative flex flex-col items-center justify-center gap-2 rounded-2xl border shadow-sm p-5 min-h-[120px] transition-colors ${
-                isDone
-                  ? 'bg-gray-50 border-black/5 opacity-60'
-                  : 'bg-white border-black/5 hover:border-[#FFB74D]/40'
-              }`}
+              className="relative flex flex-col items-center justify-center gap-2 rounded-2xl border bg-white border-black/5 shadow-sm p-5 min-h-[120px] transition-colors hover:border-[#FFB74D]/40"
             >
               <span className="text-4xl">{category.emoji}</span>
               <span className="text-sm font-semibold text-black/80 text-center leading-tight">
                 {category.name}
               </span>
-              {isDone ? (
-                <span className="flex items-center gap-1 text-xs font-medium text-green-600">
-                  <Check className="w-3.5 h-3.5" />
-                  הושלם
-                </span>
-              ) : (
-                <span className="absolute top-2.5 left-2.5 min-w-[24px] h-6 px-1.5 flex items-center justify-center rounded-full bg-[#FFB74D] text-white text-xs font-bold">
-                  {remaining}
-                </span>
-              )}
+              <span className="absolute top-2.5 left-2.5 min-w-[24px] h-6 px-1.5 flex items-center justify-center rounded-full bg-[#FFB74D] text-white text-xs font-bold">
+                {remaining}
+              </span>
             </motion.button>
           )
         })}
@@ -265,14 +260,16 @@ function CategoryDetail({ category, onToggleItem, onBack, showBack }: CategoryDe
       exit={{ opacity: 0, x: -12 }}
       transition={{ duration: 0.12, ease: 'easeOut' }}
     >
-      {/* Back to grid — hidden when this is the only category (nothing to pick) */}
+      {/* Back to grid — hidden when this is the only category (nothing to pick).
+          Styled as a clear, full-affordance button so it reads as the obvious
+          way out of a category and not an easy-to-miss text link. */}
       {showBack && (
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm font-medium text-black/60 hover:text-black/80 mb-4"
+          className="flex items-center gap-2 mb-4 rounded-full border border-[#FFB74D]/40 bg-white text-[#F57C00] text-sm font-semibold ps-3 pe-4 py-2 shadow-sm hover:bg-[#FFF3E0] active:scale-[0.98] transition-all"
         >
           <ArrowRight className="w-4 h-4" />
-          <span>כל הקטגוריות</span>
+          <span>חזרה לכל הקטגוריות</span>
         </button>
       )}
 

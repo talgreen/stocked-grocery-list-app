@@ -118,6 +118,20 @@ describe('ShoppingMode - category grid', () => {
     expect(screen.queryByText('אקמול')).not.toBeInTheDocument()
   })
 
+  it('hides categories that have nothing left to buy', () => {
+    const withFinished: Category[] = [
+      { id: 1, name: 'ירקות', emoji: '🥬', items: [makeItem(11, 'מלפפון', false)] },
+      // Fully purchased -> should not appear as a card in the grid
+      { id: 2, name: 'פירות', emoji: '🍎', items: [makeItem(21, 'תפוח', true)] },
+    ]
+    renderShoppingMode(withFinished)
+
+    expect(screen.getByText('ירקות')).toBeInTheDocument()
+    expect(screen.queryByText('פירות')).not.toBeInTheDocument()
+    // Only the one unchecked item is counted in the header total
+    expect(screen.getByText('נשארו 1 פריטים לקנייה')).toBeInTheDocument()
+  })
+
   it('shows the total remaining count in the header', () => {
     // grocery remaining = ירקות(1) + פירות(1) = 2
     renderShoppingMode(baseCategories)
@@ -179,11 +193,11 @@ describe('ShoppingMode - category detail', () => {
     renderShoppingMode(baseCategories)
 
     fireEvent.click(screen.getByText('ירקות'))
-    expect(screen.getByText('כל הקטגוריות')).toBeInTheDocument()
+    expect(screen.getByText('חזרה לכל הקטגוריות')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('כל הקטגוריות'))
+    fireEvent.click(screen.getByText('חזרה לכל הקטגוריות'))
     // Back on the grid: both category cards visible again, no back button
-    expect(screen.queryByText('כל הקטגוריות')).not.toBeInTheDocument()
+    expect(screen.queryByText('חזרה לכל הקטגוריות')).not.toBeInTheDocument()
     expect(screen.getByText('נשארו 2 פריטים לקנייה')).toBeInTheDocument()
   })
 })
@@ -207,7 +221,7 @@ describe('ShoppingMode - single category (e.g. the pharmacy tab)', () => {
   it('hides the back-to-categories button when there is nowhere to go back to', () => {
     renderShoppingMode(singleCategory)
 
-    expect(screen.queryByText('כל הקטגוריות')).not.toBeInTheDocument()
+    expect(screen.queryByText('חזרה לכל הקטגוריות')).not.toBeInTheDocument()
   })
 })
 
@@ -217,7 +231,7 @@ describe('ShoppingMode - auto return on completion', () => {
 
     // Drill into פירות (single unpurchased item)
     fireEvent.click(screen.getByText('פירות'))
-    expect(screen.getByText('כל הקטגוריות')).toBeInTheDocument()
+    expect(screen.getByText('חזרה לכל הקטגוריות')).toBeInTheDocument()
 
     // Simulate the parent marking that item purchased
     const cleared: Category[] = baseCategories.map(c =>
@@ -234,7 +248,7 @@ describe('ShoppingMode - auto return on completion', () => {
 
     // Auto-returns to the grid after the short celebration delay
     await waitFor(
-      () => expect(screen.queryByText('כל הקטגוריות')).not.toBeInTheDocument(),
+      () => expect(screen.queryByText('חזרה לכל הקטגוריות')).not.toBeInTheDocument(),
       { timeout: 1500 }
     )
   })
